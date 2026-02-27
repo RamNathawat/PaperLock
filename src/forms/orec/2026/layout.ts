@@ -2,6 +2,9 @@
 export const PAGE_WIDTH = 612;
 export const PAGE_HEIGHT = 792;
 
+// GLOBAL CHECKBOX SIZE
+export const CHECKBOX_SIZE = 11;
+
 // PROPERTY IDENTIFIER
 export const PROPERTY_IDENTIFIER = {
   page: 0,
@@ -10,7 +13,10 @@ export const PROPERTY_IDENTIFIER = {
   fontSize: 10,
 };
 
-// Appliance matrix layout
+// ---------------------------
+// PAGE 1 MATRIX
+// ---------------------------
+
 export const APPLIANCE_COLUMNS = {
   WORKING: 370,
   NOT_WORKING: 426.5,
@@ -21,71 +27,46 @@ export const APPLIANCE_COLUMNS = {
 export const APPLIANCE_FIRST_ROW_Y = 345;
 export const APPLIANCE_ROW_SPACING = 15.1;
 
-// Sewer inline checkboxes (Public / Private)
-export const SEWER_INLINE = {
-  y: 209.5,
-  publicX: 105,
-  deltaToPrivate: 44, // 149 - 105
-  size: 10.5,
+// ---------------------------
+// PAGE 2 — LOCKED ROW Y MAP
+// ---------------------------
+
+export const PAGE2_ROW_Y: Record<number, number> = {
+  0: 697.4,
+  1: 682.3,
+  2: 667.2,
+  3: 652.1,
+  4: 637.0,
+  5: 621.9,
+  6: 606.8,
+  7: 591.7,
+  8: 576.6,
+  9: 561.5,
+  10: 548,
+  11: 533.5,
+  12: 518,
+  13: 504,
+  14: 489,
+  15: 473.5,
+  16: 459,
+  17: 444, 
+  18: 428,
+  19: 412,
 };
 
-export const SEPTIC_INLINE = {
-  y: 198,               
-  firstX: 119,          
-  deltaToSecond: 68,    
-  deltaToThird: 155,    
-  size: 10.5,
-};
-
-export const WATER_HEATER_INLINE = {
-  rowIndex: 3,
-  firstX: 100,       
-  deltaToSecond: 50, 
-  deltaToThird: 87,  
-  size: 10.5,
-};
-
-export const WATER_SOFTENER_INLINE = {
-  rowIndex: 5,
-  firstX: 106.5,      
-  deltaToSecond: 51,
-  size: 10.5,
-};
-
-export const AC_INLINE = {
-  rowIndex: 10,
-  firstX: 145,      
-  deltaToSecond: 50,
-  deltaToThird: 86.5,
-  size: 10.5,
-};
-
-export const HEATING_INLINE = {
-  rowIndex: 14,
-  firstX: 110.5,
+// Security System (4-box inline)
+export const PAGE2_SECURITY_INLINE = {
+  rowIndex: 4,
+  firstX: 112,
   deltaToSecond: 50.5,
-  deltaToThird: 87,
-  size: 10.5,
+  deltaToThird: 99.5,
+  deltaToFourth: 161,
 };
 
-export const GAS_SUPPLY_INLINE = {
+// Solar Panels (3-box inline)
+export const PAGE2_SOLAR_INLINE = {
   rowIndex: 17,
-  firstX: 93,
-  deltaToSecond: 44.5,
-  deltaToThird: 98.5,
-  size: 10.5,
+  firstX: 97,
+  deltaToSecond: 50.5,
+  deltaToThird: 100,
 };
-
-export const PROPANE_TANK_INLINE = {
-  rowIndex: 18,
-  firstX: 101,
-  deltaToSecond: 51,
-  size: 10.5,
-};
-
-// ---------------------------
-// PAGE 2 MATRIX (NEW)
-// ---------------------------
-
-export const PAGE2_FIRST_ROW_Y = 670; // temporary calibration value
-export const PAGE2_ROW_SPACING = 15.1; // temporary assumption
