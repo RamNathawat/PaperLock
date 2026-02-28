@@ -116,3 +116,58 @@ export const PAGE2_FLOOD_VERTICAL_COLUMNS = {
   YES: 526.5,
   NO: 554.5,
 };
+
+// ==================================================
+// PAGE 3 — LOCKED ROW MAP (Q7–Q38)
+// ==================================================
+
+export const PAGE3_YES_NO_COLUMNS = {
+  YES: 526.5,
+  NO: 554.5,
+};
+
+export const PAGE3_ROW_Y: Record<number, number> = {
+  7: 713.5,
+  8: 686,
+  9: 665.5,
+  10: 644,
+
+  11: 603,
+  12: 587.5,
+  13: 573,
+  14: 551.5,
+  15: 524.5,
+
+  16: 500, // IMPORTANT: text only — no Yes/No
+
+  17: 475.5,
+  18: 460.5,
+  19: 445.5,
+  20: 430,
+  21: 415,
+  22: 393,
+  23: 372.5,
+
+  24: 337,
+  25: 321.5,
+  26: 306.5,
+  27: 291,
+  28: 276,
+  29: 260.5,
+  30: 245.5,
+  31: 224,
+  32: 203.5,
+  33: 188,
+  34: 172.5,
+  35: 157.5,
+  36: 142.5,
+  37: 121,
+  38: 74.5,
+};
+
+// Q37 secondary inline (maintenance responsibility)
+export const PAGE3_Q37_INLINE = {
+  offsetFromRow: 5.5,
+  firstX: 322,
+  deltaToSecond: 35,
+};
