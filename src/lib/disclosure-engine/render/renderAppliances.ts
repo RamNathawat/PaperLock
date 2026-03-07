@@ -1,14 +1,14 @@
 import { PDFPage, PDFFont } from "pdf-lib";
 import * as raw from "../../../forms/orec/2026/layout.js";
 import { DisclosureInput } from "../schema/disclosure.schema.js";
-import { APPLIANCE_LAYOUT } from "../layout/rpcd_2026.semantic.js";
-import { flattenObject } from "../utils/flatten.js";
 
 export function renderAppliances(
   pages: PDFPage[],
   font: PDFFont,
   data: DisclosureInput
 ) {
+  if (!data.appliances) return;
+
   const resolveRowY = (i: number) => {
     const baseY =
       raw.APPLIANCE_FIRST_ROW_Y -
@@ -21,15 +21,9 @@ export function renderAppliances(
       : baseY;
   };
 
-  // 🔥 Generic flattening (no manual listing anymore)
-  const flat = flattenObject(data);
-
-  for (const [path, layout] of Object.entries(APPLIANCE_LAYOUT)) {
-    const status = flat[`${path}.status`];
-    if (!status) continue;
-
-    const page = pages[layout.page];
-    const y = resolveRowY(layout.rowIndex);
+  Object.entries(data.appliances).forEach(([key, status]) => {
+    const rowIndex = Number(key);
+    const y = resolveRowY(rowIndex);
 
     let x: number | undefined;
 
@@ -48,13 +42,13 @@ export function renderAppliances(
         break;
     }
 
-    if (typeof x !== "number") continue;
+    if (typeof x !== "number") return;
 
-    page.drawText("X", {
+    pages[0].drawText("X", {
       x,
       y,
       size: raw.CHECKBOX_SIZE,
       font,
     });
-  }
+  });
 }

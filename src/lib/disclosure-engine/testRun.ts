@@ -4,56 +4,124 @@ import { generateDisclosurePDF } from "./generateDisclosurePDF.js";
 import { DisclosureInput } from "./schema/disclosure.schema.js";
 
 async function run() {
-  console.log("Generating FULLY FILLED demo PDF...");
+  console.log("Starting test run...");
 
-  try {
-    const fullDemoData: DisclosureInput = {
-      version: "01-01-2026",
+  const fullDemoData: DisclosureInput = {
+    version: "01-01-2026",
 
-      appliances: {
-        sprinklerSystem: { status: "WORKING" },
-        swimmingPool: { status: "WORKING" },
-        hotTub: { status: "NOT_WORKING" },
-        plumbing: { status: "WORKING" },
-        airConditioning: { status: "UNKNOWN" },
-      },
+    propertyIdentifier: "1234 Elm Street, Tulsa, OK 74103",
 
-      financial: {
-        hoa: "YES",
-        hoaAmount: "350",
-        specialAssessment: "YES",
-        specialAssessmentAmount: "1200",
-      },
+    sellerOccupying: 0,
 
-      explanation:
-        "Seller discloses that the hot tub heating element requires repair and that a special assessment was issued by the HOA in 2025 for roof replacement across the community. Plumbing and sprinkler systems are fully operational at the time of disclosure. Air conditioning status is unknown due to seasonal inactivity. All known material defects have been disclosed in good faith to the best of the seller’s knowledge.",
+    zoningType: "residential",
 
-      signatures: {
-        sellerSignatureBase64: "use-file",
-        buyerSignatureBase64: "use-file",
-      },
-    };
+    sewerSystem: {
+      type: 1,
+      privateType: 0,
+    },
 
-    const start = Date.now();
+    initials: {
+      buyerInitial1: "J",
+      buyerInitial2: "B",
+      sellerInitial1: "M",
+      sellerInitial2: "S",
+    },
 
-    const buffer = await generateDisclosurePDF(fullDemoData);
+    additionalPages: {
+      hasAdditionalPages: "YES",
+      howMany: "2",
+    },
 
-    const end = Date.now();
+    appliances: Object.fromEntries(
+      Array.from({ length: 19 }, (_, i) => [
+        i,
+        i % 4 === 0
+          ? "WORKING"
+          : i % 4 === 1
+          ? "NOT_WORKING"
+          : i % 4 === 2
+          ? "UNKNOWN"
+          : "NONE",
+      ])
+    ),
 
-    console.log("Render time:", end - start, "ms");
+    inlineOptions: {
+      waterHeaterType: 1,
+      waterSoftenerType: 0,
+      acType: 2,
+      heatingType: 1,
+      gasSupplyType: 0,
+      propaneTankType: 1,
+      generatorType: 1,
+      waterSourceType: 0,
+      fireSuppresionDate: "01/15/2024",
+    },
 
-    const outputPath = path.join(
-      process.cwd(),
-      "src/forms/orec/2026/output-FULL-DEMO.pdf"
-    );
+    page2NotWorkingExplanation:
+      "Hot tub heating element requires repair. Garbage disposal not functioning.",
 
-    fs.writeFileSync(outputPath, buffer);
+    questions: Object.fromEntries(
+      Array.from({ length: 44 }, (_, i) => [
+        i + 7,
+        i % 2 === 0 ? "YES" : "NO",
+      ])
+    ),
 
-    console.log("✅ FULL DEMO PDF generated at:", outputPath);
+    page3TextFields: {
+      roofAge: "12 years",
+      roofLayers: "2",
+      termiteBaitAnnualCost: "150",
+    },
 
-  } catch (err: any) {
-    console.error("🔥 ERROR:", err.message);
-  }
+    q37Inline: 1,
+
+    q41Inline: {
+      payableType: 2,
+      unpaid: "YES",
+      ifYesAmount: "500",
+      managerName: "John Doe",
+      phone: "555-0199",
+    },
+
+    q46Inline: {
+      payableType: 1,
+      amount: "300",
+      paidTo: "City Fire Dept",
+    },
+
+    q47Details: {
+      utilities: [0, 1, 2, 3],
+      otherExplain: "Co-op",
+      initialMembership: "1000",
+      annualMembership: "350",
+    },
+
+    financial: {
+      hoa: "YES",
+      hoaAmount: "350",
+      specialAssessment: "YES",
+      specialAssessmentAmount: "1200",
+    },
+
+    explanation:
+      "Seller discloses that the hot tub heating element requires repair. HOA special assessment issued in 2025. All known material defects are disclosed in good faith.",
+
+    signatures: {
+      sellerSignatureBase64: "use-file",
+      buyerSignatureBase64: "use-file",
+    },
+  };
+
+  const buffer = await generateDisclosurePDF(fullDemoData);
+
+  const outputPath = path.join(
+    process.cwd(),
+    "src/forms/orec/2026/output-FULLY-FILLED.pdf"
+  );
+
+  fs.writeFileSync(outputPath, buffer);
+
+  console.log("✅ Fully filled PDF generated.");
 }
 
-run();
+run().catch(console.error);
