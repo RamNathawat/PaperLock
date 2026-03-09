@@ -1,8 +1,8 @@
 import { PDFPage, PDFFont } from "pdf-lib";
-import { DisclosureInput } from "../schema/disclosure.schema.js";
-import { EXPLANATION_LAYOUT } from "../layout/rpcd_2026.semantic.js";
-import { flattenObject } from "../utils/flatten.js";
-import { drawWrappedText } from "../utils/drawWrappedText.js";
+import { DisclosureInput } from "../schema/disclosure.schema";
+import { EXPLANATION_LAYOUT } from "../layout/rpcd_2026.semantic";
+import { flattenObject } from "../utils/flatten";
+import { drawWrappedText } from "../utils/drawWrappedText";
 
 export function renderExplanations(
   pages: PDFPage[],

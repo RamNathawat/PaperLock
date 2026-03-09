@@ -1,7 +1,7 @@
 import { PDFPage, PDFFont } from "pdf-lib";
-import { DisclosureInput } from "../schema/disclosure.schema.js";
-import { TEXT_LAYOUT } from "../layout/rpcd_2026.semantic.js";
-import { flattenObject } from "../utils/flatten.js";
+import { DisclosureInput } from "../schema/disclosure.schema";
+import { TEXT_LAYOUT } from "../layout/rpcd_2026.semantic";
+import { flattenObject } from "../utils/flatten";
 
 export function renderTextFields(
   pages: PDFPage[],

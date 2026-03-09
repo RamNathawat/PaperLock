@@ -1,4 +1,4 @@
-import * as raw from "../../../forms/orec/2026/layout.js";
+import * as raw from "../../../forms/orec/2026/layout";
 
 /* =========================
    YES/NO FINANCIAL

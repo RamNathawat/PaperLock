@@ -1,6 +1,6 @@
 import { PDFPage, PDFFont } from "pdf-lib";
-import * as raw from "../../../forms/orec/2026/layout.js";
-import { DisclosureInput } from "../schema/disclosure.schema.js";
+import * as raw from "../../../forms/orec/2026/layout";
+import { DisclosureInput } from "../schema/disclosure.schema";
 
 export function renderAppliances(
   pages: PDFPage[],
@@ -23,6 +23,10 @@ export function renderAppliances(
 
   Object.entries(data.appliances).forEach(([key, status]) => {
     const rowIndex = Number(key);
+
+    // Page 1 only handles appliance indices 0–18
+    if (rowIndex > 18) return;
+
     const y = resolveRowY(rowIndex);
 
     let x: number | undefined;

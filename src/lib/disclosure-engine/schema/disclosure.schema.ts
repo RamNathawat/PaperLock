@@ -1,4 +1,5 @@
 export type YesNo = "YES" | "NO";
+export type YesNoUnknown = "YES" | "NO" | "UNKNOWN";
 
 export type ApplianceStatus =
   | "WORKING"
@@ -17,6 +18,12 @@ export type ZoningType =
   | "other"
   | "unknown"
   | "no_zoning";
+
+export type SecuritySystemType = 0 | 1 | 2 | 3;
+// 0 = Leased, 1 = Owned, 2 = Monitored, 3 = Financed
+
+export type SolarPanelType = 0 | 1 | 2;
+// 0 = Leased, 1 = Owned, 2 = Financed
 
 export interface FinancialSection {
   hoa: YesNo;
@@ -47,6 +54,29 @@ export interface InlineOptions {
   generatorType?: 0 | 1 | 2;
   waterSourceType?: 0 | 1 | 2;
   fireSuppresionDate?: string;
+  securitySystemType?: SecuritySystemType;
+  solarPanelType?: SolarPanelType;
+}
+
+export interface Page2FloodSection {
+  /** Q3 main: 0 = YES, 1 = NO, 2 = UNKNOWN */
+  q3Main?: 0 | 1 | 2;
+  /** Q3 flood types: array of indices (0=100yr, 1=500yr, 2=floodway, 3=outside) */
+  q3Types?: number[];
+  /** Q3 municipal: 0 = YES, 1 = NO */
+  q3Municipal?: 0 | 1;
+  /** Q4: 0 = YES, 1 = NO */
+  q4?: 0 | 1;
+  /** Q5: YES or NO */
+  q5?: YesNo;
+  /** Q6: YES or NO */
+  q6?: YesNo;
+}
+
+export interface Page2ZoningSection {
+  zoningType?: ZoningType;
+  /** Q2 historical district: 0 = YES, 1 = NO, 2 = UNKNOWN */
+  historicalDistrict?: 0 | 1 | 2;
 }
 
 export interface Q41Inline {
@@ -110,7 +140,12 @@ export interface DisclosureInput {
 
   sewerSystem?: SewerSystem;
 
+  /** @deprecated use page2Zoning.zoningType instead — kept for backward compat */
   zoningType?: ZoningType;
+
+  page2Zoning?: Page2ZoningSection;
+
+  page2Flood?: Page2FloodSection;
 
   page2NotWorkingExplanation?: string;
 

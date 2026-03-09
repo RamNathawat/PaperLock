@@ -1,7 +1,7 @@
 import { PDFPage, PDFFont } from "pdf-lib";
-import * as raw from "../../../forms/orec/2026/layout.js";
-import { DisclosureInput, ZoningType } from "../schema/disclosure.schema.js";
-import { drawWrappedText } from "../utils/drawWrappedText.js";
+import * as raw from "../../../forms/orec/2026/layout";
+import { DisclosureInput, ZoningType } from "../schema/disclosure.schema";
+import { drawWrappedText } from "../utils/drawWrappedText";
 
 const ZONING_X: Record<ZoningType, { y: number; x: number }> = {
   residential:        { y: raw.PAGE2_ZONING_Q1_ROW1.y, x: raw.PAGE2_ZONING_Q1_ROW1.firstX },
@@ -24,38 +24,69 @@ export function renderPage2(
   const page = pages[1];
 
   // --------------------------------------------------
-  // Appliance continuation grid (left column marker)
+  // Appliance continuation grid — indices 19+ only
+  // PAGE2_ROW_Y key N = appliance index N + 19
   // --------------------------------------------------
-  Object.values(raw.PAGE2_ROW_Y).forEach((y) => {
-    page.drawText("X", {
-      x: raw.APPLIANCE_COLUMNS.WORKING,
-      y,
-      size: 11,
-      font,
+  if (data.appliances) {
+    Object.entries(raw.PAGE2_ROW_Y).forEach(([keyStr, y]) => {
+      const page2RowKey = Number(keyStr);
+      const applianceIndex = page2RowKey + 19;
+      const status = data.appliances![applianceIndex];
+
+      if (!status) return;
+
+      let x: number | undefined;
+      switch (status) {
+        case "WORKING":     x = raw.APPLIANCE_COLUMNS.WORKING; break;
+        case "NOT_WORKING": x = raw.APPLIANCE_COLUMNS.NOT_WORKING; break;
+        case "UNKNOWN":     x = raw.APPLIANCE_COLUMNS.DO_NOT_KNOW; break;
+        case "NONE":        x = raw.APPLIANCE_COLUMNS.NONE; break;
+      }
+
+      if (typeof x === "number") {
+        page.drawText("X", { x, y, size: 11, font });
+      }
     });
-  });
+  }
 
   // --------------------------------------------------
-  // Security inline (rowIndex 4)
+  // Security system inline (rowIndex 4) — data-driven
   // --------------------------------------------------
-  const securityY = raw.PAGE2_ROW_Y[4];
-  page.drawText("X", {
-    x: raw.PAGE2_SECURITY_INLINE.firstX,
-    y: securityY,
-    size: 11,
-    font,
-  });
+  if (data.inlineOptions?.securitySystemType !== undefined) {
+    const securityY = raw.PAGE2_ROW_Y[4];
+    const base = raw.PAGE2_SECURITY_INLINE.firstX;
+    const deltas = [
+      raw.PAGE2_SECURITY_INLINE.deltaToSecond,
+      raw.PAGE2_SECURITY_INLINE.deltaToThird,
+      raw.PAGE2_SECURITY_INLINE.deltaToFourth,
+    ];
+
+    let x = base;
+    if (data.inlineOptions.securitySystemType > 0) {
+      x = base + deltas[data.inlineOptions.securitySystemType - 1];
+    }
+
+    page.drawText("X", { x, y: securityY, size: 11, font });
+  }
 
   // --------------------------------------------------
-  // Solar inline (rowIndex 17)
+  // Solar panels inline (rowIndex 17) — data-driven
   // --------------------------------------------------
-  const solarY = raw.PAGE2_ROW_Y[17];
-  page.drawText("X", {
-    x: raw.PAGE2_SOLAR_INLINE.firstX,
-    y: solarY,
-    size: 11,
-    font,
-  });
+  if (data.inlineOptions?.solarPanelType !== undefined) {
+    const solarY = raw.PAGE2_ROW_Y[17];
+    const base = raw.PAGE2_SOLAR_INLINE.firstX;
+    const deltas = [
+      raw.PAGE2_SOLAR_INLINE.deltaToSecond,
+      raw.PAGE2_SOLAR_INLINE.deltaToThird,
+    ];
+
+    let x = base;
+    if (data.inlineOptions.solarPanelType > 0) {
+      x = base + deltas[data.inlineOptions.solarPanelType - 1];
+    }
+
+    page.drawText("X", { x, y: solarY, size: 11, font });
+  }
 
   // --------------------------------------------------
   // Generators inline (rowIndex 18)
@@ -96,7 +127,7 @@ export function renderPage2(
   }
 
   // --------------------------------------------------
-  // Fire Suppression System date of last inspection
+  // Fire Suppression System date
   // --------------------------------------------------
   if (data.inlineOptions?.fireSuppresionDate) {
     page.drawText(data.inlineOptions.fireSuppresionDate, {
@@ -121,79 +152,100 @@ export function renderPage2(
   }
 
   // --------------------------------------------------
-  // Zoning Q1 — single select
+  // Zoning Q1 — supports legacy zoningType and new page2Zoning.zoningType
   // --------------------------------------------------
-  if (data.zoningType) {
-    const coord = ZONING_X[data.zoningType];
-    page.drawText("X", {
-      x: coord.x,
-      y: coord.y,
-      size: 11,
-      font,
+  const zoningType = data.page2Zoning?.zoningType ?? data.zoningType;
+  if (zoningType) {
+    const coord = ZONING_X[zoningType];
+    page.drawText("X", { x: coord.x, y: coord.y, size: 11, font });
+  }
+
+  // --------------------------------------------------
+  // Zoning Q2 — historical district (0=YES, 1=NO, 2=UNKNOWN)
+  // --------------------------------------------------
+  if (data.page2Zoning?.historicalDistrict !== undefined) {
+    const x =
+      data.page2Zoning.historicalDistrict === 0
+        ? raw.PAGE2_ZONING_Q2.firstX
+        : data.page2Zoning.historicalDistrict === 1
+        ? raw.PAGE2_ZONING_Q2.firstX + raw.PAGE2_ZONING_Q2.deltas[0]
+        : raw.PAGE2_ZONING_Q2.firstX + raw.PAGE2_ZONING_Q2.deltas[1];
+
+    page.drawText("X", { x, y: raw.PAGE2_ZONING_Q2.y, size: 11, font });
+  }
+
+  // --------------------------------------------------
+  // Flood Q3 Main (0=YES, 1=NO, 2=UNKNOWN)
+  // --------------------------------------------------
+  if (data.page2Flood?.q3Main !== undefined) {
+    const x =
+      data.page2Flood.q3Main === 0
+        ? raw.PAGE2_FLOOD_Q3_MAIN.firstX
+        : data.page2Flood.q3Main === 1
+        ? raw.PAGE2_FLOOD_Q3_MAIN.firstX + raw.PAGE2_FLOOD_Q3_MAIN.deltas[0]
+        : raw.PAGE2_FLOOD_Q3_MAIN.firstX + raw.PAGE2_FLOOD_Q3_MAIN.deltas[1];
+
+    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MAIN.y, size: 11, font });
+  }
+
+  // --------------------------------------------------
+  // Flood Q3 Types — multi-select array of indices
+  // --------------------------------------------------
+  if (data.page2Flood?.q3Types) {
+    data.page2Flood.q3Types.forEach((index) => {
+      let x = raw.PAGE2_FLOOD_Q3_TYPES.firstX;
+      if (index > 0) {
+        x = raw.PAGE2_FLOOD_Q3_TYPES.firstX + raw.PAGE2_FLOOD_Q3_TYPES.deltas[index - 1];
+      }
+      page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_TYPES.y, size: 11, font });
     });
   }
 
   // --------------------------------------------------
-  // Zoning Q2
+  // Flood Q3 Municipal (0=YES, 1=NO)
   // --------------------------------------------------
-  page.drawText("X", {
-    x: raw.PAGE2_ZONING_Q2.firstX,
-    y: raw.PAGE2_ZONING_Q2.y,
-    size: 11,
-    font,
-  });
+  if (data.page2Flood?.q3Municipal !== undefined) {
+    const x =
+      data.page2Flood.q3Municipal === 0
+        ? raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX
+        : raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX + raw.PAGE2_FLOOD_Q3_MUNICIPAL.deltas[0];
+
+    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MUNICIPAL.y, size: 11, font });
+  }
 
   // --------------------------------------------------
-  // Flood Q3 Main
+  // Flood Q4 (0=YES, 1=NO)
   // --------------------------------------------------
-  page.drawText("X", {
-    x: raw.PAGE2_FLOOD_Q3_MAIN.firstX,
-    y: raw.PAGE2_FLOOD_Q3_MAIN.y,
-    size: 11,
-    font,
-  });
+  if (data.page2Flood?.q4 !== undefined) {
+    const x =
+      data.page2Flood.q4 === 0
+        ? raw.PAGE2_FLOOD_Q4.firstX
+        : raw.PAGE2_FLOOD_Q4.firstX + raw.PAGE2_FLOOD_Q4.deltas[0];
 
-  // Flood Q3 Types
-  page.drawText("X", {
-    x: raw.PAGE2_FLOOD_Q3_TYPES.firstX,
-    y: raw.PAGE2_FLOOD_Q3_TYPES.y,
-    size: 11,
-    font,
-  });
-
-  // Flood Q3 Municipal
-  page.drawText("X", {
-    x: raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX,
-    y: raw.PAGE2_FLOOD_Q3_MUNICIPAL.y,
-    size: 11,
-    font,
-  });
-
-  // --------------------------------------------------
-  // Flood Q4
-  // --------------------------------------------------
-  page.drawText("X", {
-    x: raw.PAGE2_FLOOD_Q4.firstX,
-    y: raw.PAGE2_FLOOD_Q4.y,
-    size: 11,
-    font,
-  });
+    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q4.y, size: 11, font });
+  }
 
   // --------------------------------------------------
   // Flood Q5
   // --------------------------------------------------
-  page.drawText("X", {
-    x: raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES,
-    y: raw.PAGE2_FLOOD_Q5_Y,
-    size: 11,
-    font,
-  });
+  if (data.page2Flood?.q5) {
+    const x =
+      data.page2Flood.q5 === "YES"
+        ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES
+        : raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO;
 
+    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q5_Y, size: 11, font });
+  }
+
+  // --------------------------------------------------
   // Flood Q6
-  page.drawText("X", {
-    x: raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO,
-    y: raw.PAGE2_FLOOD_Q6_Y,
-    size: 11,
-    font,
-  });
+  // --------------------------------------------------
+  if (data.page2Flood?.q6) {
+    const x =
+      data.page2Flood.q6 === "YES"
+        ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES
+        : raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO;
+
+    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q6_Y, size: 11, font });
+  }
 }

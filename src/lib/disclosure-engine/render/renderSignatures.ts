@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
 import { PDFPage, PDFDocument, PDFFont } from "pdf-lib";
-import { DisclosureInput } from "../schema/disclosure.schema.js";
-import { SIGNATURE_LAYOUT } from "../layout/rpcd_2026.semantic.js";
-import * as raw from "../../../forms/orec/2026/layout.js";
+import { DisclosureInput } from "../schema/disclosure.schema";
+import { SIGNATURE_LAYOUT } from "../layout/rpcd_2026.semantic";
+import * as raw from "../../../forms/orec/2026/layout";
 
 export async function renderSignatures(
   pdfDoc: PDFDocument,

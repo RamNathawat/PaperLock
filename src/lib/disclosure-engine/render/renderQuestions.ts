@@ -1,6 +1,6 @@
 import { PDFPage, PDFFont } from "pdf-lib";
-import * as raw from "../../../forms/orec/2026/layout.js";
-import { DisclosureInput } from "../schema/disclosure.schema.js";
+import * as raw from "../../../forms/orec/2026/layout";
+import { DisclosureInput } from "../schema/disclosure.schema";
 
 export function renderQuestions(
   pages: PDFPage[],

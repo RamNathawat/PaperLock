@@ -2,22 +2,22 @@ import fs from "fs";
 import path from "path";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 
-import { DisclosureInput } from "./schema/disclosure.schema.js";
-import { validateDisclosureInput } from "./validation/validateDisclosure.js";
+import { DisclosureInput } from "./schema/disclosure.schema";
+import { validateDisclosureInput } from "./validation/validateDisclosure";
 
-import { renderPropertyIdentifier } from "./render/renderPropertyIdentifier.js";
-import { renderAppliances } from "./render/renderAppliances.js";
-import { renderInlineOptions } from "./render/renderInlineOptions.js";
-import { renderSewerInline } from "./render/renderSewerInline.js";
-import { renderPage2 } from "./render/renderPage2.js";
-import { renderQuestions } from "./render/renderQuestions.js";
-import { renderQ37Inline } from "./render/renderQ37Inline.js";
-import { renderQ41Q46Inline } from "./render/renderQ41Q46Inline.js";
-import { renderQ47Inline } from "./render/renderQ47Inline.js";
-import { renderCheckboxes } from "./render/renderCheckboxes.js";
-import { renderTextFields } from "./render/renderTextFields.js";
-import { renderExplanations } from "./render/renderExplanations.js";
-import { renderSignatures } from "./render/renderSignatures.js";
+import { renderPropertyIdentifier } from "./render/renderPropertyIdentifier";
+import { renderAppliances } from "./render/renderAppliances";
+import { renderInlineOptions } from "./render/renderInlineOptions";
+import { renderSewerInline } from "./render/renderSewerInline";
+import { renderPage2 } from "./render/renderPage2";
+import { renderQuestions } from "./render/renderQuestions";
+import { renderQ37Inline } from "./render/renderQ37Inline";
+import { renderQ41Q46Inline } from "./render/renderQ41Q46Inline";
+import { renderQ47Inline } from "./render/renderQ47Inline";
+import { renderCheckboxes } from "./render/renderCheckboxes";
+import { renderTextFields } from "./render/renderTextFields";
+import { renderExplanations } from "./render/renderExplanations";
+import { renderSignatures } from "./render/renderSignatures";
 
 export async function generateDisclosurePDF(
   data: DisclosureInput
