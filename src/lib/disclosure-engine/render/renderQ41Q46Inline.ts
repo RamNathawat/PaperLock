@@ -10,20 +10,40 @@ export function renderQ41Q46Inline(
   const page = pages[3];
 
   // --------------------------------------------------
-  // Q41 Payable type checkbox
+  // Q41 HOA Amount of Dues
+  // --------------------------------------------------
+  if (data.q41Inline?.hoaAmount) {
+    page.drawText(data.q41Inline.hoaAmount, {
+      x: raw.PAGE4_TEXT_FIELDS.q41AmountOfDues.x,
+      y: raw.PAGE4_TEXT_FIELDS.q41AmountOfDues.y,
+      size: 10,
+      font,
+    });
+  }
+
+  // --------------------------------------------------
+  // Q41 Special Assessment Amount
+  // --------------------------------------------------
+  if (data.q41Inline?.specialAssessmentAmount) {
+    page.drawText(data.q41Inline.specialAssessmentAmount, {
+      x: raw.PAGE4_TEXT_FIELDS.q41SpecialAssessment.x,
+      y: raw.PAGE4_TEXT_FIELDS.q41SpecialAssessment.y,
+      size: 10,
+      font,
+    });
+  }
+
+  // --------------------------------------------------
+  // Q41 Payable type checkbox — coerce to number
   // --------------------------------------------------
   if (data.q41Inline?.payableType !== undefined) {
+    const pt = Number(data.q41Inline.payableType);
     const y = raw.PAGE4_Q41_PAYABLE.y;
     const base = raw.PAGE4_Q41_PAYABLE.firstX;
-    const deltas = [
-      raw.PAGE4_Q41_PAYABLE.deltaToSecond,
-      raw.PAGE4_Q41_PAYABLE.deltaToThird,
-    ];
 
     let x = base;
-    if (data.q41Inline.payableType > 0) {
-      x = base + deltas[data.q41Inline.payableType - 1];
-    }
+    if (pt === 1) x = base + raw.PAGE4_Q41_PAYABLE.deltaToSecond;
+    if (pt === 2) x = base + raw.PAGE4_Q41_PAYABLE.deltaToThird;
 
     page.drawText("X", { x, y, size: 11, font });
   }
@@ -78,20 +98,16 @@ export function renderQ41Q46Inline(
   }
 
   // --------------------------------------------------
-  // Q46 Payable type checkbox
+  // Q46 Payable type checkbox — coerce to number
   // --------------------------------------------------
   if (data.q46Inline?.payableType !== undefined) {
+    const pt = Number(data.q46Inline.payableType);
     const y = raw.PAGE4_Q46_PAYABLE.y;
     const base = raw.PAGE4_Q46_PAYABLE.firstX;
-    const deltas = [
-      raw.PAGE4_Q46_PAYABLE.deltaToSecond,
-      raw.PAGE4_Q46_PAYABLE.deltaToThird,
-    ];
 
     let x = base;
-    if (data.q46Inline.payableType > 0) {
-      x = base + deltas[data.q46Inline.payableType - 1];
-    }
+    if (pt === 1) x = base + raw.PAGE4_Q46_PAYABLE.deltaToSecond;
+    if (pt === 2) x = base + raw.PAGE4_Q46_PAYABLE.deltaToThird;
 
     page.drawText("X", { x, y, size: 11, font });
   }

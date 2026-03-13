@@ -10,7 +10,7 @@ export const PROPERTY_IDENTIFIER_PAGE1 = { x: 200, y: 500, fontSize: 10 };
 // Pages 1–5 — repeating header at top of every page
 export const PROPERTY_IDENTIFIER_HEADER = { x: 138, y: 765, fontSize: 10 };
 
-export const SELLER_OCCUPYING = { y: 477, occupyingX: 81.5, notOccupyingX: 113 };
+export const SELLER_OCCUPYING = { y: 477, occupyingX: 81.5, notOccupyingX: 104 };
 
 export const APPLIANCE_COLUMNS = { WORKING: 370, NOT_WORKING: 426.5, DO_NOT_KNOW: 484, NONE: 541.5 };
 export const APPLIANCE_FIRST_ROW_Y = 345;

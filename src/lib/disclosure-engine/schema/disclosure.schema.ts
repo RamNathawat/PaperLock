@@ -1,11 +1,5 @@
 export type YesNo = "YES" | "NO";
-export type YesNoUnknown = "YES" | "NO" | "UNKNOWN";
-
-export type ApplianceStatus =
-  | "WORKING"
-  | "NOT_WORKING"
-  | "UNKNOWN"
-  | "NONE";
+export type ApplianceStatus = "WORKING" | "NOT_WORKING" | "UNKNOWN" | "NONE";
 
 export type ZoningType =
   | "residential"
@@ -24,13 +18,6 @@ export type SecuritySystemType = 0 | 1 | 2 | 3;
 
 export type SolarPanelType = 0 | 1 | 2;
 // 0 = Leased, 1 = Owned, 2 = Financed
-
-export interface FinancialSection {
-  hoa: YesNo;
-  hoaAmount?: string;
-  specialAssessment: YesNo;
-  specialAssessmentAmount?: string;
-}
 
 export interface SignatureBlock {
   sellerSignatureBase64?: string;
@@ -61,12 +48,12 @@ export interface InlineOptions {
 export interface Page2FloodSection {
   /** Q3 main: 0 = YES, 1 = NO, 2 = UNKNOWN */
   q3Main?: 0 | 1 | 2;
-  /** Q3 flood types: array of indices (0=100yr, 1=500yr, 2=floodway, 3=outside) */
+  /** Q3 flood types: array of indices (0=100yr, 1=500yr, 2=floodway, 3=outside hazard area) */
   q3Types?: number[];
-  /** Q3 municipal: 0 = YES, 1 = NO */
-  q3Municipal?: 0 | 1;
-  /** Q4: 0 = YES, 1 = NO */
-  q4?: 0 | 1;
+  /** Q3 municipal: 0 = YES, 1 = NO, 2 = UNKNOWN */
+  q3Municipal?: 0 | 1 | 2;
+  /** Q4: 0 = YES, 1 = NO, 2 = UNKNOWN */
+  q4?: 0 | 1 | 2;
   /** Q5: YES or NO */
   q5?: YesNo;
   /** Q6: YES or NO */
@@ -80,6 +67,8 @@ export interface Page2ZoningSection {
 }
 
 export interface Q41Inline {
+  hoaAmount?: string;
+  specialAssessmentAmount?: string;
   payableType?: 0 | 1 | 2;
   unpaid?: YesNo;
   ifYesAmount?: string;
@@ -130,7 +119,11 @@ export interface DisclosureInput {
 
   questions?: Record<number, YesNo>;
 
+  /** Q37 HOA type: 0 = Mandatory, 1 = Voluntary — NOTE: Q37 in PDF is dams, not HOA */
   q37Inline?: 0 | 1;
+
+  /** Q37 dam maintenance: YES or NO */
+  q37DamMaintenance?: YesNo;
 
   q41Inline?: Q41Inline;
 
@@ -140,7 +133,7 @@ export interface DisclosureInput {
 
   sewerSystem?: SewerSystem;
 
-  /** @deprecated use page2Zoning.zoningType instead — kept for backward compat */
+  /** @deprecated use page2Zoning.zoningType instead */
   zoningType?: ZoningType;
 
   page2Zoning?: Page2ZoningSection;
@@ -154,8 +147,6 @@ export interface DisclosureInput {
   initials?: InitialsBlock;
 
   additionalPages?: AdditionalPages;
-
-  financial: FinancialSection;
 
   explanation?: string;
 

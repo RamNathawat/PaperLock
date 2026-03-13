@@ -24,10 +24,6 @@ export function validateDisclosureInput(data: DisclosureInput) {
     throw new Error("appliances section is required");
   }
 
-  if (!data.financial) {
-    throw new Error("financial section is required");
-  }
-
   // --------------------------------------------------
   // Initials — must be exactly 1 character each
   // --------------------------------------------------
@@ -64,16 +60,12 @@ export function validateDisclosureInput(data: DisclosureInput) {
   // --------------------------------------------------
   // Explanation length
   // --------------------------------------------------
-  if (data.explanation) {
-    if (data.explanation.length > 1500) {
-      throw new Error("explanation exceeds 1500 character limit");
-    }
+  if (data.explanation && data.explanation.length > 1500) {
+    throw new Error("explanation exceeds 1500 character limit");
   }
 
-  if (data.page2NotWorkingExplanation) {
-    if (data.page2NotWorkingExplanation.length > 1500) {
-      throw new Error("page2NotWorkingExplanation exceeds 1500 character limit");
-    }
+  if (data.page2NotWorkingExplanation && data.page2NotWorkingExplanation.length > 1500) {
+    throw new Error("page2NotWorkingExplanation exceeds 1500 character limit");
   }
 
   // --------------------------------------------------
@@ -91,29 +83,32 @@ export function validateDisclosureInput(data: DisclosureInput) {
   }
 
   // --------------------------------------------------
+  // Sewer — privateType required if type is Private
+  // --------------------------------------------------
+  if (data.sewerSystem?.type === 1 && data.sewerSystem.privateType === undefined) {
+    throw new Error(
+      "sewerSystem.privateType is required when sewer type is Private"
+    );
+  }
+
+  // --------------------------------------------------
+  // Q41 — hoaAmount required if Q41 is YES
+  // --------------------------------------------------
+  if (data.questions?.[41] === "YES" && !data.q41Inline?.hoaAmount?.trim()) {
+    throw new Error("q41Inline.hoaAmount is required when Q41 is YES");
+  }
+
+  // --------------------------------------------------
   // Q41 — ifYesAmount required if unpaid is YES
   // --------------------------------------------------
   if (data.q41Inline?.unpaid === "YES" && !data.q41Inline.ifYesAmount?.trim()) {
-    throw new Error(
-      "q41Inline.ifYesAmount is required when unpaid is YES"
-    );
+    throw new Error("q41Inline.ifYesAmount is required when unpaid is YES");
   }
 
   // --------------------------------------------------
-  // Financial — amounts required if YES
+  // Q46 — amount required if Q46 is YES
   // --------------------------------------------------
-  if (data.financial.hoa === "YES" && !data.financial.hoaAmount?.trim()) {
-    throw new Error(
-      "financial.hoaAmount is required when hoa is YES"
-    );
-  }
-
-  if (
-    data.financial.specialAssessment === "YES" &&
-    !data.financial.specialAssessmentAmount?.trim()
-  ) {
-    throw new Error(
-      "financial.specialAssessmentAmount is required when specialAssessment is YES"
-    );
+  if (data.questions?.[46] === "YES" && !data.q46Inline?.amount?.trim()) {
+    throw new Error("q46Inline.amount is required when Q46 is YES");
   }
 }

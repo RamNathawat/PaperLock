@@ -1,0 +1,83 @@
+{
+  "name": "rhf-wizard",
+  "author": "kennyhei <kenny_heinonen@hotmail.com>",
+  "description": "Multistep wizard for React Hook Form",
+  "homepage": "https://github.com/kennyhei/rhf-wizard",
+  "version": "1.0.2",
+  "license": "MIT",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/rhf-wizard.es.js",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/rhf-wizard.es.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kennyhei/rhf-wizard"
+  },
+  "keywords": [
+    "react",
+    "react-hook-form",
+    "step",
+    "multistep",
+    "wizard",
+    "react-wizard",
+    "form-wizard",
+    "step-wizard",
+    "react-hook-form-wizard"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
+    "build": "tsc && vite build",
+    "build:demo": "vite build -c vite.demo.config.ts",
+    "predeploy": "npm run build:demo",
+    "deploy": "gh-pages -d dist",
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build",
+    "postpublish": "PACKAGE_VERSION=$(cat package.json | grep \\\"version\\\" | head -1 | awk -F: '{ print $2 }' | sed 's/[\",]//g' | tr -d '[[:space:]]') && git tag v$PACKAGE_VERSION && git push --tags",
+    "install:local": "PACKAGE_VERSION=$(cat package.json | grep \\\"version\\\" | head -1 | awk -F: '{ print $2 }' | sed 's/[\",]//g' | tr -d '[[:space:]]') && npm run build && npm pack && tar -xzf rhf-wizard-$PACKAGE_VERSION.tgz && mv package rhf-wizard && yarn add ./rhf-wizard",
+    "uninstall:local": "PACKAGE_VERSION=$(cat package.json | grep \\\"version\\\" | head -1 | awk -F: '{ print $2 }' | sed 's/[\",]//g' | tr -d '[[:space:]]') && yarn remove rhf-wizard && rm -rf rhf-wizard-$PACKAGE_VERSION.tgz rhf-wizard"
+  },
+  "dependencies": {
+    "rhf-wizard": "./rhf-wizard"
+  },
+  "devDependencies": {
+    "@hookform/error-message": "^2.0.1",
+    "@hookform/resolvers": "^5.2.2",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^25.0.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^5.1.2",
+    "daisyui": "^5.5.14",
+    "gh-pages": "^6.3.0",
+    "motion": "^12.23.26",
+    "prettier": "3.7.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.67.0",
+    "react-icons": "^5.5.0",
+    "react-spinners": "^0.17.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0",
+    "vite-plugin-dts": "^4.5.4",
+    "yup": "^1.7.1"
+  },
+  "peerDependencies": {
+    "@hookform/resolvers": ">=5.0.0",
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0",
+    "react-hook-form": ">=7.0.0"
+  }
+}
