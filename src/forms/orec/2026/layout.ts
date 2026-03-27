@@ -10,7 +10,7 @@ export const PROPERTY_IDENTIFIER_PAGE1 = { x: 200, y: 500, fontSize: 10 };
 // Pages 1–5 — repeating header at top of every page
 export const PROPERTY_IDENTIFIER_HEADER = { x: 138, y: 765, fontSize: 10 };
 
-export const SELLER_OCCUPYING = { y: 477, occupyingX: 81.5, notOccupyingX: 104 };
+export const SELLER_OCCUPYING = { y: 477, occupyingX: 80, notOccupyingX: 104 };
 
 export const APPLIANCE_COLUMNS = { WORKING: 370, NOT_WORKING: 426.5, DO_NOT_KNOW: 484, NONE: 541.5 };
 export const APPLIANCE_FIRST_ROW_Y = 345;
@@ -60,8 +60,8 @@ export const PAGE2_ROW_Y: Record<number, number> = {
 };
 export const PAGE2_SECURITY_INLINE = { rowIndex: 4, firstX: 112, deltaToSecond: 50.5, deltaToThird: 99.5, deltaToFourth: 161 };
 export const PAGE2_SOLAR_INLINE = { rowIndex: 17, firstX: 97, deltaToSecond: 50.5, deltaToThird: 100 };
-export const PAGE2_GENERATORS_INLINE = { rowIndex: 18, firstX: 40.5, deltaToSecond: 50.5, deltaToThird: 100 };
-export const PAGE2_WATER_SOURCE_INLINE = { rowIndex: 19, firstX: 160, deltaToSecond: 50.5, deltaToThird: 100 };
+export const PAGE2_GENERATORS_INLINE = { rowIndex: 18, firstX: 89, deltaToSecond: 50.5, deltaToThird: 100 };
+export const PAGE2_WATER_SOURCE_INLINE = { rowIndex: 19, firstX: 160, deltaToSecond: 38, deltaToThird: 100 };
 export const PAGE2_FLOOD_VERTICAL_COLUMNS = { YES: 526.5, NO: 554.5 };
 export const PAGE2_ZONING_Q1_ROW1 = { y: 280, firstX: 185, deltas: [62, 128.5, 185.5, 227, 289.5] };
 export const PAGE2_ZONING_Q1_ROW2 = { y: 268, firstX: 44, deltas: [100, 141, 198] };

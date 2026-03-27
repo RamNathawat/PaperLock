@@ -11,23 +11,87 @@ import Step7Signatures from "./steps/Step7Signatures";
 import Navigation from "./components/Navigation";
 import ProgressBar from "./components/ProgressBar";
 import { DisclosureInput } from "@/src/lib/disclosure-engine/schema/disclosure.schema";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function DisclosurePage() {
-  async function handleCompleted(values: any) {
+  const searchParams = useSearchParams();
+  const disclosureId = searchParams.get("id");
+  const [initialValues, setInitialValues] = useState<any>(null);
+  const [loading, setLoading] = useState(!!disclosureId);
+  const draftIdRef = useRef<string | null>(disclosureId);
 
-    console.log("PAYLOAD", JSON.stringify(values, null, 2));
+  useEffect(() => {
+    if (!disclosureId) {
+      setLoading(false);
+      return;
+    }
+    draftIdRef.current = disclosureId;
+    fetch(`/api/disclosures/${disclosureId}`, { credentials: "include" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.disclosure?.form_data) {
+          setInitialValues({
+            ...data.disclosure.form_data,
+            disclosureId,
+          });
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [disclosureId]);
+
+  async function handleStepChanged(_from: any, _to: any, allValues: any) {
+    const flat: any = Object.values(allValues).reduce((acc: any, v: any) => ({ ...acc, ...v }), {} as any);
+
+    if (draftIdRef.current) {
+      await fetch(`/api/disclosures/${draftIdRef.current}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          property_identifier: flat.propertyIdentifier || "Untitled",
+          form_data: { ...flat, disclosureId: draftIdRef.current },
+        }),
+      });
+    } else {
+      const res = await fetch("/api/disclosures", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          property_identifier: flat.propertyIdentifier || "Untitled",
+          form_data: flat,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        draftIdRef.current = data.disclosure.id;
+      }
+    }
+  }
+
+  async function handleCompleted(values: any) {
+    const questionsRecord: Record<number, "YES" | "NO"> = {};
+    if (Array.isArray(values.questions)) {
+      values.questions.forEach((val: any, idx: number) => {
+        if (val === "YES" || val === "NO") {
+          questionsRecord[idx] = val;
+        }
+      });
+    } else if (values.questions) {
+      Object.assign(questionsRecord, values.questions);
+    }
 
     const payload: DisclosureInput = {
       version: "01-01-2026",
       propertyIdentifier: values.propertyIdentifier,
       sellerOccupying: Number(values.sellerOccupying) as 0 | 1,
       appliances: values.appliances,
-      sewerSystem: values.sewerSystem
+      sewerSystem: values.sewerSystem?.type !== null && values.sewerSystem?.type !== undefined
         ? {
-            type: values.sewerSystem.type !== undefined
-              ? Number(values.sewerSystem.type) as 0 | 1
-              : undefined,
-            privateType: values.sewerSystem.privateType !== undefined
+            type: Number(values.sewerSystem.type) as 0 | 1,
+            privateType: values.sewerSystem.privateType !== null && values.sewerSystem.privateType !== undefined
               ? Number(values.sewerSystem.privateType) as 0 | 1 | 2
               : undefined,
           }
@@ -80,7 +144,7 @@ export default function DisclosurePage() {
             q3Main: values.page2Flood.q3Main !== undefined
               ? Number(values.page2Flood.q3Main) as 0 | 1 | 2
               : undefined,
-            q3Types: values.page2Flood.q3Types
+            q3Types: Array.isArray(values.page2Flood.q3Types) && values.page2Flood.q3Types.length > 0
               ? values.page2Flood.q3Types.map(Number)
               : undefined,
             q3Municipal: values.page2Flood.q3Municipal !== undefined
@@ -94,7 +158,7 @@ export default function DisclosurePage() {
           }
         : undefined,
       page2NotWorkingExplanation: values.page2NotWorkingExplanation,
-      questions: values.questions,
+      questions: questionsRecord,
       page3TextFields: values.page3TextFields,
       q37Inline: values.q37Inline !== undefined
         ? Number(values.q37Inline) as 0 | 1
@@ -124,7 +188,7 @@ export default function DisclosurePage() {
         : undefined,
       q47Details: values.q47Details
         ? {
-            utilities: values.q47Details.utilities
+            utilities: Array.isArray(values.q47Details.utilities) && values.q47Details.utilities.length > 0
               ? values.q47Details.utilities.map(Number)
               : undefined,
             otherExplain: values.q47Details.otherExplain,
@@ -137,6 +201,19 @@ export default function DisclosurePage() {
       initials: values.initials,
       signatures: values.signatures,
     };
+
+    if (draftIdRef.current) {
+      await fetch(`/api/disclosures/${draftIdRef.current}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "completed",
+          property_identifier: values.propertyIdentifier,
+          form_data: values,
+        }),
+      });
+    }
 
     const res = await fetch("/api/disclosure/generate", {
       method: "POST",
@@ -160,14 +237,77 @@ export default function DisclosurePage() {
   }
 
   const steps = [
-    { id: "Property", component: <Step1Property /> },
-    { id: "Appliances", component: <Step2Appliances /> },
-    { id: "Systems", component: <Step3Systems /> },
-    { id: "Zoning", component: <Step4Zoning /> },
-    { id: "Questions", component: <Step5Questions /> },
-    { id: "Financial", component: <Step6Financial /> },
-    { id: "Signatures", component: <Step7Signatures /> },
+    {
+      id: "Property",
+      component: <Step1Property />,
+      initialValues: initialValues ? {
+        propertyIdentifier: initialValues.propertyIdentifier,
+        sellerOccupying: initialValues.sellerOccupying,
+        initials: initialValues.initials,
+        disclosureId: initialValues.disclosureId,
+      } : undefined
+    },
+    {
+      id: "Appliances",
+      component: <Step2Appliances />,
+      initialValues: initialValues ? {
+        appliances: initialValues.appliances,
+        page2NotWorkingExplanation: initialValues.page2NotWorkingExplanation
+      } : undefined
+    },
+    {
+      id: "Systems",
+      component: <Step3Systems />,
+      initialValues: initialValues ? {
+        inlineOptions: initialValues.inlineOptions,
+        sewerSystem: initialValues.sewerSystem
+      } : undefined
+    },
+    {
+      id: "Zoning",
+      component: <Step4Zoning />,
+      initialValues: initialValues ? {
+        page2Zoning: initialValues.page2Zoning,
+        page2Flood: initialValues.page2Flood
+      } : undefined
+    },
+    {
+      id: "Questions",
+      component: <Step5Questions />,
+      initialValues: initialValues ? {
+        questions: initialValues.questions,
+        page3TextFields: initialValues.page3TextFields,
+        q37Inline: initialValues.q37Inline,
+        q37DamMaintenance: initialValues.q37DamMaintenance,
+        q41Inline: initialValues.q41Inline,
+        q46Inline: initialValues.q46Inline,
+        q47Details: initialValues.q47Details,
+        explanation: initialValues.explanation
+      } : undefined
+    },
+    {
+      id: "Financial",
+      component: <Step6Financial />,
+      initialValues: initialValues ? {
+        additionalPages: initialValues.additionalPages
+      } : undefined
+    },
+    {
+      id: "Signatures",
+      component: <Step7Signatures />,
+      initialValues: initialValues ? {
+        signatures: initialValues.signatures
+      } : undefined
+    },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500 text-sm">Loading draft...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -179,6 +319,7 @@ export default function DisclosurePage() {
         <Wizard
           steps={steps}
           onCompleted={handleCompleted}
+          onStepChanged={handleStepChanged}
           footer={<Navigation />}
           header={<ProgressBar />}
         />
