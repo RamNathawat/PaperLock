@@ -15,6 +15,12 @@ export default function DashboardPage() {
   const [email, setEmail] = useState("");
   const [disclosures, setDisclosures] = useState<Disclosure[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 🔥 NEW STATES
+  const [showModal, setShowModal] = useState(false);
+  const [link, setLink] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
   const router = useRouter();
   const supabase = createClient();
 
@@ -47,7 +53,7 @@ export default function DashboardPage() {
     if (res.ok) {
       setDisclosures(prev => prev.filter(d => d.id !== id));
     } else {
-      alert("Failed to delete. Please try again.");
+      alert("Failed to delete.");
     }
   }
 
@@ -58,14 +64,48 @@ export default function DashboardPage() {
 
   function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short", day: "numeric", year: "numeric"
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
+  }
+
+  // 🔥 CREATE LINK (IMPROVED)
+  async function handleCreateLink() {
+    if (creating) return;
+    setCreating(true);
+
+    const token = crypto.randomUUID();
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+      .from("shared_links")
+      .insert({
+        token,
+        created_by: user?.id || null,
+      });
+
+    if (error) {
+      console.error(error);
+      alert(error.message);
+      setCreating(false);
+      return;
+  }
+
+    const url = `${window.location.origin}/fill/${token}`;
+    setLink(url);
+
+    // auto copy
+    navigator.clipboard.writeText(url);
+
+    setCreating(false);
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
       </div>
     );
   }
@@ -74,68 +114,128 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto py-10 px-4">
 
+        {/* HEADER */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">My Disclosures</h1>
-            <p className="text-gray-500 text-sm mt-1">{email}</p>
+            <h1 className="text-2xl font-bold">My Disclosures</h1>
+            <p className="text-sm text-gray-500">{email}</p>
           </div>
+
           <div className="flex gap-3">
+            {/* 🔥 PRIMARY BUTTON */}
+            <button
+              onClick={() => {
+                setShowModal(true);
+                setLink(null);
+              }}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+            >
+              + Send to Client
+            </button>
+
+            {/* SECONDARY */}
             <button
               onClick={() => router.push("/disclosure")}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
             >
-              + New Disclosure
+              + Create Draft
             </button>
+
             <button
               onClick={handleSignOut}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+              className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-100"
             >
               Sign out
             </button>
           </div>
         </div>
 
+        {/* LIST */}
         {disclosures.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-            <p className="text-gray-400 text-sm mb-4">No disclosures yet</p>
-            <button
-              onClick={() => router.push("/disclosure")}
-              className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
-            >
-              Start New Disclosure
-            </button>
+          <div className="bg-white p-10 rounded-xl text-center">
+            No disclosures yet
           </div>
         ) : (
           <div className="space-y-3">
             {disclosures.map(d => (
-              <div key={d.id} className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center justify-between">
+              <div
+                key={d.id}
+                className="bg-white p-4 rounded-lg flex justify-between"
+              >
                 <div>
-                  <p className="text-sm font-medium text-gray-800">{d.property_identifier || "Untitled"}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Last updated {formatDate(d.updated_at)}</p>
+                  <p className="font-medium">
+                    {d.property_identifier || "Untitled"}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {formatDate(d.updated_at)}
+                  </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                    d.status === "completed"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}>
-                    {d.status === "completed" ? "Completed" : "Draft"}
-                  </span>
+
+                <div className="flex gap-3">
                   <button
-                    onClick={() => router.push(`/disclosure?id=${d.id}`)}
-                    className="text-sm text-blue-600 hover:underline"
+                    onClick={() =>
+                      router.push(`/disclosure?id=${d.id}`)
+                    }
+                    className="text-blue-600 text-sm hover:underline"
                   >
-                    {d.status === "completed" ? "View" : "Continue"}
+                    Open
                   </button>
+
                   <button
                     onClick={() => handleDelete(d.id)}
-                    className="text-sm text-red-400 hover:underline"
+                    className="text-red-400 text-sm hover:underline"
                   >
                     Delete
                   </button>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* 🔥 MODAL */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-xl w-[400px] space-y-4">
+
+              <h2 className="text-lg font-semibold">
+                Send Form to Client
+              </h2>
+
+              {!link ? (
+                <button
+                  onClick={handleCreateLink}
+                  disabled={creating}
+                  className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                >
+                  {creating ? "Creating..." : "Create Link"}
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-green-600 font-medium">
+                    ✅ Link Created & Copied
+                  </p>
+
+                  <div className="bg-gray-100 p-2 rounded text-xs break-all">
+                    {link}
+                  </div>
+
+                  <button
+                    onClick={() => navigator.clipboard.writeText(link)}
+                    className="w-full border py-2 rounded-lg text-sm hover:bg-gray-100"
+                  >
+                    Copy Again
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-sm text-gray-400 w-full hover:underline"
+              >
+                Close
+              </button>
+            </div>
           </div>
         )}
       </div>

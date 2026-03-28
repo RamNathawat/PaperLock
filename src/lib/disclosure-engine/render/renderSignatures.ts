@@ -1,5 +1,3 @@
-import fs from "fs";
-import path from "path";
 import { PDFPage, PDFDocument, PDFFont } from "pdf-lib";
 import { DisclosureInput } from "../schema/disclosure.schema";
 import { SIGNATURE_LAYOUT } from "../layout/rpcd_2026.semantic";
@@ -12,14 +10,24 @@ export async function renderSignatures(
   data: DisclosureInput
 ) {
   // --------------------------------------------------
-  // Signatures
+  // Signatures (NOW FROM BASE64)
   // --------------------------------------------------
   if (data.signatures?.sellerSignatureBase64) {
-    await drawSignatureFromFile(pdfDoc, pages, SIGNATURE_LAYOUT.seller);
+    await drawSignatureFromBase64(
+      pdfDoc,
+      pages,
+      SIGNATURE_LAYOUT.seller,
+      data.signatures.sellerSignatureBase64
+    );
   }
 
   if (data.signatures?.buyerSignatureBase64) {
-    await drawSignatureFromFile(pdfDoc, pages, SIGNATURE_LAYOUT.buyer);
+    await drawSignatureFromBase64(
+      pdfDoc,
+      pages,
+      SIGNATURE_LAYOUT.buyer,
+      data.signatures.buyerSignatureBase64
+    );
   }
 
   // --------------------------------------------------
@@ -54,7 +62,7 @@ export async function renderSignatures(
   }
 
   // --------------------------------------------------
-  // Initials on every page — one character per box
+  // Initials on every page
   // --------------------------------------------------
   if (data.initials) {
     pages.forEach((page, pageIndex) => {
@@ -103,7 +111,7 @@ export async function renderSignatures(
   }
 }
 
-async function drawSignatureFromFile(
+async function drawSignatureFromBase64(
   pdfDoc: PDFDocument,
   pages: PDFPage[],
   layout: {
@@ -112,17 +120,22 @@ async function drawSignatureFromFile(
     y: number;
     width: number;
     height: number;
-  }
+  },
+  base64: string
 ) {
   const page = pages[layout.page];
 
-  const imagePath = path.join(
-    process.cwd(),
-    "src/lib/disclosure-engine/assets/signature.jpg"
+  const imageBytes = Uint8Array.from(atob(base64), (c) =>
+    c.charCodeAt(0)
   );
 
-  const imageBytes = fs.readFileSync(imagePath);
-  const image = await pdfDoc.embedJpg(imageBytes);
+  let image;
+
+  try {
+    image = await pdfDoc.embedPng(imageBytes);
+  } catch {
+    image = await pdfDoc.embedJpg(imageBytes);
+  }
 
   const scale = Math.min(
     layout.width / image.width,
