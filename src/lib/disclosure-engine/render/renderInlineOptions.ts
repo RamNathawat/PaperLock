@@ -12,42 +12,28 @@ export function renderInlineOptions(
   const page = pages[0];
 
   const resolveRowY = (i: number) => {
-    const baseY =
-      raw.APPLIANCE_FIRST_ROW_Y -
-      i * raw.APPLIANCE_ROW_SPACING;
-
-    return i === 9
-      ? 202.5
-      : i > 9
-      ? baseY - 12.5
-      : baseY;
+    const baseY = raw.APPLIANCE_FIRST_ROW_Y - i * raw.APPLIANCE_ROW_SPACING;
+    return i === 9 ? 202.5 : i > 9 ? baseY - 12.5 : baseY;
   };
 
+  // ✅ null-safe: skip if undefined or null, correctly handles selectedIndex === 0
   const drawInline = (
     rowIndex: number,
     firstX: number,
     deltas: number[],
-    selectedIndex?: number
+    selectedIndex?: number | null
   ) => {
-    if (selectedIndex === undefined) return;
+    if (selectedIndex === undefined || selectedIndex === null) return;
 
     const y = resolveRowY(rowIndex);
-
-    let x = firstX;
-    if (selectedIndex > 0) {
-      x = firstX + deltas[selectedIndex - 1];
-    }
-
+    const x = selectedIndex === 0 ? firstX : firstX + deltas[selectedIndex - 1];
     page.drawText("X", { x, y, size: raw.CHECKBOX_SIZE, font });
   };
 
   drawInline(
     raw.WATER_HEATER_INLINE.rowIndex,
     raw.WATER_HEATER_INLINE.firstX,
-    [
-      raw.WATER_HEATER_INLINE.deltaToSecond,
-      raw.WATER_HEATER_INLINE.deltaToThird,
-    ],
+    [raw.WATER_HEATER_INLINE.deltaToSecond, raw.WATER_HEATER_INLINE.deltaToThird],
     data.inlineOptions.waterHeaterType
   );
 

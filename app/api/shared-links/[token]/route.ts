@@ -54,7 +54,9 @@ export async function PATCH(
   const supabase = await getSupabase();
   const body = await req.json();
 
-  // 1. fetch the shared link to get the realtor's user_id
+  const isSubmitted = body.is_submitted === true;
+
+  // 1. fetch the shared link
   const { data: existingLink, error: fetchError } = await supabase
     .from("shared_links")
     .select("*")
@@ -67,12 +69,12 @@ export async function PATCH(
 
   const realtorUserId = existingLink.created_by;
 
-  // 2. update shared_links
+  // 2. update shared_links with form data
   const { data: updatedLink, error: updateError } = await supabase
     .from("shared_links")
     .update({
       form_data: body.form_data,
-      is_submitted: body.is_submitted ?? false,
+      is_submitted: isSubmitted,
       updated_at: new Date().toISOString(),
     })
     .eq("token", token)
@@ -84,13 +86,20 @@ export async function PATCH(
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // 3. create or update the linked disclosure
-  let disclosureId = existingLink.disclosure_id;
+  // 3. only create/update disclosure on final submit
+  // ✅ this prevents the race condition where multiple autosaves
+  //    each try to insert a new disclosure simultaneously
+  if (!isSubmitted) {
+    return NextResponse.json({ link: updatedLink });
+  }
+
+  // 4. on submit — create or update the linked disclosure
+  const disclosureId = existingLink.disclosure_id;
 
   if (!disclosureId) {
-    // only create disclosure if we have a realtor user_id
+    // no disclosure yet — create one under the realtor's account
     if (!realtorUserId) {
-      // no user_id available — just save to shared_links only, skip disclosures
+      // no realtor user_id — skip disclosure creation
       return NextResponse.json({ link: updatedLink });
     }
 
@@ -100,31 +109,30 @@ export async function PATCH(
         user_id: realtorUserId,
         property_identifier: body.form_data?.propertyIdentifier || "Untitled",
         form_data: body.form_data,
-        status: "draft",
+        status: "submitted",
       })
       .select()
       .single();
 
     if (insertError) {
       console.error("DISCLOSURE INSERT ERROR:", insertError);
-      // non-fatal — shared_links already saved
       return NextResponse.json({ link: updatedLink });
     }
 
     if (newDisclosure) {
-      disclosureId = newDisclosure.id;
       await supabase
         .from("shared_links")
-        .update({ disclosure_id: disclosureId })
+        .update({ disclosure_id: newDisclosure.id })
         .eq("token", token);
     }
   } else {
-    // update existing disclosure
+    // disclosure already exists — update it to submitted
     await supabase
       .from("disclosures")
       .update({
         property_identifier: body.form_data?.propertyIdentifier || "Untitled",
         form_data: body.form_data,
+        status: "submitted",
         updated_at: new Date().toISOString(),
       })
       .eq("id", disclosureId);

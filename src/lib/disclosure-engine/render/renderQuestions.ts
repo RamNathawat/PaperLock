@@ -9,10 +9,10 @@ export function renderQuestions(
 ) {
   if (!data.questions) return;
 
-  // --------------------------------------------------
-  // Yes/No questions
-  // --------------------------------------------------
   Object.entries(data.questions).forEach(([key, value]) => {
+    // ✅ skip null/undefined entries (sparse array gaps)
+    if (value === null || value === undefined) return;
+
     const qNum = Number(key);
 
     if (qNum >= 7 && qNum <= 38) {
@@ -43,9 +43,7 @@ export function renderQuestions(
     }
   });
 
-  // --------------------------------------------------
   // Q16 text fields — roof age and layers
-  // --------------------------------------------------
   if (data.page3TextFields?.roofAge) {
     pages[2].drawText(data.page3TextFields.roofAge, {
       x: raw.PAGE3_Q16_ROOF_AGE.x,
@@ -64,9 +62,7 @@ export function renderQuestions(
     });
   }
 
-  // --------------------------------------------------
   // Q19 termite bait annual cost
-  // --------------------------------------------------
   if (data.page3TextFields?.termiteBaitAnnualCost) {
     pages[2].drawText(data.page3TextFields.termiteBaitAnnualCost, {
       x: raw.PAGE3_Q19_TERMITE_COST.x,
