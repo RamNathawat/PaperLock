@@ -1,11 +1,13 @@
 "use client";
 
 import DisclosurePage from "@/app/disclosure/page";
+import { use } from "react";
 
 export default function FillPage({
   params,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }) {
-  return <DisclosurePage sharedToken={params.token} />;
+  const { token } = use(params);
+  return <DisclosurePage sharedToken={token} />;
 }

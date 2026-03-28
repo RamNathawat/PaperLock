@@ -10,15 +10,13 @@ import Step6Financial from "./steps/Step6Financial";
 import Step7Signatures from "./steps/Step7Signatures";
 import Navigation from "./components/Navigation";
 import ProgressBar from "./components/ProgressBar";
-import { DisclosureInput } from "@/src/lib/disclosure-engine/schema/disclosure.schema";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Props = {
   sharedToken?: string;
 };
 
-// 🔥 normalize appliances for Step2 (index-based)
 function normalizeAppliances(flat: any) {
   const source =
     flat?.appliances ||
@@ -41,6 +39,7 @@ function normalizeAppliances(flat: any) {
 
 export default function DisclosurePage({ sharedToken }: Props) {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const disclosureId = searchParams.get("id");
   const token = sharedToken || searchParams.get("token");
@@ -48,14 +47,12 @@ export default function DisclosurePage({ sharedToken }: Props) {
   const [initialValues, setInitialValues] = useState<any>(null);
   const [loading, setLoading] = useState(!!disclosureId || !!token);
   const draftIdRef = useRef<string | null>(disclosureId);
-
   const autosaveTimeoutRef = useRef<any>(null);
 
   // =============================
   // LOAD
   // =============================
   useEffect(() => {
-    // 🔥 CLIENT FLOW (public)
     if (token) {
       fetch(`/api/shared-links/${token}`)
         .then(res => res.json())
@@ -66,11 +63,9 @@ export default function DisclosurePage({ sharedToken }: Props) {
           setLoading(false);
         })
         .catch(() => setLoading(false));
-
       return;
     }
 
-    // 🔥 DASHBOARD FLOW
     if (!disclosureId) {
       setLoading(false);
       return;
@@ -78,15 +73,11 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
     draftIdRef.current = disclosureId;
 
-    fetch(`/api/disclosures/${disclosureId}`, {
-      credentials: "include",
-    })
+    fetch(`/api/disclosures/${disclosureId}`, { credentials: "include" })
       .then(res => res.json())
       .then(data => {
         if (data.disclosure?.form_data) {
           const flat = data.disclosure.form_data;
-
-          // 🔥 map flat → step structure
           setInitialValues({
             Property: {
               propertyIdentifier: flat.propertyIdentifier,
@@ -96,8 +87,7 @@ export default function DisclosurePage({ sharedToken }: Props) {
             },
             Appliances: {
               appliances: normalizeAppliances(flat),
-              page2NotWorkingExplanation:
-                flat.page2NotWorkingExplanation,
+              page2NotWorkingExplanation: flat.page2NotWorkingExplanation,
             },
             Systems: {
               inlineOptions: flat.inlineOptions,
@@ -135,36 +125,27 @@ export default function DisclosurePage({ sharedToken }: Props) {
   // =============================
   async function handleStepChanged(_from: any, _to: any, allValues: any) {
     type FormValues = Record<string, any>;
-
     const flat = Object.values(allValues as FormValues).reduce(
       (acc, v) => ({ ...acc, ...v }),
       {} as FormValues
     );
 
-    // 🔥 CLIENT FLOW
     if (token) {
-      if (autosaveTimeoutRef.current) {
-        clearTimeout(autosaveTimeoutRef.current);
-      }
-
+      if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
       autosaveTimeoutRef.current = setTimeout(async () => {
         try {
           await fetch(`/api/shared-links/${token}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              form_data: flat,
-            }),
+            body: JSON.stringify({ form_data: flat }),
           });
         } catch (err) {
           console.error("Autosave failed:", err);
         }
       }, 500);
-
       return;
     }
 
-    // 🔥 DASHBOARD FLOW
     if (draftIdRef.current) {
       await fetch(`/api/disclosures/${draftIdRef.current}`, {
         method: "PATCH",
@@ -186,10 +167,7 @@ export default function DisclosurePage({ sharedToken }: Props) {
       await fetch(`/api/shared-links/${token}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          form_data: values,
-          is_submitted: true,
-        }),
+        body: JSON.stringify({ form_data: values, is_submitted: true }),
       });
     }
 
@@ -199,15 +177,31 @@ export default function DisclosurePage({ sharedToken }: Props) {
       body: JSON.stringify(values),
     });
 
+    if (!res.ok) {
+      const err = await res.json();
+      console.error("PDF generation failed:", err);
+      alert(`Failed to generate PDF: ${err.error}`);
+      return;
+    }
+
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
     a.download = "disclosure.pdf";
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
 
+    // wait for download to trigger before navigating away
+    await new Promise(resolve => setTimeout(resolve, 1500));
     URL.revokeObjectURL(url);
+
+    if (token) {
+      router.push("/fill/thank-you");
+    } else {
+      router.push("/dashboard");
+    }
   }
 
   const steps = [
@@ -231,12 +225,10 @@ export default function DisclosurePage({ sharedToken }: Props) {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto py-10 px-4">
-
         <h1 className="text-2xl font-bold text-gray-800 mb-2">
           Oklahoma Residential Property Condition Disclosure
         </h1>
         <p className="text-gray-500 text-sm mb-8">Form 01-01-2026</p>
-
         <Wizard
           steps={steps}
           onCompleted={handleCompleted}
