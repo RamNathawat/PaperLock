@@ -190,9 +190,9 @@ export default function DisclosurePage({ sharedToken }: Props) {
     <div className="min-h-screen bg-[#f7f9fb]">
       {/* Top bar */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <span className="text-sm font-bold text-gray-900">RPCD Disclosure</span>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-2 py-1 bg-gray-100">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-2.5 py-1 bg-gray-100 rounded-full">
             {token ? "Client Portal" : "Draft"}
           </span>
         </div>
@@ -215,7 +215,7 @@ export default function DisclosurePage({ sharedToken }: Props) {
           </h1>
         </div>
 
-        <div className="bg-white border border-gray-100 p-8">
+        <div className="bg-white border border-gray-100 rounded-xl p-8">
           <Wizard
             steps={steps}
             onCompleted={handleCompleted}

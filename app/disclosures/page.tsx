@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface Disclosure {
@@ -51,7 +51,7 @@ function StatusBadge({ status }: { status: string }) {
   const s = status?.toLowerCase();
   if (s === "submitted" || s === "completed") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
         Completed
       </span>
@@ -59,14 +59,14 @@ function StatusBadge({ status }: { status: string }) {
   }
   if (s === "sent" || s === "in_progress") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
         <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
         Sent
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-500 border border-gray-200">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-500 border border-gray-200 rounded-full">
       <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
       Draft
     </span>
@@ -81,24 +81,24 @@ function Sidebar({ email, onSignOut, onShare }: { email: string; onSignOut: () =
         <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">Oklahoma</p>
         <h1 className="text-base font-bold text-gray-900 leading-tight">RPCD Disclosure</h1>
       </div>
-      <nav className="flex-1 space-y-0.5">
-        <Link href="/dashboard" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+      <nav className="flex-1 space-y-1">
+        <Link href="/dashboard" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
           Dashboard
         </Link>
-        <Link href="/disclosures" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium bg-blue-50 text-blue-700">
+        <Link href="/disclosures" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium bg-blue-50 text-blue-700 rounded-lg">
           Disclosures
         </Link>
       </nav>
       <div className="space-y-2 mt-4">
         <button
           onClick={onShare}
-          className="w-full px-3 py-2.5 bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+          className="w-full px-3 py-2.5 bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors rounded-lg"
         >
           + Send to Client
         </button>
         <button
           onClick={() => router.push("/disclosure")}
-          className="w-full px-3 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+          className="w-full px-3 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors rounded-lg"
         >
           + New Draft
         </button>
@@ -107,7 +107,7 @@ function Sidebar({ email, onSignOut, onShare }: { email: string; onSignOut: () =
         <p className="text-xs text-gray-400 truncate px-2 mb-3">{email}</p>
         <button
           onClick={onSignOut}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
         >
           ↪ Sign out
         </button>
@@ -212,7 +212,6 @@ export default function DisclosuresPage() {
     setCreating(false);
   }
 
-  // Build combined + sorted activity list
   const allActivity: ActivityItem[] = useMemo(() => [
     ...sharedLinks.map(sl => ({
       type: "shared" as const,
@@ -232,9 +231,9 @@ export default function DisclosuresPage() {
       progress: null,
       token: null,
     })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [sharedLinks, disclosures]);
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+  [sharedLinks, disclosures]);
 
-  // Search filter
   const filtered = useMemo(() =>
     search.trim()
       ? allActivity.filter(item =>
@@ -244,10 +243,8 @@ export default function DisclosuresPage() {
     [allActivity, search]
   );
 
-  // Reset to page 1 on search
   useEffect(() => { setPage(1); }, [search]);
 
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -264,8 +261,6 @@ export default function DisclosuresPage() {
       <Sidebar email={email} onSignOut={handleSignOut} onShare={() => { setShowModal(true); setLink(null); }} />
 
       <main className="ml-60 flex-1 px-10 py-10">
-
-        {/* Page header */}
         <div className="mb-10">
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 mb-1">Management Hub</p>
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Disclosures</h2>
@@ -280,7 +275,7 @@ export default function DisclosuresPage() {
               placeholder="Search by property address..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-8 pr-4 h-9 bg-white border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full pl-8 pr-4 h-9 bg-white border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors rounded-lg"
             />
           </div>
           <p className="text-[11px] text-gray-400 font-medium">
@@ -289,8 +284,7 @@ export default function DisclosuresPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-gray-100">
-          {/* Column headers */}
+        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-100">
             <div className="col-span-4 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Property Address</div>
             <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Status</div>
@@ -324,8 +318,8 @@ export default function DisclosuresPage() {
                   {item.progress !== null ? (
                     <div>
                       <div className="text-[10px] text-gray-400 mb-1">{item.progress}%</div>
-                      <div className="w-full bg-gray-100 h-1">
-                        <div className="bg-blue-500 h-1 transition-all" style={{ width: `${item.progress}%` }} />
+                      <div className="w-full bg-gray-100 h-1.5 rounded-full">
+                        <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${item.progress}%` }} />
                       </div>
                     </div>
                   ) : (
@@ -387,14 +381,14 @@ export default function DisclosuresPage() {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-1.5 text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-1.5 text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-lg"
               >
                 ← Previous
               </button>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-4 py-1.5 text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-1.5 text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-lg"
               >
                 Next →
               </button>
@@ -406,7 +400,7 @@ export default function DisclosuresPage() {
       {/* Share modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-          <div className="bg-white w-full max-w-md border border-gray-100 shadow-[0_24px_48px_rgba(0,0,0,0.08)]">
+          <div className="bg-white w-full max-w-md border border-gray-100 shadow-[0_24px_48px_rgba(0,0,0,0.08)] rounded-2xl overflow-hidden">
             <div className="px-8 pt-8 pb-6 border-b border-gray-100">
               <div className="flex justify-between items-start">
                 <div>
@@ -425,14 +419,14 @@ export default function DisclosuresPage() {
                   <button
                     onClick={handleCreateLink}
                     disabled={creating}
-                    className="w-full py-3 bg-blue-600 text-white text-sm font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="w-full py-3 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                   >
                     {creating ? "Generating..." : "Generate Link"}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-5">
-                  <div className="flex items-center gap-3 bg-gray-50 px-4 py-3 border border-gray-100">
+                  <div className="flex items-center gap-3 bg-gray-50 px-4 py-3 border border-gray-100 rounded-lg">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Link Created</p>
@@ -445,17 +439,17 @@ export default function DisclosuresPage() {
                       <input
                         readOnly
                         value={link}
-                        className="flex-1 h-10 px-3 bg-gray-50 border border-gray-200 text-xs text-gray-700 focus:outline-none focus:border-blue-500"
+                        className="flex-1 h-10 px-3 bg-gray-50 border border-gray-200 text-xs text-gray-700 focus:outline-none focus:border-blue-500 rounded-md"
                       />
                       <button
                         onClick={() => copyLink(link)}
-                        className="px-4 h-10 border border-blue-600 text-blue-600 text-xs font-bold uppercase tracking-wide hover:bg-blue-50 transition-colors"
+                        className="px-4 h-10 border border-blue-600 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-50 transition-colors"
                       >
                         {copied ? "Copied!" : "Copy"}
                       </button>
                     </div>
                   </div>
-                  <div className="flex gap-3 p-4 bg-gray-50 border border-gray-100">
+                  <div className="flex gap-3 p-4 bg-gray-50 border border-gray-100 rounded-lg">
                     <span className="text-blue-500 text-sm flex-shrink-0">ℹ</span>
                     <p className="text-xs text-gray-500 leading-relaxed">
                       No account needed. Progress appears on your dashboard in real time.
@@ -469,7 +463,7 @@ export default function DisclosuresPage() {
       )}
 
       {copied && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-4 py-2 z-50">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-4 py-2 rounded-lg z-50">
           Link copied to clipboard
         </div>
       )}

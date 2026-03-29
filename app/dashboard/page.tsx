@@ -41,7 +41,7 @@ function StatusBadge({ status }: { status: string }) {
   const s = status?.toLowerCase();
   if (s === "submitted" || s === "completed") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
         Completed
       </span>
@@ -49,14 +49,14 @@ function StatusBadge({ status }: { status: string }) {
   }
   if (s === "sent" || s === "in_progress") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
         <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
         Sent
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-500 border border-gray-200">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-500 border border-gray-200 rounded-full">
       <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
       Draft
     </span>
@@ -71,24 +71,24 @@ function Sidebar({ email, onSignOut }: { email: string; onSignOut: () => void })
         <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">Oklahoma</p>
         <h1 className="text-base font-bold text-gray-900 leading-tight">RPCD Disclosure</h1>
       </div>
-      <nav className="flex-1 space-y-0.5">
-        <Link href="/dashboard" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium bg-blue-50 text-blue-700">
+      <nav className="flex-1 space-y-1">
+        <Link href="/dashboard" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium bg-blue-50 text-blue-700 rounded-lg">
           Dashboard
         </Link>
-        <Link href="/disclosures" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+        <Link href="/disclosures" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
           Disclosures
         </Link>
       </nav>
       <div className="space-y-2 mt-4">
         <button
           onClick={() => router.push("/disclosures?modal=share")}
-          className="w-full px-3 py-2.5 bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+          className="w-full px-3 py-2.5 bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors rounded-lg"
         >
           + Send to Client
         </button>
         <button
           onClick={() => router.push("/disclosure")}
-          className="w-full px-3 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+          className="w-full px-3 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors rounded-lg"
         >
           + New Draft
         </button>
@@ -97,7 +97,7 @@ function Sidebar({ email, onSignOut }: { email: string; onSignOut: () => void })
         <p className="text-xs text-gray-400 truncate px-2 mb-3">{email}</p>
         <button
           onClick={onSignOut}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
         >
           ↪ Sign out
         </button>
@@ -185,7 +185,6 @@ export default function DashboardPage() {
     });
   }
 
-  // Combined recent activity — last 5 only
   const recentActivity = [
     ...sharedLinks.map(sl => ({
       type: "shared" as const,
@@ -209,7 +208,6 @@ export default function DashboardPage() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
-  // Stats
   const totalSent = sharedLinks.length;
   const totalSubmitted = sharedLinks.filter(sl => sl.is_submitted).length;
   const totalDrafts = disclosures.length;
@@ -227,8 +225,6 @@ export default function DashboardPage() {
       <Sidebar email={email} onSignOut={handleSignOut} />
 
       <main className="ml-60 flex-1 px-10 py-10">
-
-        {/* Page header */}
         <div className="mb-10">
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 mb-1">Overview</p>
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h2>
@@ -241,7 +237,7 @@ export default function DashboardPage() {
             { label: "Submitted", value: totalSubmitted },
             { label: "My Drafts", value: totalDrafts },
           ].map(stat => (
-            <div key={stat.label} className="bg-white border border-gray-100 px-6 py-5">
+            <div key={stat.label} className="bg-white border border-gray-100 px-6 py-5 rounded-xl">
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 mb-2">{stat.label}</p>
               <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
             </div>
@@ -249,7 +245,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent activity */}
-        <div className="bg-white border border-gray-100">
+        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">Recent Activity</p>
             <Link href="/disclosures" className="text-xs font-semibold text-blue-600 hover:underline">
@@ -257,7 +253,6 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Column headers */}
           <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-100">
             <div className="col-span-5 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Property Address</div>
             <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Status</div>
@@ -289,11 +284,9 @@ export default function DashboardPage() {
                 <div className="col-span-3">
                   {item.progress !== null ? (
                     <div>
-                      <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                        <span>{item.progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 h-1">
-                        <div className="bg-blue-500 h-1 transition-all" style={{ width: `${item.progress}%` }} />
+                      <div className="text-[10px] text-gray-400 mb-1">{item.progress}%</div>
+                      <div className="w-full bg-gray-100 h-1.5 rounded-full">
+                        <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${item.progress}%` }} />
                       </div>
                     </div>
                   ) : (
@@ -312,7 +305,7 @@ export default function DashboardPage() {
       {/* Share modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-          <div className="bg-white w-full max-w-md border border-gray-100 shadow-[0_24px_48px_rgba(0,0,0,0.08)]">
+          <div className="bg-white w-full max-w-md border border-gray-100 shadow-[0_24px_48px_rgba(0,0,0,0.08)] rounded-2xl overflow-hidden">
             <div className="px-8 pt-8 pb-6 border-b border-gray-100">
               <div className="flex justify-between items-start">
                 <div>
@@ -331,14 +324,14 @@ export default function DashboardPage() {
                   <button
                     onClick={handleCreateLink}
                     disabled={creating}
-                    className="w-full py-3 bg-blue-600 text-white text-sm font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="w-full py-3 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                   >
                     {creating ? "Generating..." : "Generate Link"}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-5">
-                  <div className="flex items-center gap-3 bg-gray-50 px-4 py-3 border border-gray-100">
+                  <div className="flex items-center gap-3 bg-gray-50 px-4 py-3 border border-gray-100 rounded-lg">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Link Created</p>
@@ -348,16 +341,20 @@ export default function DashboardPage() {
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 block">Generated Link</label>
                     <div className="flex gap-2">
-                      <input readOnly value={link} className="flex-1 h-10 px-3 bg-gray-50 border border-gray-200 text-xs text-gray-700 focus:outline-none focus:border-blue-500" />
+                      <input
+                        readOnly
+                        value={link}
+                        className="flex-1 h-10 px-3 bg-gray-50 border border-gray-200 text-xs text-gray-700 focus:outline-none focus:border-blue-500 rounded-md"
+                      />
                       <button
                         onClick={() => copyLink(link)}
-                        className="px-4 h-10 border border-blue-600 text-blue-600 text-xs font-bold uppercase tracking-wide hover:bg-blue-50 transition-colors"
+                        className="px-4 h-10 border border-blue-600 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-50 transition-colors"
                       >
                         {copied ? "Copied!" : "Copy"}
                       </button>
                     </div>
                   </div>
-                  <div className="flex gap-3 p-4 bg-gray-50 border border-gray-100">
+                  <div className="flex gap-3 p-4 bg-gray-50 border border-gray-100 rounded-lg">
                     <span className="text-blue-500 text-sm flex-shrink-0">ℹ</span>
                     <p className="text-xs text-gray-500 leading-relaxed">
                       No account needed. Progress appears on your dashboard in real time.
@@ -371,7 +368,7 @@ export default function DashboardPage() {
       )}
 
       {copied && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-4 py-2 z-50">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-4 py-2 rounded-lg z-50">
           Link copied to clipboard
         </div>
       )}
