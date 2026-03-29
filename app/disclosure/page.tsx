@@ -23,9 +23,7 @@ function normalizeAppliances(flat: any) {
     flat?.Appliances?.appliances ||
     flat?.Appliances ||
     {};
-
   if (Array.isArray(source)) return source;
-
   if (typeof source === "object") {
     const result: Record<number, string> = {};
     Object.entries(source).forEach(([_, value], index) => {
@@ -33,7 +31,6 @@ function normalizeAppliances(flat: any) {
     });
     return result;
   }
-
   return {};
 }
 
@@ -49,30 +46,20 @@ export default function DisclosurePage({ sharedToken }: Props) {
   const draftIdRef = useRef<string | null>(disclosureId);
   const autosaveTimeoutRef = useRef<any>(null);
 
-  // =============================
-  // LOAD
-  // =============================
   useEffect(() => {
     if (token) {
       fetch(`/api/shared-links/${token}`)
         .then(res => res.json())
         .then(data => {
-          if (data.link?.form_data) {
-            setInitialValues(data.link.form_data);
-          }
+          if (data.link?.form_data) setInitialValues(data.link.form_data);
           setLoading(false);
         })
         .catch(() => setLoading(false));
       return;
     }
-
-    if (!disclosureId) {
-      setLoading(false);
-      return;
-    }
+    if (!disclosureId) { setLoading(false); return; }
 
     draftIdRef.current = disclosureId;
-
     fetch(`/api/disclosures/${disclosureId}`, { credentials: "include" })
       .then(res => res.json())
       .then(data => {
@@ -89,14 +76,8 @@ export default function DisclosurePage({ sharedToken }: Props) {
               appliances: normalizeAppliances(flat),
               page2NotWorkingExplanation: flat.page2NotWorkingExplanation,
             },
-            Systems: {
-              inlineOptions: flat.inlineOptions,
-              sewerSystem: flat.sewerSystem,
-            },
-            Zoning: {
-              page2Zoning: flat.page2Zoning,
-              page2Flood: flat.page2Flood,
-            },
+            Systems: { inlineOptions: flat.inlineOptions, sewerSystem: flat.sewerSystem },
+            Zoning: { page2Zoning: flat.page2Zoning, page2Flood: flat.page2Flood },
             Questions: {
               questions: flat.questions,
               page3TextFields: flat.page3TextFields,
@@ -107,12 +88,8 @@ export default function DisclosurePage({ sharedToken }: Props) {
               q47Details: flat.q47Details,
               explanation: flat.explanation,
             },
-            Financial: {
-              additionalPages: flat.additionalPages,
-            },
-            Signatures: {
-              signatures: flat.signatures,
-            },
+            Financial: { additionalPages: flat.additionalPages },
+            Signatures: { signatures: flat.signatures },
           });
         }
         setLoading(false);
@@ -120,16 +97,12 @@ export default function DisclosurePage({ sharedToken }: Props) {
       .catch(() => setLoading(false));
   }, [disclosureId, token]);
 
-  // =============================
-  // AUTOSAVE
-  // =============================
   async function handleStepChanged(_from: any, _to: any, allValues: any) {
     type FormValues = Record<string, any>;
     const flat = Object.values(allValues as FormValues).reduce(
       (acc, v) => ({ ...acc, ...v }),
       {} as FormValues
     );
-
     if (token) {
       if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
       autosaveTimeoutRef.current = setTimeout(async () => {
@@ -139,13 +112,10 @@ export default function DisclosurePage({ sharedToken }: Props) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ form_data: flat }),
           });
-        } catch (err) {
-          console.error("Autosave failed:", err);
-        }
+        } catch (err) { console.error("Autosave failed:", err); }
       }, 500);
       return;
     }
-
     if (draftIdRef.current) {
       await fetch(`/api/disclosures/${draftIdRef.current}`, {
         method: "PATCH",
@@ -159,9 +129,6 @@ export default function DisclosurePage({ sharedToken }: Props) {
     }
   }
 
-  // =============================
-  // COMPLETE
-  // =============================
   async function handleCompleted(values: any) {
     if (token) {
       await fetch(`/api/shared-links/${token}`, {
@@ -179,7 +146,6 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
     if (!res.ok) {
       const err = await res.json();
-      console.error("PDF generation failed:", err);
       alert(`Failed to generate PDF: ${err.error}`);
       return;
     }
@@ -192,8 +158,6 @@ export default function DisclosurePage({ sharedToken }: Props) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-
-    // wait for download to trigger before navigating away
     await new Promise(resolve => setTimeout(resolve, 1500));
     URL.revokeObjectURL(url);
 
@@ -216,26 +180,50 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        Loading...
+      <div className="min-h-screen bg-[#f7f9fb] flex items-center justify-center">
+        <p className="text-sm text-gray-400 font-medium">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto py-10 px-4">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          Oklahoma Residential Property Condition Disclosure
-        </h1>
-        <p className="text-gray-500 text-sm mb-8">Form 01-01-2026</p>
-        <Wizard
-          steps={steps}
-          onCompleted={handleCompleted}
-          onStepChanged={handleStepChanged}
-          footer={<Navigation />}
-          header={<ProgressBar />}
-        />
+    <div className="min-h-screen bg-[#f7f9fb]">
+      {/* Top bar */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <span className="text-sm font-bold text-gray-900">RPCD Disclosure</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-2 py-1 bg-gray-100">
+            {token ? "Client Portal" : "Draft"}
+          </span>
+        </div>
+        {!token && (
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors"
+          >
+            ← Back to Dashboard
+          </button>
+        )}
+      </header>
+
+      {/* Form */}
+      <div className="max-w-3xl mx-auto py-12 px-6">
+        <div className="mb-8">
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">Form 01-01-2026</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            Oklahoma Residential Property Condition Disclosure
+          </h1>
+        </div>
+
+        <div className="bg-white border border-gray-100 p-8">
+          <Wizard
+            steps={steps}
+            onCompleted={handleCompleted}
+            onStepChanged={handleStepChanged}
+            footer={<Navigation />}
+            header={<ProgressBar />}
+          />
+        </div>
       </div>
     </div>
   );

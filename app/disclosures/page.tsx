@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 interface Disclosure {
@@ -20,6 +20,16 @@ interface SharedLink {
   is_submitted: boolean;
   form_data: any;
   disclosure_id: string | null;
+}
+
+interface ActivityItem {
+  type: "shared" | "draft";
+  id: string;
+  address: string;
+  date: string;
+  status: string;
+  progress: number | null;
+  token: string | null;
 }
 
 function getProgress(formData: any): number {
@@ -63,7 +73,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function Sidebar({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+function Sidebar({ email, onSignOut, onShare }: { email: string; onSignOut: () => void; onShare: () => void }) {
   const router = useRouter();
   return (
     <aside className="fixed left-0 top-0 h-full w-60 bg-white border-r border-gray-100 flex flex-col py-8 px-4 z-40">
@@ -72,16 +82,16 @@ function Sidebar({ email, onSignOut }: { email: string; onSignOut: () => void })
         <h1 className="text-base font-bold text-gray-900 leading-tight">RPCD Disclosure</h1>
       </div>
       <nav className="flex-1 space-y-0.5">
-        <Link href="/dashboard" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium bg-blue-50 text-blue-700">
+        <Link href="/dashboard" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
           Dashboard
         </Link>
-        <Link href="/disclosures" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+        <Link href="/disclosures" className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium bg-blue-50 text-blue-700">
           Disclosures
         </Link>
       </nav>
       <div className="space-y-2 mt-4">
         <button
-          onClick={() => router.push("/disclosures?modal=share")}
+          onClick={onShare}
           className="w-full px-3 py-2.5 bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
         >
           + Send to Client
@@ -106,7 +116,9 @@ function Sidebar({ email, onSignOut }: { email: string; onSignOut: () => void })
   );
 }
 
-export default function DashboardPage() {
+const PAGE_SIZE = 10;
+
+export default function DisclosuresPage() {
   const [email, setEmail] = useState("");
   const [disclosures, setDisclosures] = useState<Disclosure[]>([]);
   const [sharedLinks, setSharedLinks] = useState<SharedLink[]>([]);
@@ -115,6 +127,8 @@ export default function DashboardPage() {
   const [link, setLink] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const router = useRouter();
   const supabase = createClient();
@@ -150,9 +164,28 @@ export default function DashboardPage() {
     setLoading(false);
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this disclosure?")) return;
+    const res = await fetch(`/api/disclosures/${id}`, { method: "DELETE", credentials: "include" });
+    if (res.ok) setDisclosures(prev => prev.filter(d => d.id !== id));
+    else alert("Failed to delete.");
+  }
+
+  async function handleDeleteLink(token: string) {
+    if (!confirm("Delete this client link?")) return;
+    const { error } = await supabase.from("shared_links").delete().eq("token", token);
+    if (!error) setSharedLinks(prev => prev.filter(l => l.token !== token));
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     router.push("/auth/login");
+  }
+
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric",
+    });
   }
 
   function copyLink(url: string) {
@@ -179,14 +212,8 @@ export default function DashboardPage() {
     setCreating(false);
   }
 
-  function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short", day: "numeric", year: "numeric",
-    });
-  }
-
-  // Combined recent activity — last 5 only
-  const recentActivity = [
+  // Build combined + sorted activity list
+  const allActivity: ActivityItem[] = useMemo(() => [
     ...sharedLinks.map(sl => ({
       type: "shared" as const,
       id: sl.token,
@@ -205,14 +232,24 @@ export default function DashboardPage() {
       progress: null,
       token: null,
     })),
-  ]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [sharedLinks, disclosures]);
 
-  // Stats
-  const totalSent = sharedLinks.length;
-  const totalSubmitted = sharedLinks.filter(sl => sl.is_submitted).length;
-  const totalDrafts = disclosures.length;
+  // Search filter
+  const filtered = useMemo(() =>
+    search.trim()
+      ? allActivity.filter(item =>
+          item.address.toLowerCase().includes(search.toLowerCase())
+        )
+      : allActivity,
+    [allActivity, search]
+  );
+
+  // Reset to page 1 on search
+  useEffect(() => { setPage(1); }, [search]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   if (loading) {
     return (
@@ -224,60 +261,57 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen flex bg-[#f7f9fb] font-[Inter,sans-serif]">
-      <Sidebar email={email} onSignOut={handleSignOut} />
+      <Sidebar email={email} onSignOut={handleSignOut} onShare={() => { setShowModal(true); setLink(null); }} />
 
       <main className="ml-60 flex-1 px-10 py-10">
 
         {/* Page header */}
         <div className="mb-10">
-          <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 mb-1">Overview</p>
-          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h2>
+          <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 mb-1">Management Hub</p>
+          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Disclosures</h2>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
-          {[
-            { label: "Total Sent", value: totalSent },
-            { label: "Submitted", value: totalSubmitted },
-            { label: "My Drafts", value: totalDrafts },
-          ].map(stat => (
-            <div key={stat.label} className="bg-white border border-gray-100 px-6 py-5">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 mb-2">{stat.label}</p>
-              <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Recent activity */}
-        <div className="bg-white border border-gray-100">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">Recent Activity</p>
-            <Link href="/disclosures" className="text-xs font-semibold text-blue-600 hover:underline">
-              View all →
-            </Link>
+        {/* Search + count */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="relative w-80">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">⌕</span>
+            <input
+              type="text"
+              placeholder="Search by property address..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-8 pr-4 h-9 bg-white border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors"
+            />
           </div>
+          <p className="text-[11px] text-gray-400 font-medium">
+            {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+          </p>
+        </div>
 
+        {/* Table */}
+        <div className="bg-white border border-gray-100">
           {/* Column headers */}
           <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-100">
-            <div className="col-span-5 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Property Address</div>
+            <div className="col-span-4 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Property Address</div>
             <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Status</div>
-            <div className="col-span-3 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Progress</div>
-            <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Date</div>
+            <div className="col-span-3 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Client Progress</div>
+            <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Last Updated</div>
+            <div className="col-span-1 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">Actions</div>
           </div>
 
-          {recentActivity.length === 0 ? (
+          {paginated.length === 0 ? (
             <div className="px-6 py-16 text-center text-sm text-gray-400">
-              No activity yet. Create a draft or send a form to a client.
+              {search ? `No results for "${search}"` : "No disclosures yet."}
             </div>
           ) : (
-            recentActivity.map((item, i) => (
+            paginated.map((item, i) => (
               <div
                 key={item.id}
                 className={`grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50 transition-colors ${
-                  i < recentActivity.length - 1 ? "border-b border-gray-50" : ""
+                  i < paginated.length - 1 ? "border-b border-gray-50" : ""
                 }`}
               >
-                <div className="col-span-5">
+                <div className="col-span-4">
                   <p className="text-sm font-semibold text-gray-900 truncate">{item.address}</p>
                   <p className="text-[11px] text-gray-400 mt-0.5">
                     {item.type === "shared" ? "Sent to client" : "My draft"}
@@ -289,9 +323,7 @@ export default function DashboardPage() {
                 <div className="col-span-3">
                   {item.progress !== null ? (
                     <div>
-                      <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                        <span>{item.progress}%</span>
-                      </div>
+                      <div className="text-[10px] text-gray-400 mb-1">{item.progress}%</div>
                       <div className="w-full bg-gray-100 h-1">
                         <div className="bg-blue-500 h-1 transition-all" style={{ width: `${item.progress}%` }} />
                       </div>
@@ -303,10 +335,72 @@ export default function DashboardPage() {
                 <div className="col-span-2">
                   <p className="text-[11px] text-gray-400">{formatDate(item.date)}</p>
                 </div>
+                <div className="col-span-1 flex items-center gap-3">
+                  {item.type === "draft" ? (
+                    <>
+                      <button
+                        onClick={() => router.push(`/disclosure?id=${item.id}`)}
+                        title="Continue editing"
+                        className="text-gray-400 hover:text-blue-600 transition-colors text-sm"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        title="Delete"
+                        className="text-gray-400 hover:text-red-500 transition-colors text-sm"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => copyLink(`${window.location.origin}/fill/${item.token}`)}
+                        title="Copy link"
+                        className="text-gray-400 hover:text-blue-600 transition-colors text-sm"
+                      >
+                        ⎘
+                      </button>
+                      <button
+                        onClick={() => handleDeleteLink(item.token!)}
+                        title="Delete"
+                        className="text-gray-400 hover:text-red-500 transition-colors text-sm"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             ))
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-[11px] text-gray-400">
+              Page {page} of {totalPages} · Showing {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-1.5 text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Previous
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-4 py-1.5 text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Share modal */}
@@ -348,7 +442,11 @@ export default function DashboardPage() {
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 block">Generated Link</label>
                     <div className="flex gap-2">
-                      <input readOnly value={link} className="flex-1 h-10 px-3 bg-gray-50 border border-gray-200 text-xs text-gray-700 focus:outline-none focus:border-blue-500" />
+                      <input
+                        readOnly
+                        value={link}
+                        className="flex-1 h-10 px-3 bg-gray-50 border border-gray-200 text-xs text-gray-700 focus:outline-none focus:border-blue-500"
+                      />
                       <button
                         onClick={() => copyLink(link)}
                         className="px-4 h-10 border border-blue-600 text-blue-600 text-xs font-bold uppercase tracking-wide hover:bg-blue-50 transition-colors"
