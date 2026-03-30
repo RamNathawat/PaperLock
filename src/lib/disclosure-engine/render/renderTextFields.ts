@@ -14,12 +14,19 @@ export function renderTextFields(
     const value = flat[path];
     if (!value) continue;
 
-    const page = pages[layout.page];
+    const page = pages[layout.page - 1];
+    if (!page) continue;
+
+    const x = Number(layout.x);
+    const y = Number(layout.y);
+    const size = Number(layout.fontSize);
+
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
 
     page.drawText(String(value), {
-      x: layout.x,
-      y: layout.y,
-      size: layout.fontSize,
+      x,
+      y,
+      size: Number.isFinite(size) ? size : 10,
       font,
     });
   }

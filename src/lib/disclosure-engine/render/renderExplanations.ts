@@ -15,14 +15,18 @@ export function renderExplanations(
     const text = flat[path];
     if (!text) continue;
 
-    const page = pages[layout.page];
+    const page = pages[layout.page - 1];
+    if (!page) continue;
 
-    drawWrappedText(
+    drawWrappedText({
       page,
       font,
-      text,
-      layout,
-      10
-    );
+      text: String(text),
+      x: layout.x,
+      y: layout.yTop,
+      maxWidth: layout.width,
+      size: 10,
+      lineHeight: layout.lineHeight,
+    });
   }
 }

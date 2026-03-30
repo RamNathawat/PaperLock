@@ -1,58 +1,74 @@
-import { PDFPage, PDFFont } from "pdf-lib";
+// src/lib/disclosure-engine/utils/drawWrappedText.ts
+import { PDFPage, PDFFont, rgb } from "pdf-lib";
 
-interface WrapBox {
-  x: number;
-  yTop: number;
-  width: number;
-  lineHeight: number;
-  maxLines: number;
-}
+type DrawWrappedTextOptions = {
+  page: PDFPage;
+  text?: string | null;
+  x?: number;
+  y?: number;
+  maxWidth?: number;
+  font: PDFFont;
+  size?: number;
+  lineHeight?: number;
+};
 
-export function drawWrappedText(
-  page: PDFPage,
-  font: PDFFont,
-  text: string,
-  box: WrapBox,
-  fontSize: number
-) {
-  const words = text.split(/\s+/);
+const toSafeNumber = (value: unknown, fallback: number) => {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+export function drawWrappedText({
+  page,
+  text,
+  x,
+  y,
+  maxWidth,
+  font,
+  size = 10,
+  lineHeight,
+}: DrawWrappedTextOptions) {
+  // ✅ root fix: never allow NaN coordinates into pdf-lib
+  const safeX = toSafeNumber(x, 50);
+  const safeY = toSafeNumber(y, 700);
+  const safeSize = toSafeNumber(size, 10);
+  const safeMaxWidth = toSafeNumber(maxWidth, 220);
+  const safeLineHeight = toSafeNumber(lineHeight, safeSize + 2);
+
+  const content = String(text ?? "").trim();
+  if (!content) return { y: safeY };
+
+  const words = content.split(/\s+/);
   const lines: string[] = [];
-
   let currentLine = "";
 
   for (const word of words) {
-    const testLine = currentLine
-      ? `${currentLine} ${word}`
-      : word;
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const testWidth = font.widthOfTextAtSize(testLine, safeSize);
 
-    const width = font.widthOfTextAtSize(
-      testLine,
-      fontSize
-    );
-
-    if (width > box.width) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
+    if (testWidth <= safeMaxWidth) {
       currentLine = testLine;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
     }
   }
 
   if (currentLine) lines.push(currentLine);
 
-  // 🚨 HARD FAIL ON OVERFLOW
-  if (lines.length > box.maxLines) {
-    throw new Error(
-      `Explanation exceeds allowed space. Max lines: ${box.maxLines}, Required lines: ${lines.length}`
-    );
+  let currentY = safeY;
+
+  for (const line of lines) {
+    // extra hardening in case future callers mutate values
+    page.drawText(line, {
+      x: toSafeNumber(safeX, 50),
+      y: toSafeNumber(currentY, safeY),
+      size: safeSize,
+      font,
+      color: rgb(0, 0, 0),
+    });
+
+    currentY -= safeLineHeight;
   }
 
-  lines.forEach((line, index) => {
-    page.drawText(line, {
-      x: box.x,
-      y: box.yTop - index * box.lineHeight,
-      size: fontSize,
-      font,
-    });
-  });
+  return { y: currentY };
 }

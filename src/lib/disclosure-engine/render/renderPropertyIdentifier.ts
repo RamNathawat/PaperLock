@@ -2,6 +2,11 @@ import { PDFPage, PDFFont } from "pdf-lib";
 import * as raw from "../../../forms/orec/2026/layout";
 import { DisclosureInput } from "../schema/disclosure.schema";
 
+const n = (value: unknown, fallback: number) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+};
+
 export function renderPropertyIdentifier(
   pages: PDFPage[],
   font: PDFFont,
@@ -9,43 +14,49 @@ export function renderPropertyIdentifier(
 ) {
   if (!data.propertyIdentifier) return;
 
-  // Page 1 header — top of page
-  pages[0].drawText(data.propertyIdentifier, {
-    x: raw.PROPERTY_IDENTIFIER_HEADER.x,
-    y: raw.PROPERTY_IDENTIFIER_HEADER.y,
-    size: raw.PROPERTY_IDENTIFIER_HEADER.fontSize,
+  const headerX = n(raw.PROPERTY_IDENTIFIER_HEADER?.x, 50);
+  const headerY = n(raw.PROPERTY_IDENTIFIER_HEADER?.y, 750);
+  const headerSize = n(raw.PROPERTY_IDENTIFIER_HEADER?.fontSize, 10);
+
+  const bodyX = n(raw.PROPERTY_IDENTIFIER_PAGE1?.x, 50);
+  const bodyY = n(raw.PROPERTY_IDENTIFIER_PAGE1?.y, 700);
+  const bodySize = n(raw.PROPERTY_IDENTIFIER_PAGE1?.fontSize, 10);
+
+  pages[0]?.drawText(data.propertyIdentifier, {
+    x: headerX,
+    y: headerY,
+    size: headerSize,
     font,
   });
 
-  // Page 1 body — "LOCATION OF SUBJECT PROPERTY" field
-  pages[0].drawText(data.propertyIdentifier, {
-    x: raw.PROPERTY_IDENTIFIER_PAGE1.x,
-    y: raw.PROPERTY_IDENTIFIER_PAGE1.y,
-    size: raw.PROPERTY_IDENTIFIER_PAGE1.fontSize,
+  pages[0]?.drawText(data.propertyIdentifier, {
+    x: bodyX,
+    y: bodyY,
+    size: bodySize,
     font,
   });
 
-  // Pages 2–5 — repeat in header at top of every page
   pages.slice(1).forEach((page) => {
     page.drawText(data.propertyIdentifier!, {
-      x: raw.PROPERTY_IDENTIFIER_HEADER.x,
-      y: raw.PROPERTY_IDENTIFIER_HEADER.y,
-      size: raw.PROPERTY_IDENTIFIER_HEADER.fontSize,
+      x: headerX,
+      y: headerY,
+      size: headerSize,
       font,
     });
   });
 
-  // Seller occupying checkbox — page 1 only
   if (data.sellerOccupying !== undefined) {
-    const x =
+    const checkX =
       data.sellerOccupying === 0
-        ? raw.SELLER_OCCUPYING.occupyingX
-        : raw.SELLER_OCCUPYING.notOccupyingX;
+        ? n(raw.SELLER_OCCUPYING?.occupyingX, 400)
+        : n(raw.SELLER_OCCUPYING?.notOccupyingX, 460);
 
-    pages[0].drawText("X", {
-      x,
-      y: raw.SELLER_OCCUPYING.y,
-      size: raw.CHECKBOX_SIZE,
+    const checkY = n(raw.SELLER_OCCUPYING?.y, 650);
+
+    pages[0]?.drawText("X", {
+      x: checkX,
+      y: checkY,
+      size: n(raw.CHECKBOX_SIZE, 11),
       font,
     });
   }
