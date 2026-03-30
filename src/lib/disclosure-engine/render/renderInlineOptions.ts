@@ -16,7 +16,6 @@ export function renderInlineOptions(
     return i === 9 ? 202.5 : i > 9 ? baseY - 12.5 : baseY;
   };
 
-  // ✅ null-safe: skip if undefined or null, correctly handles selectedIndex === 0
   const drawInline = (
     rowIndex: number,
     firstX: number,
@@ -26,14 +25,26 @@ export function renderInlineOptions(
     if (selectedIndex === undefined || selectedIndex === null) return;
 
     const y = resolveRowY(rowIndex);
-    const x = selectedIndex === 0 ? firstX : firstX + deltas[selectedIndex - 1];
-    page.drawText("X", { x, y, size: raw.CHECKBOX_SIZE, font });
+    const x =
+      selectedIndex === 0
+        ? firstX
+        : firstX + deltas[selectedIndex - 1];
+
+    page.drawText("X", {
+      x,
+      y,
+      size: raw.CHECKBOX_SIZE,
+      font,
+    });
   };
 
   drawInline(
     raw.WATER_HEATER_INLINE.rowIndex,
     raw.WATER_HEATER_INLINE.firstX,
-    [raw.WATER_HEATER_INLINE.deltaToSecond, raw.WATER_HEATER_INLINE.deltaToThird],
+    [
+      raw.WATER_HEATER_INLINE.deltaToSecond,
+      raw.WATER_HEATER_INLINE.deltaToThird,
+    ],
     data.inlineOptions.waterHeaterType
   );
 
@@ -56,19 +67,5 @@ export function renderInlineOptions(
     raw.HEATING_INLINE.firstX,
     [raw.HEATING_INLINE.deltaToSecond, raw.HEATING_INLINE.deltaToThird],
     data.inlineOptions.heatingType
-  );
-
-  drawInline(
-    raw.GAS_SUPPLY_INLINE.rowIndex,
-    raw.GAS_SUPPLY_INLINE.firstX,
-    [raw.GAS_SUPPLY_INLINE.deltaToSecond, raw.GAS_SUPPLY_INLINE.deltaToThird],
-    data.inlineOptions.gasSupplyType
-  );
-
-  drawInline(
-    raw.PROPANE_TANK_INLINE.rowIndex,
-    raw.PROPANE_TANK_INLINE.firstX,
-    [raw.PROPANE_TANK_INLINE.deltaToSecond],
-    data.inlineOptions.propaneTankType
   );
 }

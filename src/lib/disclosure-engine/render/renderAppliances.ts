@@ -11,20 +11,14 @@ export function renderAppliances(
 
   const resolveRowY = (i: number) => {
     const baseY =
-      raw.APPLIANCE_FIRST_ROW_Y -
-      i * raw.APPLIANCE_ROW_SPACING;
+      raw.APPLIANCE_FIRST_ROW_Y - i * raw.APPLIANCE_ROW_SPACING;
 
-    return i === 9
-      ? 202.5
-      : i > 9
-      ? baseY - 12.5
-      : baseY;
+    return i === 9 ? 202.5 : i > 9 ? baseY - 12.5 : baseY;
   };
 
   Object.entries(data.appliances).forEach(([key, status]) => {
     const rowIndex = Number(key);
 
-    // Page 1 only handles appliance indices 0–18
     if (rowIndex > 18) return;
 
     const y = resolveRowY(rowIndex);
