@@ -3,46 +3,125 @@ import { generateDisclosurePDF } from "@/src/lib/disclosure-engine/generateDiscl
 import { validateDisclosureInput } from "@/src/lib/disclosure-engine/validation/validateDisclosure";
 import { DisclosureInput } from "@/src/lib/disclosure-engine/schema/disclosure.schema";
 
-function toNum(v: any): number | undefined {
+function toNum(v: unknown): number | undefined {
   if (v === null || v === undefined || v === "") return undefined;
   const n = Number(v);
-  return isNaN(n) ? undefined : n;
+  return Number.isNaN(n) ? undefined : n;
 }
 
-function normalizeRecord(obj: any) {
+/**
+ * RHF + wizard payloads may come as:
+ * - sparse arrays
+ * - numeric string-key objects
+ * - nested records
+ *
+ * This safely normalizes everything into:
+ * Record<number, value>
+ */
+function normalizeIndexedRecord<T>(
+  obj: unknown
+): Record<number, T> | undefined {
   if (!obj) return undefined;
-  if (Array.isArray(obj)) {
-    return Object.fromEntries(
-      obj
-        .map((v, i) => [i, v])
-        .filter(([, v]) => v !== undefined && v !== null && v !== "")
-    );
+
+  // numeric-string keyed object support
+  if (typeof obj === "object" && !Array.isArray(obj)) {
+    const entries = Object.entries(obj as Record<string, T>)
+      .filter(
+        ([, value]) =>
+          value !== undefined &&
+          value !== null &&
+          value !== ""
+      )
+      .map(([key, value]) => [Number(key), value] as const)
+      .filter(([key]) => !Number.isNaN(key));
+
+    return entries.length
+      ? Object.fromEntries(entries)
+      : undefined;
   }
-  return obj;
+
+  // sparse array support
+  if (Array.isArray(obj)) {
+    const entries = obj
+      .map((value, index) => [index, value] as const)
+      .filter(
+        ([, value]) =>
+          value !== undefined &&
+          value !== null &&
+          value !== ""
+      );
+
+    return entries.length
+      ? Object.fromEntries(entries)
+      : undefined;
+  }
+
+  return undefined;
 }
 
 function coerce(data: any): DisclosureInput {
+  const appliances =
+    normalizeIndexedRecord(data.appliances) ?? {};
+
+  /**
+   * Step3Systems saves these into systems.*
+   * but PDF page 2 expects appliance continuation rows.
+   *
+   * Map them into exact page 2 appliance indexes.
+   */
+  const systems = data.systems ?? {};
+
+  const systemToApplianceIndex: Record<string, number> = {
+    security: 23,        // TV Antenna/Satellite Dish-ish row group continuation section
+    solar: 32,
+    generator: 31,
+    waterSource: 30,
+  };
+
+  Object.entries(systemToApplianceIndex).forEach(
+    ([key, index]) => {
+      const value = systems[key];
+      if (value) {
+        appliances[index] = value;
+      }
+    }
+  );
+
   return {
     ...data,
     version: "01-01-2026",
 
+    appliances,
+
     sellerOccupying: toNum(data.sellerOccupying) as 0 | 1,
 
-    appliances: normalizeRecord(data.appliances),
-
-    questions: normalizeRecord(data.questions),
+    questions: normalizeIndexedRecord(data.questions),
 
     inlineOptions: data.inlineOptions
       ? {
           ...data.inlineOptions,
-          waterHeaterType: toNum(data.inlineOptions.waterHeaterType),
-          waterSoftenerType: toNum(data.inlineOptions.waterSoftenerType),
+          waterHeaterType: toNum(
+            data.inlineOptions.waterHeaterType
+          ),
+          waterSoftenerType: toNum(
+            data.inlineOptions.waterSoftenerType
+          ),
           acType: toNum(data.inlineOptions.acType),
-          heatingType: toNum(data.inlineOptions.heatingType),
-          gasSupplyType: toNum(data.inlineOptions.gasSupplyType),
-          propaneTankType: toNum(data.inlineOptions.propaneTankType),
-          generatorType: toNum(data.inlineOptions.generatorType),
-          waterSourceType: toNum(data.inlineOptions.waterSourceType),
+          heatingType: toNum(
+            data.inlineOptions.heatingType
+          ),
+          gasSupplyType: toNum(
+            data.inlineOptions.gasSupplyType
+          ),
+          propaneTankType: toNum(
+            data.inlineOptions.propaneTankType
+          ),
+          generatorType: toNum(
+            data.inlineOptions.generatorType
+          ),
+          waterSourceType: toNum(
+            data.inlineOptions.waterSourceType
+          ),
           securitySystemType: toNum(
             data.inlineOptions.securitySystemType
           ),
@@ -55,69 +134,27 @@ function coerce(data: any): DisclosureInput {
     sewerSystem: data.sewerSystem
       ? {
           type: toNum(data.sewerSystem.type) as 0 | 1,
-          privateType: toNum(data.sewerSystem.privateType) as
-            | 0
-            | 1
-            | 2,
+          privateType: toNum(
+            data.sewerSystem.privateType
+          ) as 0 | 1 | 2,
         }
       : undefined,
 
     q41Inline: data.q41Inline
       ? {
           ...data.q41Inline,
-          payableType: toNum(data.q41Inline.payableType) as
-            | 0
-            | 1
-            | 2,
+          payableType: toNum(
+            data.q41Inline.payableType
+          ) as 0 | 1 | 2,
         }
       : undefined,
 
     q46Inline: data.q46Inline
       ? {
           ...data.q46Inline,
-          payableType: toNum(data.q46Inline.payableType) as
-            | 0
-            | 1
-            | 2,
-        }
-      : undefined,
-
-    q47Details: data.q47Details
-      ? {
-          ...data.q47Details,
-          utilities: Array.isArray(data.q47Details.utilities)
-            ? data.q47Details.utilities
-                .map((v: any) => toNum(v))
-                .filter((v: any) => v !== undefined)
-            : [],
-        }
-      : undefined,
-
-    page2Zoning: data.page2Zoning
-      ? {
-          ...data.page2Zoning,
-          historicalDistrict: toNum(
-            data.page2Zoning.historicalDistrict
+          payableType: toNum(
+            data.q46Inline.payableType
           ) as 0 | 1 | 2,
-        }
-      : undefined,
-
-    page2Flood: data.page2Flood
-      ? {
-          ...data.page2Flood,
-          q3Main: toNum(data.page2Flood.q3Main) as
-            | 0
-            | 1
-            | 2,
-          q3Types: Array.isArray(data.page2Flood.q3Types)
-            ? data.page2Flood.q3Types
-                .map((v: any) => toNum(v))
-                .filter((v: any) => v !== undefined)
-            : undefined,
-          q3Municipal: toNum(
-            data.page2Flood.q3Municipal
-          ) as 0 | 1 | 2,
-          q4: toNum(data.page2Flood.q4) as 0 | 1 | 2,
         }
       : undefined,
 
@@ -126,43 +163,40 @@ function coerce(data: any): DisclosureInput {
 }
 
 export async function POST(req: NextRequest) {
-  let raw: any;
-
   try {
-    raw = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 }
+    const body = await req.json();
+
+    const normalized = coerce(body);
+
+    validateDisclosureInput(normalized);
+
+    const pdfBuffer = await generateDisclosurePDF(
+      normalized
     );
-  }
 
-  const data = coerce(raw);
+    /**
+     * Next.js 16 requires Uint8Array / ArrayBuffer
+     * instead of raw Node Buffer
+     */
+    const pdfBytes = new Uint8Array(pdfBuffer);
 
-  try {
-    validateDisclosureInput(data);
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: e.message },
-      { status: 422 }
-    );
-  }
-
-  try {
-    const pdfBuffer = await generateDisclosurePDF(data);
-
-    return new NextResponse(pdfBuffer as unknown as BodyInit, {
-      status: 200,
+    return new NextResponse(pdfBytes, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition":
-          'attachment; filename="disclosure.pdf"',
-        "Content-Length": pdfBuffer.length.toString(),
+          'attachment; filename="oklahoma-disclosure.pdf"',
       },
     });
-  } catch (e: any) {
+  } catch (error) {
+    console.error("PDF generation failed:", error);
+
     return NextResponse.json(
-      { error: e.message },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown PDF generation error",
+      },
       { status: 500 }
     );
   }

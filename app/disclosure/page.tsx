@@ -14,7 +14,7 @@ import Step7Signatures from "./steps/Step7Signatures";
 import Navigation from "./components/Navigation";
 import ProgressBar from "./components/ProgressBar";
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 type Props = {
   sharedToken?: string;
@@ -44,7 +44,6 @@ function normalizeAppliances(flat: FlatFormData) {
 
 export default function DisclosurePage({ sharedToken }: Props) {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const disclosureId = searchParams.get("id");
   const token = sharedToken || searchParams.get("token");
@@ -54,11 +53,6 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
   const draftIdRef = useRef<string | null>(disclosureId);
   const autosaveTimeoutRef = useRef<any>(null);
-
-  // ─────────────────────────────────────────────────────────────
-  // Accumulate per-step values so keys like `questions` and
-  // `appliances` from multiple steps don't clobber each other.
-  // ─────────────────────────────────────────────────────────────
   const perStepValuesRef = useRef<Record<string, FlatFormData>>({});
 
   useEffect(() => {
@@ -162,8 +156,6 @@ export default function DisclosurePage({ sharedToken }: Props) {
     _to: any,
     allValues: Record<string, FlatFormData>
   ) {
-    // Keep a snapshot of all per-step values so handleCompleted
-    // can do a smart merge instead of a lossy flat spread.
     perStepValuesRef.current = allValues;
 
     const flat: FlatFormData = Object.values(allValues).reduce(
@@ -206,30 +198,37 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
   async function handleCompleted(values: FlatFormData) {
     try {
-      // ─────────────────────────────────────────────────────────
-      // Smart merge: combine per-step data for keys that appear
-      // in multiple steps (appliances, questions, questionComments).
-      // For all other keys, prefer the last step's value.
-      // ─────────────────────────────────────────────────────────
-      const allSteps = perStepValuesRef.current;
+      /**
+       * ✅ SAFE FIX 1
+       * merge latest values into snapshot
+       */
+      const allSteps: Record<string, FlatFormData> = {
+        ...perStepValuesRef.current,
+        CURRENT: values,
+      };
 
-      // Merge `appliances` from BOTH appliance steps.
-      // Step "Appliances" covers indices 0–18 (rows 0-18 on page 1).
-      // Step "Appliances Continued" covers indices 100–114 (page 2 rows).
+      // Merge appliances from both appliance steps
       const appliancesPage1: Record<number, string> =
         allSteps["Appliances"]?.appliances || {};
       const appliancesPage2: Record<number, string> =
         allSteps["Appliances Continued"]?.appliances || {};
-      const mergedAppliances = { ...appliancesPage1, ...appliancesPage2 };
+      const mergedAppliances = {
+        ...appliancesPage1,
+        ...appliancesPage2,
+      };
 
-      // Merge `questions` and `questionComments` across all three question steps.
+      // Merge questions from all three question steps
       const questionsA: Record<number, string> =
         allSteps["Questions"]?.questions || {};
       const questionsB: Record<number, string> =
         allSteps["Questions Continued"]?.questions || {};
       const questionsC: Record<number, string> =
         allSteps["Questions Final"]?.questions || {};
-      const mergedQuestions = { ...questionsA, ...questionsB, ...questionsC };
+      const mergedQuestions = {
+        ...questionsA,
+        ...questionsB,
+        ...questionsC,
+      };
 
       const commentsA: Record<number, string> =
         allSteps["Questions"]?.questionComments || {};
@@ -237,13 +236,26 @@ export default function DisclosurePage({ sharedToken }: Props) {
         allSteps["Questions Continued"]?.questionComments || {};
       const commentsC: Record<number, string> =
         allSteps["Questions Final"]?.questionComments || {};
-      const mergedComments = { ...commentsA, ...commentsB, ...commentsC };
+      const mergedComments = {
+        ...commentsA,
+        ...commentsB,
+        ...commentsC,
+      };
 
-      // Now build the final flat values using the smart-merged keys,
-      // falling back to the wizard's own flat values for everything else.
-      const q41 = allSteps["Questions Final"]?.q41Inline || values.q41Inline || {};
-      const q46 = allSteps["Questions Final"]?.q46Inline || values.q46Inline || {};
-      const q47 = allSteps["Questions Final"]?.q47Details || values.q47Details || {};
+      const q41 =
+        allSteps["Questions Final"]?.q41Inline ||
+        values.q41Inline ||
+        {};
+
+      const q46 =
+        allSteps["Questions Final"]?.q46Inline ||
+        values.q46Inline ||
+        {};
+
+      const q47 =
+        allSteps["Questions Final"]?.q47Details ||
+        values.q47Details ||
+        {};
 
       const frequencyMap: Record<string, 0 | 1 | 2> = {
         Monthly: 0,
@@ -258,8 +270,6 @@ export default function DisclosurePage({ sharedToken }: Props) {
         Other: 3,
       };
 
-      // page2NotWorkingExplanation: collect NOT_WORKING appliance comments
-      // from the extended step (indices 100+).
       const applianceComments = values.applianceComments || {};
 
       const page1Notes = Object.entries(applianceComments)
@@ -272,9 +282,15 @@ export default function DisclosurePage({ sharedToken }: Props) {
         .map(([key, value]) => `Appliance ${key}: ${value}`)
         .join("\n");
 
-      // Build page3TextFields from the Q5 step's q16Inline fields.
-      const q16 = allSteps["Questions"]?.q16Inline || values.q16Inline || {};
-      const q19 = allSteps["Questions"]?.q19Inline || values.q19Inline || {};
+      const q16 =
+        allSteps["Questions"]?.q16Inline ||
+        values.q16Inline ||
+        {};
+
+      const q19 =
+        allSteps["Questions"]?.q19Inline ||
+        values.q19Inline ||
+        {};
 
       const cleanPayload = {
         version: "01-01-2026" as const,
@@ -290,17 +306,34 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
         appliances: mergedAppliances,
 
+        /**
+         * ✅ SAFE FIX 2
+         * freshest systems data wins
+         */
+        systems:
+          values.systems ||
+          allSteps["Systems"]?.systems ||
+          {},
+
         inlineOptions:
-          allSteps["Systems"]?.inlineOptions || values.inlineOptions || {},
+          allSteps["Systems"]?.inlineOptions ||
+          values.inlineOptions ||
+          {},
 
         sewerSystem:
-          allSteps["Systems"]?.sewerSystem || values.sewerSystem || {},
+          allSteps["Systems"]?.sewerSystem ||
+          values.sewerSystem ||
+          {},
 
         page2Zoning:
-          allSteps["Zoning"]?.page2Zoning || values.page2Zoning || {},
+          allSteps["Zoning"]?.page2Zoning ||
+          values.page2Zoning ||
+          {},
 
         page2Flood:
-          allSteps["Zoning"]?.page2Flood || values.page2Flood || {},
+          allSteps["Zoning"]?.page2Flood ||
+          values.page2Flood ||
+          {},
 
         questions: mergedQuestions,
         questionComments: mergedComments,
@@ -309,7 +342,8 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
         q41Inline: {
           hoaAmount: q41.hoaAmount,
-          specialAssessmentAmount: q41.specialAssessmentAmount,
+          specialAssessmentAmount:
+            q41.specialAssessmentAmount,
           payableType:
             typeof q41.frequency === "string"
               ? frequencyMap[q41.frequency]
@@ -335,17 +369,26 @@ export default function DisclosurePage({ sharedToken }: Props) {
                 .map((s: string) => utilityMap[s])
                 .filter((v: number) => v !== undefined)
             : q47.utilities || [],
-          otherExplain: q47.other || q47.otherExplain,
+          otherExplain:
+            q47.other || q47.otherExplain,
           initialMembership:
-            q47.initialMembershipFee || q47.initialMembership,
+            q47.initialMembershipFee ||
+            q47.initialMembership,
           annualMembership:
-            q47.annualMembershipFee || q47.annualMembership,
+            q47.annualMembershipFee ||
+            q47.annualMembership,
         },
 
         page3TextFields: {
-          roofAge: q16.roofAge || values["q16Inline.roofAge"],
-          roofLayers: q16.layers || values["q16Inline.layers"],
-          termiteBaitAnnualCost: q19.annualCost || values["q19Inline.annualCost"],
+          roofAge:
+            q16.roofAge ||
+            values["q16Inline.roofAge"],
+          roofLayers:
+            q16.layers ||
+            values["q16Inline.layers"],
+          termiteBaitAnnualCost:
+            q19.annualCost ||
+            values["q19Inline.annualCost"],
         },
 
         explanation:
@@ -359,20 +402,23 @@ export default function DisclosurePage({ sharedToken }: Props) {
           {},
 
         page1NotWorkingExplanation:
-          values.page1NotWorkingExplanation || page1Notes || "",
+          values.page1NotWorkingExplanation ||
+          page1Notes ||
+          "",
 
         page2NotWorkingExplanation:
-          values.page2NotWorkingExplanation || page2Notes || "",
+          values.page2NotWorkingExplanation ||
+          page2Notes ||
+          "",
 
         additionalPages:
           allSteps["Financial"]?.additionalPages ||
           values.additionalPages,
 
         initials:
-          allSteps["Property"]?.initials || values.initials,
+          allSteps["Property"]?.initials ||
+          values.initials,
       };
-
-      console.log("FINAL PDF PAYLOAD", cleanPayload);
 
       const res = await fetch("/api/disclosure/generate", {
         method: "POST",
@@ -461,40 +507,12 @@ export default function DisclosurePage({ sharedToken }: Props) {
   ];
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f7f9fb] flex items-center justify-center">
-        <p className="text-sm text-gray-400 font-medium">
-          Loading...
-        </p>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   return (
     <div className="min-h-screen bg-[#f7f9fb]">
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-bold text-gray-900">
-            RPCD Disclosure
-          </span>
-
-          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-2.5 py-1 bg-gray-100 rounded-full">
-            {token ? "Client Portal" : "Draft"}
-          </span>
-        </div>
-      </header>
-
       <div className="max-w-3xl mx-auto py-12 px-6">
-        <div className="mb-8">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">
-            Form 01-01-2026
-          </p>
-
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            Oklahoma Residential Property Condition Disclosure
-          </h1>
-        </div>
-
         <div className="bg-white border border-gray-100 rounded-xl p-8">
           <Wizard
             steps={steps}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 
 const STATUS_OPTIONS = [
@@ -102,7 +103,38 @@ function InlineOptions({
 }
 
 export default function Step3Systems() {
-  const { watch, register, setValue } = useFormContext();
+  const { watch, setValue } = useFormContext();
+
+  /**
+   * ✅ CRITICAL FIX
+   * Persist nested systems.* keys so RHF does not drop them
+   * when the wizard step unmounts.
+   */
+  useEffect(() => {
+    const systemKeys = [
+      "waterHeater",
+      "ac",
+      "heating",
+      "gasSupply",
+      "generator",
+      "waterSource",
+      "security",
+      "solar",
+      "fireSuppression",
+    ];
+
+    systemKeys.forEach((key) => {
+      const path = `systems.${key}`;
+      const current = watch(path);
+
+      if (current === undefined) {
+        setValue(path, "", {
+          shouldDirty: false,
+          shouldTouch: false,
+        });
+      }
+    });
+  }, [setValue, watch]);
 
   const waterHeater = watch("systems.waterHeater");
   const ac = watch("systems.ac");
@@ -137,7 +169,13 @@ export default function Step3Systems() {
       >
         <InlineOptions
           name="inlineOptions.waterHeaterType"
-          options={["Electric", "Gas", "Tankless", "Solar", "Other"]}
+          options={[
+            "Electric",
+            "Gas",
+            "Tankless",
+            "Solar",
+            "Other",
+          ]}
         />
       </StatusRow>
 
@@ -217,26 +255,31 @@ export default function Step3Systems() {
         />
       </StatusRow>
 
-      <StatusRow
-        label="Sewer System"
-        name="sewerSystem.type"
-        subtypeValue={sewer}
-        commentName="systemComments.sewer"
-      >
-        <InlineOptions
-          name="sewerSystem.type"
-          label="Select sewer access"
-          options={["Public", "Private"]}
-        />
+<StatusRow
+  label="Sewer System"
+  name="systems.sewer"
+  subtypeValue={String(watch("sewerSystem.type"))}
+  commentName="systemComments.sewer"
+>
+  <InlineOptions
+    name="sewerSystem.type"
+    label="Select sewer access"
+    options={["Public", "Private"]}
+  />
 
-        {String(sewer) === "1" && (
-          <InlineOptions
-            name="sewerSystem.privateType"
-            label="If private, select type"
-            options={["Septic", "Aerobic", "Lagoon", "Other"]}
-          />
-        )}
-      </StatusRow>
+  {String(watch("sewerSystem.type")) === "1" && (
+    <InlineOptions
+      name="sewerSystem.privateType"
+      label="If private, select type"
+      options={[
+        "Septic",
+        "Aerobic",
+        "Lagoon",
+        "Other",
+      ]}
+    />
+  )}
+</StatusRow>
 
       <StatusRow
         label="Security System"
@@ -246,7 +289,12 @@ export default function Step3Systems() {
       >
         <InlineOptions
           name="inlineOptions.securitySystemType"
-          options={["Leased", "Owned", "Monitored", "Financed"]}
+          options={[
+            "Leased",
+            "Owned",
+            "Monitored",
+            "Financed",
+          ]}
         />
       </StatusRow>
 

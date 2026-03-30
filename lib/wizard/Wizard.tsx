@@ -29,7 +29,6 @@ function Wizard({
   const [activeStep, setActiveStep] = useState(initialStep);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // 🔥 FIX: hydrate wizard state from initialValues
   const [values, setValues] = useState<WizardValues>(() => {
     const initial: WizardValues = {};
 
@@ -50,7 +49,12 @@ function Wizard({
     defaultValues,
     mode: getMode(activeStep),
     resolver: getResolver(activeStep, values),
-    shouldUnregister: true,
+
+    /**
+     * ✅ FINAL FIX
+     * Persist all nested RHF fields across step unmounts
+     */
+    shouldUnregister: false,
   });
 
   const { reset } = methods;
@@ -63,7 +67,6 @@ function Wizard({
   const isFirstStep: boolean = stepNumber === 1;
   const isLastStep: boolean = stepNumber === totalSteps;
 
-  // 🔥 ensure form resets correctly on step/value change
   useEffect(() => {
     reset(defaultValues);
   }, [defaultValues, reset]);
@@ -162,7 +165,6 @@ function Wizard({
         onStepChanged(activeStep, nextStep, wizardValues);
       }
 
-      // ✅ FIX: safe cast
       setActiveStep(nextStep as Step);
     } catch (error: any) {
       console.log(error);
@@ -191,7 +193,6 @@ function Wizard({
       onStepChanged(activeStep, previousStep, wizardValues);
     }
 
-    // ✅ FIX: safe cast
     setActiveStep(previousStep as Step);
   }
 
