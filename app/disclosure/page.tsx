@@ -55,6 +55,12 @@ export default function DisclosurePage({ sharedToken }: Props) {
   const draftIdRef = useRef<string | null>(disclosureId);
   const autosaveTimeoutRef = useRef<any>(null);
 
+  // ─────────────────────────────────────────────────────────────
+  // Accumulate per-step values so keys like `questions` and
+  // `appliances` from multiple steps don't clobber each other.
+  // ─────────────────────────────────────────────────────────────
+  const perStepValuesRef = useRef<Record<string, FlatFormData>>({});
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -156,6 +162,10 @@ export default function DisclosurePage({ sharedToken }: Props) {
     _to: any,
     allValues: Record<string, FlatFormData>
   ) {
+    // Keep a snapshot of all per-step values so handleCompleted
+    // can do a smart merge instead of a lossy flat spread.
+    perStepValuesRef.current = allValues;
+
     const flat: FlatFormData = Object.values(allValues).reduce(
       (acc: FlatFormData, value: FlatFormData) => ({
         ...acc,
@@ -194,154 +204,208 @@ export default function DisclosurePage({ sharedToken }: Props) {
     }, 500);
   }
 
-async function handleCompleted(values: FlatFormData) {
-  try {
-    const q41 = values.q41Inline || {};
-    const q46 = values.q46Inline || {};
-    const q47 = values.q47Details || {};
+  async function handleCompleted(values: FlatFormData) {
+    try {
+      // ─────────────────────────────────────────────────────────
+      // Smart merge: combine per-step data for keys that appear
+      // in multiple steps (appliances, questions, questionComments).
+      // For all other keys, prefer the last step's value.
+      // ─────────────────────────────────────────────────────────
+      const allSteps = perStepValuesRef.current;
 
-    const frequencyMap: Record<string, 0 | 1 | 2> = {
-      Monthly: 0,
-      Quarterly: 1,
-      Annually: 2,
-    };
+      // Merge `appliances` from BOTH appliance steps.
+      // Step "Appliances" covers indices 0–18 (rows 0-18 on page 1).
+      // Step "Appliances Continued" covers indices 100–114 (page 2 rows).
+      const appliancesPage1: Record<number, string> =
+        allSteps["Appliances"]?.appliances || {};
+      const appliancesPage2: Record<number, string> =
+        allSteps["Appliances Continued"]?.appliances || {};
+      const mergedAppliances = { ...appliancesPage1, ...appliancesPage2 };
 
-    const utilityMap: Record<string, number> = {
-      Water: 0,
-      Garbage: 1,
-      Sewer: 2,
-      Other: 3,
-    };
+      // Merge `questions` and `questionComments` across all three question steps.
+      const questionsA: Record<number, string> =
+        allSteps["Questions"]?.questions || {};
+      const questionsB: Record<number, string> =
+        allSteps["Questions Continued"]?.questions || {};
+      const questionsC: Record<number, string> =
+        allSteps["Questions Final"]?.questions || {};
+      const mergedQuestions = { ...questionsA, ...questionsB, ...questionsC };
 
-    const cleanPayload = {
-      version: "01-01-2026" as const,
+      const commentsA: Record<number, string> =
+        allSteps["Questions"]?.questionComments || {};
+      const commentsB: Record<number, string> =
+        allSteps["Questions Continued"]?.questionComments || {};
+      const commentsC: Record<number, string> =
+        allSteps["Questions Final"]?.questionComments || {};
+      const mergedComments = { ...commentsA, ...commentsB, ...commentsC };
 
-      propertyIdentifier:
-        values.propertyIdentifier ||
-        values.propertyAddress ||
-        "",
+      // Now build the final flat values using the smart-merged keys,
+      // falling back to the wizard's own flat values for everything else.
+      const q41 = allSteps["Questions Final"]?.q41Inline || values.q41Inline || {};
+      const q46 = allSteps["Questions Final"]?.q46Inline || values.q46Inline || {};
+      const q47 = allSteps["Questions Final"]?.q47Details || values.q47Details || {};
 
-      sellerOccupying: values.sellerOccupying,
+      const frequencyMap: Record<string, 0 | 1 | 2> = {
+        Monthly: 0,
+        Quarterly: 1,
+        Annually: 2,
+      };
 
-      appliances: values.appliances || {},
-      inlineOptions: values.inlineOptions || {},
-      sewerSystem: values.sewerSystem || {},
+      const utilityMap: Record<string, number> = {
+        Water: 0,
+        Garbage: 1,
+        Sewer: 2,
+        Other: 3,
+      };
 
-      page2Zoning: values.page2Zoning || {},
-      page2Flood: values.page2Flood || {},
+      // page2NotWorkingExplanation: collect NOT_WORKING appliance comments
+      // from the extended step (indices 100+).
+      const applianceComments = values.applianceComments || {};
 
-      questions: values.questions || {},
-      questionComments: values.questionComments || {},
+      const page1Notes = Object.entries(applianceComments)
+        .filter(([key, value]) => Number(key) < 100 && value)
+        .map(([key, value]) => `Appliance ${key}: ${value}`)
+        .join("\n");
 
-      q37Inline: values.q37Inline,
+      const page2Notes = Object.entries(applianceComments)
+        .filter(([key, value]) => Number(key) >= 100 && value)
+        .map(([key, value]) => `Appliance ${key}: ${value}`)
+        .join("\n");
 
-      q41Inline: {
-        hoaAmount: q41.hoaAmount,
-        specialAssessmentAmount:
-          q41.specialAssessmentAmount,
-        payableType:
-          typeof q41.frequency === "string"
-            ? frequencyMap[q41.frequency]
-            : q41.payableType,
-        unpaid: q41.unpaid,
-        ifYesAmount: q41.ifYesAmount,
-        managerName: q41.managerName,
-        phone: q41.managerPhone || q41.phone,
-      },
+      // Build page3TextFields from the Q5 step's q16Inline fields.
+      const q16 = allSteps["Questions"]?.q16Inline || values.q16Inline || {};
+      const q19 = allSteps["Questions"]?.q19Inline || values.q19Inline || {};
 
-      q46Inline: {
-        amount: q46.amount,
-        paidTo: q46.paidTo,
-        payableType:
-          typeof q46.frequency === "string"
-            ? frequencyMap[q46.frequency]
-            : q46.payableType,
-      },
+      const cleanPayload = {
+        version: "01-01-2026" as const,
 
-      q47Details: {
-        utilities: Array.isArray(q47.services)
-          ? q47.services
-              .map((s: string) => utilityMap[s])
-              .filter((v: number) => v !== undefined)
-          : q47.utilities || [],
-        otherExplain: q47.other || q47.otherExplain,
-        initialMembership:
-          q47.initialMembershipFee ||
-          q47.initialMembership,
-        annualMembership:
-          q47.annualMembershipFee ||
-          q47.annualMembership,
-      },
+        propertyIdentifier:
+          values.propertyIdentifier ||
+          allSteps["Property"]?.propertyIdentifier ||
+          "",
 
-      explanation:
-        typeof values.explanation === "string"
-          ? values.explanation
-          : "",
+        sellerOccupying:
+          values.sellerOccupying ??
+          allSteps["Property"]?.sellerOccupying,
 
-      signatures: values.signatures || {},
+        appliances: mergedAppliances,
 
-      page1NotWorkingExplanation:
-        values.page1NotWorkingExplanation || "",
+        inlineOptions:
+          allSteps["Systems"]?.inlineOptions || values.inlineOptions || {},
 
-      page2NotWorkingExplanation:
-        values.page2NotWorkingExplanation || "",
-    };
+        sewerSystem:
+          allSteps["Systems"]?.sewerSystem || values.sewerSystem || {},
 
-    const applianceComments =
-      values.applianceComments || {};
+        page2Zoning:
+          allSteps["Zoning"]?.page2Zoning || values.page2Zoning || {},
 
-    const page1Notes = Object.entries(applianceComments)
-      .filter(([key, value]) => Number(key) < 100 && value)
-      .map(([key, value]) => `Appliance ${key}: ${value}`)
-      .join("\n");
+        page2Flood:
+          allSteps["Zoning"]?.page2Flood || values.page2Flood || {},
 
-    const page2Notes = Object.entries(applianceComments)
-      .filter(([key, value]) => Number(key) >= 100 && value)
-      .map(([key, value]) => `Appliance ${key}: ${value}`)
-      .join("\n");
+        questions: mergedQuestions,
+        questionComments: mergedComments,
 
-    cleanPayload.page1NotWorkingExplanation =
-      cleanPayload.page1NotWorkingExplanation ||
-      page1Notes;
+        q37Inline: values.q37Inline,
 
-    cleanPayload.page2NotWorkingExplanation =
-      cleanPayload.page2NotWorkingExplanation ||
-      page2Notes;
+        q41Inline: {
+          hoaAmount: q41.hoaAmount,
+          specialAssessmentAmount: q41.specialAssessmentAmount,
+          payableType:
+            typeof q41.frequency === "string"
+              ? frequencyMap[q41.frequency]
+              : q41.payableType,
+          unpaid: q41.unpaid,
+          ifYesAmount: q41.ifYesAmount,
+          managerName: q41.managerName,
+          phone: q41.managerPhone || q41.phone,
+        },
 
-    console.log("FINAL PDF PAYLOAD", cleanPayload);
+        q46Inline: {
+          amount: q46.amount,
+          paidTo: q46.paidTo,
+          payableType:
+            typeof q46.frequency === "string"
+              ? frequencyMap[q46.frequency]
+              : q46.payableType,
+        },
 
-    const res = await fetch("/api/disclosure/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(cleanPayload),
-    });
+        q47Details: {
+          utilities: Array.isArray(q47.services)
+            ? q47.services
+                .map((s: string) => utilityMap[s])
+                .filter((v: number) => v !== undefined)
+            : q47.utilities || [],
+          otherExplain: q47.other || q47.otherExplain,
+          initialMembership:
+            q47.initialMembershipFee || q47.initialMembership,
+          annualMembership:
+            q47.annualMembershipFee || q47.annualMembership,
+        },
 
-    if (!res.ok) {
-      const err = await res.json();
-      alert(`Failed to generate PDF: ${err.error}`);
-      return;
+        page3TextFields: {
+          roofAge: q16.roofAge || values["q16Inline.roofAge"],
+          roofLayers: q16.layers || values["q16Inline.layers"],
+          termiteBaitAnnualCost: q19.annualCost || values["q19Inline.annualCost"],
+        },
+
+        explanation:
+          typeof values.explanation === "string"
+            ? values.explanation
+            : "",
+
+        signatures:
+          allSteps["Signatures"]?.signatures ||
+          values.signatures ||
+          {},
+
+        page1NotWorkingExplanation:
+          values.page1NotWorkingExplanation || page1Notes || "",
+
+        page2NotWorkingExplanation:
+          values.page2NotWorkingExplanation || page2Notes || "",
+
+        additionalPages:
+          allSteps["Financial"]?.additionalPages ||
+          values.additionalPages,
+
+        initials:
+          allSteps["Property"]?.initials || values.initials,
+      };
+
+      console.log("FINAL PDF PAYLOAD", cleanPayload);
+
+      const res = await fetch("/api/disclosure/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(cleanPayload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(`Failed to generate PDF: ${err.error}`);
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "disclosure.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 2000);
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      alert("Something went wrong while generating PDF.");
     }
-
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "disclosure.pdf";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    setTimeout(() => {
-      window.URL.revokeObjectURL(url);
-    }, 2000);
-  } catch (error) {
-    console.error("PDF generation failed:", error);
-    alert("Something went wrong while generating PDF.");
   }
-}
 
   const steps = [
     {
