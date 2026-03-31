@@ -71,4 +71,18 @@ export function renderInlineOptions(
     [raw.HEATING_INLINE.deltaToSecond, raw.HEATING_INLINE.deltaToThird],
     data.inlineOptions.heatingType
   );
+
+  drawInline(
+    raw.GAS_SUPPLY_INLINE.rowIndex,
+    raw.GAS_SUPPLY_INLINE.firstX,
+    [raw.GAS_SUPPLY_INLINE.deltaToSecond, raw.GAS_SUPPLY_INLINE.deltaToThird],
+    data.inlineOptions.gasSupplyType
+  );
+
+  drawInline(
+    raw.PROPANE_TANK_INLINE.rowIndex,
+    raw.PROPANE_TANK_INLINE.firstX,
+    [raw.PROPANE_TANK_INLINE.deltaToSecond],
+    data.inlineOptions.propaneTankType
+  );
 }

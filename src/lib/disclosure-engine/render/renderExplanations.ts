@@ -27,20 +27,8 @@ function buildUnifiedExplanation(data: any): string {
     });
   }
 
-  if (
-    data.sewerSystem?.type === 1 &&
-    data.sewerSystem?.privateType !== undefined
-  ) {
-    lines.push(
-      `Private sewer subtype: ${data.sewerSystem.privateType}`
-    );
-  }
-
-  if (data.inlineOptions?.fireSuppresionDate?.trim()) {
-    lines.push(
-      `Fire suppression serviced: ${data.inlineOptions.fireSuppresionDate}`
-    );
-  }
+  // Removed sewer subtype & fire suppression date "metadata leaks"
+  // as they are primarily rendered via specific field bindings.
 
   return lines.join("\n");
 }

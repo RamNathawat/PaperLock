@@ -221,11 +221,9 @@ export default function Step3Systems() {
         <InlineOptions
           name="inlineOptions.heatingType"
           options={[
-            "Gas",
             "Electric",
-            "Propane",
-            "Oil",
-            "Other",
+            "Gas",
+            "Heat Pump",
           ]}
         />
       </StatusRow>
@@ -238,7 +236,7 @@ export default function Step3Systems() {
       >
         <InlineOptions
           name="inlineOptions.gasSupplyType"
-          options={["Natural Gas", "Propane", "Other"]}
+          options={["Public", "Propane", "Butane"]}
         />
       </StatusRow>
 
@@ -262,7 +260,7 @@ export default function Step3Systems() {
       >
         <InlineOptions
           name="inlineOptions.generatorType"
-          options={["Owned", "Leased", "Other"]}
+          options={["Leased", "Owned", "Financed"]}
         />
       </StatusRow>
 

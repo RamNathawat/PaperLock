@@ -171,7 +171,7 @@ export default function Step4Zoning() {
         <>
           <div className="rounded-xl border border-gray-100 p-5 space-y-4">
             <p className="text-sm font-semibold text-gray-800">
-              Is the property insured for flood damage?
+              Q5. Are you aware of any flood insurance requirements concerning the property?
             </p>
 
             <RadioGroup
@@ -180,18 +180,16 @@ export default function Step4Zoning() {
             />
           </div>
 
-          {String(q5) === "0" && (
-            <div className="rounded-xl border border-gray-100 p-5 space-y-4">
-              <p className="text-sm font-semibold text-gray-800">
-                Has a flood insurance claim ever been filed?
-              </p>
+          <div className="rounded-xl border border-gray-100 p-5 space-y-4">
+            <p className="text-sm font-semibold text-gray-800">
+              Q6. Are you aware of any flood insurance on the property?
+            </p>
 
-              <RadioGroup
-                name="page2Flood.q6"
-                options={["Yes", "No"]}
-              />
-            </div>
-          )}
+            <RadioGroup
+              name="page2Flood.q6"
+              options={["Yes", "No"]}
+            />
+          </div>
         </>
       )}
     </div>

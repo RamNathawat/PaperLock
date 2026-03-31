@@ -19,6 +19,12 @@ export async function renderSignatures(
       SIGNATURE_LAYOUT.seller,
       data.signatures.sellerSignatureBase64
     );
+    await drawSignatureFromBase64(
+      pdfDoc,
+      pages,
+      SIGNATURE_LAYOUT.seller2,
+      data.signatures.sellerSignatureBase64
+    );
   }
 
   if (data.signatures?.buyerSignatureBase64) {
@@ -26,6 +32,12 @@ export async function renderSignatures(
       pdfDoc,
       pages,
       SIGNATURE_LAYOUT.buyer,
+      data.signatures.buyerSignatureBase64
+    );
+    await drawSignatureFromBase64(
+      pdfDoc,
+      pages,
+      SIGNATURE_LAYOUT.buyer2,
       data.signatures.buyerSignatureBase64
     );
   }

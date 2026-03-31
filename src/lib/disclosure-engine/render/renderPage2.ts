@@ -253,22 +253,24 @@ export function renderPage2(
   // --------------------------------------------------
   // Flood Q5
   // --------------------------------------------------
-  if (data.page2Flood?.q5) {
+  if (data.page2Flood?.q5 !== undefined && data.page2Flood?.q5 !== null) {
+    const v = Number(data.page2Flood.q5);
     const x =
-      data.page2Flood.q5 === "YES"
+      v === 0
         ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES
         : raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO;
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q5_Y, size: 11, font });
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q5_Y, size: 11, font });
   }
 
   // --------------------------------------------------
   // Flood Q6
   // --------------------------------------------------
-  if (data.page2Flood?.q6) {
+  if (data.page2Flood?.q6 !== undefined && data.page2Flood?.q6 !== null) {
+    const v = Number(data.page2Flood.q6);
     const x =
-      data.page2Flood.q6 === "YES"
+      v === 0
         ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES
         : raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO;
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q6_Y, size: 11, font });
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q6_Y, size: 11, font });
   }
 }
