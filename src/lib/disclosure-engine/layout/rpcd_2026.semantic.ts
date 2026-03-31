@@ -36,7 +36,7 @@ export const TEXT_LAYOUT: Record<string, TextLayout> = {};
 
 export const EXPLANATION_LAYOUT = {
   explanation: {
-    page: 3,
+    page: 4,
     x: 38,
     yTop: 170,
     width: 545,
