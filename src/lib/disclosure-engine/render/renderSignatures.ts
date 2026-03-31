@@ -41,12 +41,14 @@ export async function renderSignatures(
         ? raw.PAGE5_ADDITIONAL_PAGES.yesX
         : raw.PAGE5_ADDITIONAL_PAGES.noX;
 
-    page5.drawText("X", {
-      x: checkX,
-      y: raw.PAGE5_ADDITIONAL_PAGES.y,
-      size: raw.CHECKBOX_SIZE,
-      font,
-    });
+    if (!Number.isNaN(checkX)) {
+      page5.drawText("X", {
+        x: checkX,
+        y: raw.PAGE5_ADDITIONAL_PAGES.y,
+        size: raw.CHECKBOX_SIZE,
+        font,
+      });
+    }
 
     if (
       data.additionalPages.hasAdditionalPages === "YES" &&

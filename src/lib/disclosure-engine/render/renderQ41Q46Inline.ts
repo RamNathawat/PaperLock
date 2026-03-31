@@ -45,7 +45,7 @@ export function renderQ41Q46Inline(
     if (pt === 1) x = base + raw.PAGE4_Q41_PAYABLE.deltaToSecond;
     if (pt === 2) x = base + raw.PAGE4_Q41_PAYABLE.deltaToThird;
 
-    page.drawText("X", { x, y, size: 11, font });
+    if (!Number.isNaN(x)) page.drawText("X", { x, y, size: 11, font });
   }
 
   // --------------------------------------------------
@@ -109,7 +109,7 @@ export function renderQ41Q46Inline(
     if (pt === 1) x = base + raw.PAGE4_Q46_PAYABLE.deltaToSecond;
     if (pt === 2) x = base + raw.PAGE4_Q46_PAYABLE.deltaToThird;
 
-    page.drawText("X", { x, y, size: 11, font });
+    if (!Number.isNaN(x)) page.drawText("X", { x, y, size: 11, font });
   }
 
   // --------------------------------------------------

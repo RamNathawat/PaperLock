@@ -25,10 +25,13 @@ export function renderInlineOptions(
     if (selectedIndex === undefined || selectedIndex === null) return;
 
     const y = resolveRowY(rowIndex);
+    const idx = selectedIndex - 1;
     const x =
-      selectedIndex === 0
+      selectedIndex === 0 || typeof deltas[idx] !== "number"
         ? firstX
-        : firstX + deltas[selectedIndex - 1];
+        : firstX + deltas[idx];
+
+    if (Number.isNaN(x)) return;
 
     page.drawText("X", {
       x,

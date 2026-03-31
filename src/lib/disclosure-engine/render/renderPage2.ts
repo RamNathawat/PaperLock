@@ -68,11 +68,12 @@ export function renderPage2(
       raw.PAGE2_SECURITY_INLINE.deltaToThird,
       raw.PAGE2_SECURITY_INLINE.deltaToFourth,
     ];
+    const idx = data.inlineOptions.securitySystemType - 1;
     const x =
-      data.inlineOptions.securitySystemType === 0
+      data.inlineOptions.securitySystemType === 0 || typeof deltas[idx] !== "number"
         ? base
-        : base + deltas[data.inlineOptions.securitySystemType - 1];
-    page.drawText("X", { x, y: securityY, size: 11, font });
+        : base + deltas[idx];
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: securityY, size: 11, font });
   }
 
   // --------------------------------------------------
@@ -88,11 +89,12 @@ export function renderPage2(
       raw.PAGE2_SOLAR_INLINE.deltaToSecond,
       raw.PAGE2_SOLAR_INLINE.deltaToThird,
     ];
+    const idx = data.inlineOptions.solarPanelType - 1;
     const x =
-      data.inlineOptions.solarPanelType === 0
+      data.inlineOptions.solarPanelType === 0 || typeof deltas[idx] !== "number"
         ? base
-        : base + deltas[data.inlineOptions.solarPanelType - 1];
-    page.drawText("X", { x, y: solarY, size: 11, font });
+        : base + deltas[idx];
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: solarY, size: 11, font });
   }
 
   // --------------------------------------------------
@@ -108,11 +110,12 @@ export function renderPage2(
       raw.PAGE2_GENERATORS_INLINE.deltaToSecond,
       raw.PAGE2_GENERATORS_INLINE.deltaToThird,
     ];
+    const idx = data.inlineOptions.generatorType - 1;
     const x =
-      data.inlineOptions.generatorType === 0
+      data.inlineOptions.generatorType === 0 || typeof deltas[idx] !== "number"
         ? base
-        : base + deltas[data.inlineOptions.generatorType - 1];
-    page.drawText("X", { x, y: generatorY, size: 11, font });
+        : base + deltas[idx];
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: generatorY, size: 11, font });
   }
 
   // --------------------------------------------------
@@ -128,11 +131,12 @@ export function renderPage2(
       raw.PAGE2_WATER_SOURCE_INLINE.deltaToSecond,
       raw.PAGE2_WATER_SOURCE_INLINE.deltaToThird,
     ];
+    const idx = data.inlineOptions.waterSourceType - 1;
     const x =
-      data.inlineOptions.waterSourceType === 0
+      data.inlineOptions.waterSourceType === 0 || typeof deltas[idx] !== "number"
         ? base
-        : base + deltas[data.inlineOptions.waterSourceType - 1];
-    page.drawText("X", { x, y: waterSourceY, size: 11, font });
+        : base + deltas[idx];
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: waterSourceY, size: 11, font });
   }
 
   // --------------------------------------------------
@@ -176,26 +180,28 @@ export function renderPage2(
     data.page2Zoning?.historicalDistrict !== undefined &&
     data.page2Zoning.historicalDistrict !== null
   ) {
+    const val = Number(data.page2Zoning.historicalDistrict);
     const x =
-      data.page2Zoning.historicalDistrict === 0
+      val === 0
         ? raw.PAGE2_ZONING_Q2.firstX
-        : data.page2Zoning.historicalDistrict === 1
+        : val === 1
         ? raw.PAGE2_ZONING_Q2.firstX + raw.PAGE2_ZONING_Q2.deltas[0]
-        : raw.PAGE2_ZONING_Q2.firstX + raw.PAGE2_ZONING_Q2.deltas[1];
-    page.drawText("X", { x, y: raw.PAGE2_ZONING_Q2.y, size: 11, font });
+        : raw.PAGE2_ZONING_Q2.firstX + (raw.PAGE2_ZONING_Q2.deltas[1] || 0);
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_ZONING_Q2.y, size: 11, font });
   }
 
   // --------------------------------------------------
   // Flood Q3 Main (0=YES, 1=NO, 2=UNKNOWN)
   // --------------------------------------------------
   if (data.page2Flood?.q3Main !== undefined && data.page2Flood.q3Main !== null) {
+    const val = Number(data.page2Flood.q3Main);
     const x =
-      data.page2Flood.q3Main === 0
+      val === 0
         ? raw.PAGE2_FLOOD_Q3_MAIN.firstX
-        : data.page2Flood.q3Main === 1
+        : val === 1
         ? raw.PAGE2_FLOOD_Q3_MAIN.firstX + raw.PAGE2_FLOOD_Q3_MAIN.deltas[0]
-        : raw.PAGE2_FLOOD_Q3_MAIN.firstX + raw.PAGE2_FLOOD_Q3_MAIN.deltas[1];
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MAIN.y, size: 11, font });
+        : raw.PAGE2_FLOOD_Q3_MAIN.firstX + (raw.PAGE2_FLOOD_Q3_MAIN.deltas[1] || 0);
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MAIN.y, size: 11, font });
   }
 
   // --------------------------------------------------
@@ -203,9 +209,16 @@ export function renderPage2(
   // --------------------------------------------------
   if (data.page2Flood?.q3Types) {
     data.page2Flood.q3Types.forEach((index) => {
+      const numIndex = Number(index);
+      if (Number.isNaN(numIndex)) return;
       let x = raw.PAGE2_FLOOD_Q3_TYPES.firstX;
-      if (index > 0) x = raw.PAGE2_FLOOD_Q3_TYPES.firstX + raw.PAGE2_FLOOD_Q3_TYPES.deltas[index - 1];
-      page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_TYPES.y, size: 11, font });
+      if (numIndex > 0) {
+        const d = raw.PAGE2_FLOOD_Q3_TYPES.deltas[numIndex - 1];
+        if (typeof d === "number") x += d;
+      }
+      if (!Number.isNaN(x)) {
+        page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_TYPES.y, size: 11, font });
+      }
     });
   }
 
@@ -213,26 +226,28 @@ export function renderPage2(
   // Flood Q3 Municipal (0=YES, 1=NO, 2=UNKNOWN)
   // --------------------------------------------------
   if (data.page2Flood?.q3Municipal !== undefined && data.page2Flood.q3Municipal !== null) {
+    const val = Number(data.page2Flood.q3Municipal);
     const x =
-      data.page2Flood.q3Municipal === 0
+      val === 0
         ? raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX
-        : data.page2Flood.q3Municipal === 1
+        : val === 1
         ? raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX + raw.PAGE2_FLOOD_Q3_MUNICIPAL.deltas[0]
-        : raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX + raw.PAGE2_FLOOD_Q3_MUNICIPAL.deltas[1];
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MUNICIPAL.y, size: 11, font });
+        : raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX + (raw.PAGE2_FLOOD_Q3_MUNICIPAL.deltas[1] || 0);
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MUNICIPAL.y, size: 11, font });
   }
 
   // --------------------------------------------------
   // Flood Q4 (0=YES, 1=NO, 2=UNKNOWN)
   // --------------------------------------------------
   if (data.page2Flood?.q4 !== undefined && data.page2Flood.q4 !== null) {
+    const val = Number(data.page2Flood.q4);
     const x =
-      data.page2Flood.q4 === 0
+      val === 0
         ? raw.PAGE2_FLOOD_Q4.firstX
-        : data.page2Flood.q4 === 1
+        : val === 1
         ? raw.PAGE2_FLOOD_Q4.firstX + raw.PAGE2_FLOOD_Q4.deltas[0]
-        : raw.PAGE2_FLOOD_Q4.firstX + raw.PAGE2_FLOOD_Q4.deltas[1];
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q4.y, size: 11, font });
+        : raw.PAGE2_FLOOD_Q4.firstX + (raw.PAGE2_FLOOD_Q4.deltas[1] || 0);
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q4.y, size: 11, font });
   }
 
   // --------------------------------------------------
