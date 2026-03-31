@@ -46,7 +46,7 @@ function normalizeAppliances(flat: FlatFormData) {
   return {};
 }
 
-export default function DisclosurePage({ sharedToken }: Props) {
+export function DisclosurePage({ sharedToken }: Props) {
   const searchParams = useSearchParams();
 
   const disclosureId = searchParams.get("id");
@@ -608,5 +608,15 @@ export default function DisclosurePage({ sharedToken }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+import { Suspense } from "react";
+
+export default function DisclosurePageWrapper(props: Props) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DisclosurePage {...props} />
+    </Suspense>
   );
 }
