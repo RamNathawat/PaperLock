@@ -231,6 +231,28 @@ export default function Step7QuestionsC() {
               placeholder="Paid to whom"
               className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400"
             />
+
+            <div className="pt-2">
+              <p className="text-sm font-semibold text-gray-800 mb-2">
+                Payable frequency
+              </p>
+              <div className="flex flex-wrap gap-4">
+                {["Monthly", "Quarterly", "Annually"].map((opt) => (
+                  <label
+                    key={opt}
+                    className="flex items-center gap-2 text-sm text-gray-600"
+                  >
+                    <input
+                      {...register("q46Inline.frequency")}
+                      type="radio"
+                      value={opt}
+                      className="accent-[#2463EB]"
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>

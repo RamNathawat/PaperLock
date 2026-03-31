@@ -154,18 +154,26 @@ export function renderPage2(
   // --------------------------------------------------
   // Page 2 Not Working explanation box
   // --------------------------------------------------
-if (data.page2NotWorkingExplanation) {
-  drawWrappedText({
-    page,
-    font,
-    text: data.page2NotWorkingExplanation,
-    x: raw.PAGE2_NOT_WORKING_BOX.x,
-    y: raw.PAGE2_NOT_WORKING_BOX.yTop,
-    maxWidth: raw.PAGE2_NOT_WORKING_BOX.width,
-    size: 10,
-    lineHeight: raw.PAGE2_NOT_WORKING_BOX.lineHeight,
-  });
-}
+  const notWorkingText = [
+    data.page1NotWorkingExplanation,
+    data.page2NotWorkingExplanation,
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+
+  if (notWorkingText) {
+    drawWrappedText({
+      page,
+      font,
+      text: notWorkingText,
+      x: raw.PAGE2_NOT_WORKING_BOX.x,
+      y: raw.PAGE2_NOT_WORKING_BOX.yTop,
+      maxWidth: raw.PAGE2_NOT_WORKING_BOX.width,
+      size: 10,
+      lineHeight: raw.PAGE2_NOT_WORKING_BOX.lineHeight,
+    });
+  }
 
   // --------------------------------------------------
   // Zoning Q1
