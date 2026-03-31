@@ -119,7 +119,7 @@ export interface DisclosureInput {
 
   questions?: Record<number, YesNo>;
 
-  /** Q37 HOA type: 0 = Mandatory, 1 = Voluntary — NOTE: Q37 in PDF is dams, not HOA */
+  /** Q37 dam maintenance responsibility: 0 = Yes, 1 = No */
   q37Inline?: 0 | 1;
 
   /** Q37 dam maintenance: YES or NO */
@@ -140,6 +140,16 @@ export interface DisclosureInput {
 
   page2Flood?: Page2FloodSection;
 
+  /**
+   * Explanation for NOT_WORKING items on page 1 (appliance indexes 0–11).
+   * Required when any page 1 appliance is marked NOT_WORKING.
+   */
+  page1NotWorkingExplanation?: string;
+
+  /**
+   * Explanation for NOT_WORKING items on page 2 (appliance indexes 12+).
+   * Required when any page 2 appliance is marked NOT_WORKING.
+   */
   page2NotWorkingExplanation?: string;
 
   page3TextFields?: Page3TextFields;

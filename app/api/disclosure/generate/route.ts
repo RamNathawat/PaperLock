@@ -60,32 +60,12 @@ function normalizeIndexedRecord<T>(
 }
 
 function coerce(data: any): DisclosureInput {
+  // Appliances arrive as a single merged record from page.tsx handleCompleted.
+  // Step2AppliancesPrimary uses indexes 0–11.
+  // Step3AppliancesExtended uses indexes 12–26.
+  // No remapping needed here — just normalize whatever comes in.
   const appliances =
     normalizeIndexedRecord(data.appliances) ?? {};
-
-  /**
-   * Step3Systems saves these into systems.*
-   * but PDF page 2 expects appliance continuation rows.
-   *
-   * Map them into exact page 2 appliance indexes.
-   */
-  const systems = data.systems ?? {};
-
-  const systemToApplianceIndex: Record<string, number> = {
-    security: 23,        // TV Antenna/Satellite Dish-ish row group continuation section
-    solar: 32,
-    generator: 31,
-    waterSource: 30,
-  };
-
-  Object.entries(systemToApplianceIndex).forEach(
-    ([key, index]) => {
-      const value = systems[key];
-      if (value) {
-        appliances[index] = value;
-      }
-    }
-  );
 
   return {
     ...data,

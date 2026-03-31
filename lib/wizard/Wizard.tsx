@@ -136,7 +136,7 @@ function Wizard({
       result = { ...result, ...values[stepId] };
     });
 
-    onCompleted(result);
+    onCompleted(result, values);
   }
 
   async function handleNext(stepValues: Values) {

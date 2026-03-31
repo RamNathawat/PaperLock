@@ -2,26 +2,30 @@
 
 import { useFormContext } from "react-hook-form";
 
-const ITEMS = [
-  "Sprinkler System",
-  "Swimming Pool",
-  "Hot Tub / Spa",
-  "Water Purifier",
-  "Sump Pump",
-  "Plumbing",
-  "Whirlpool Tub",
-  "Window Air Conditioner(s)",
-  "Attic Fan",
-  "Fireplaces",
-  "Humidifier",
-  "Ceiling Fans",
+// Each index here matches the exact PDF row number on page 1.
+// Rows 3 (Water Heater), 5 (Water Softener), 9 (Sewer), 10 (AC),
+// 14 (Heating), 17 (Gas Supply), 18 (Propane Tank) are omitted
+// because they are handled by Step3Systems with inline type selectors.
+const ITEMS: { index: number; label: string }[] = [
+  { index: 0,  label: "Sprinkler System" },
+  { index: 1,  label: "Swimming Pool" },
+  { index: 2,  label: "Hot Tub / Spa" },
+  { index: 4,  label: "Water Purifier" },
+  { index: 6,  label: "Sump Pump" },
+  { index: 7,  label: "Plumbing" },
+  { index: 8,  label: "Whirlpool Tub" },
+  { index: 11, label: "Window Air Conditioner(s)" },
+  { index: 12, label: "Attic Fan" },
+  { index: 13, label: "Fireplaces" },
+  { index: 15, label: "Humidifier" },
+  { index: 16, label: "Ceiling Fans" },
 ];
 
 const OPTIONS = [
-  { label: "Working", value: "WORKING" },
-  { label: "Not Working", value: "NOT_WORKING" },
+  { label: "Working",              value: "WORKING" },
+  { label: "Not Working",          value: "NOT_WORKING" },
   { label: "Do Not Know if Working", value: "UNKNOWN" },
-  { label: "None / Not Included", value: "NONE" },
+  { label: "None / Not Included",  value: "NONE" },
 ];
 
 function ApplianceRow({
@@ -81,10 +85,10 @@ export default function Step2AppliancesPrimary() {
         </h2>
       </div>
 
-      {ITEMS.map((item, index) => (
+      {ITEMS.map(({ index, label }) => (
         <ApplianceRow
           key={index}
-          label={item}
+          label={label}
           name={`appliances.${index}`}
           commentName={`applianceComments.${index}`}
         />

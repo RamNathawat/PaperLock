@@ -121,6 +121,8 @@ export default function Step3Systems() {
       "security",
       "solar",
       "fireSuppression",
+      "waterSoftener",
+      "propaneTank",
     ];
 
     systemKeys.forEach((key) => {
@@ -137,9 +139,11 @@ export default function Step3Systems() {
   }, [setValue, watch]);
 
   const waterHeater = watch("systems.waterHeater");
+  const waterSoftener = watch("systems.waterSoftener");
   const ac = watch("systems.ac");
   const heating = watch("systems.heating");
   const gasSupply = watch("systems.gasSupply");
+  const propaneTank = watch("systems.propaneTank");
   const generator = watch("systems.generator");
   const waterSource = watch("systems.waterSource");
   const sewer = watch("sewerSystem.type");
@@ -176,6 +180,18 @@ export default function Step3Systems() {
             "Solar",
             "Other",
           ]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Water Softener"
+        name="systems.waterSoftener"
+        subtypeValue={waterSoftener}
+        commentName="systemComments.waterSoftener"
+      >
+        <InlineOptions
+          name="inlineOptions.waterSoftenerType"
+          options={["Leased", "Owned"]}
         />
       </StatusRow>
 
@@ -223,6 +239,18 @@ export default function Step3Systems() {
         <InlineOptions
           name="inlineOptions.gasSupplyType"
           options={["Natural Gas", "Propane", "Other"]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Propane Tank"
+        name="systems.propaneTank"
+        subtypeValue={propaneTank}
+        commentName="systemComments.propaneTank"
+      >
+        <InlineOptions
+          name="inlineOptions.propaneTankType"
+          options={["Leased", "Owned"]}
         />
       </StatusRow>
 

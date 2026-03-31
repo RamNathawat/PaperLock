@@ -22,6 +22,10 @@ type Props = {
 
 type FlatFormData = Record<string, any>;
 
+// Step2AppliancesPrimary owns indexes 0–11.
+// Step3AppliancesExtended owns indexes 12–26.
+const PAGE_2_APPLIANCE_OFFSET = 19;
+
 function normalizeAppliances(flat: FlatFormData) {
   const source =
     flat?.appliances ||
@@ -33,8 +37,8 @@ function normalizeAppliances(flat: FlatFormData) {
 
   if (typeof source === "object" && source !== null) {
     const result: Record<number, string> = {};
-    Object.entries(source).forEach(([_, value], index) => {
-      result[index] = value as string;
+    Object.entries(source).forEach(([key, value]) => {
+      result[Number(key)] = value as string;
     });
     return result;
   }
@@ -53,6 +57,9 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
   const draftIdRef = useRef<string | null>(disclosureId);
   const autosaveTimeoutRef = useRef<any>(null);
+
+  // Keyed by step ID — populated by onStepChanged which receives
+  // the full wizardValues Record<stepId, stepValues> from the Wizard.
   const perStepValuesRef = useRef<Record<string, FlatFormData>>({});
 
   useEffect(() => {
@@ -94,14 +101,14 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
           AppliancesPrimary: {
             appliances: normalizeAppliances(flat),
-            page1NotWorkingExplanation:
-              flat.page1NotWorkingExplanation,
+            page1NotWorkingExplanation: flat.page1NotWorkingExplanation,
+            applianceComments: flat.applianceComments,
           },
 
           AppliancesExtended: {
             appliances: normalizeAppliances(flat),
-            page2NotWorkingExplanation:
-              flat.page2NotWorkingExplanation,
+            page2NotWorkingExplanation: flat.page2NotWorkingExplanation,
+            applianceComments: flat.applianceComments,
           },
 
           Systems: {
@@ -118,11 +125,21 @@ export default function DisclosurePage({ sharedToken }: Props) {
           QuestionsA: {
             questions: flat.questions,
             questionComments: flat.questionComments,
+            q16Inline: flat.page3TextFields
+              ? {
+                  roofAge: flat.page3TextFields.roofAge,
+                  layers: flat.page3TextFields.roofLayers,
+                }
+              : flat.q16Inline,
+            q19Inline: flat.page3TextFields
+              ? { annualCost: flat.page3TextFields.termiteBaitAnnualCost }
+              : flat.q19Inline,
           },
 
           QuestionsB: {
             questions: flat.questions,
             questionComments: flat.questionComments,
+            q37Inline: flat.q37Inline,
           },
 
           QuestionsC: {
@@ -154,15 +171,39 @@ export default function DisclosurePage({ sharedToken }: Props) {
   async function handleStepChanged(
     _from: any,
     _to: any,
+    // Wizard passes the full Record<stepId, stepValues> here
     allValues: Record<string, FlatFormData>
   ) {
-    perStepValuesRef.current = allValues;
+    // Helper to safely merge without empty array spots overwriting
+    const safeMerge = (a: any, b: any) => {
+      const res: Record<string, any> = { ...(a || {}) };
+      if (b) {
+        Object.entries(b).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && v !== "") {
+            res[k] = v;
+          }
+        });
+      }
+      return res;
+    };
 
     const flat: FlatFormData = Object.values(allValues).reduce(
-      (acc: FlatFormData, value: FlatFormData) => ({
-        ...acc,
-        ...value,
-      }),
+      (acc: FlatFormData, value: FlatFormData) => {
+        const merged = { ...acc, ...value };
+        if (acc.appliances || value.appliances) {
+          merged.appliances = safeMerge(acc.appliances, value.appliances);
+        }
+        if (acc.questions || value.questions) {
+          merged.questions = safeMerge(acc.questions, value.questions);
+        }
+        if (acc.questionComments || value.questionComments) {
+          merged.questionComments = safeMerge(acc.questionComments, value.questionComments);
+        }
+        if (acc.applianceComments || value.applianceComments) {
+          merged.applianceComments = safeMerge(acc.applianceComments, value.applianceComments);
+        }
+        return merged;
+      },
       {}
     );
 
@@ -187,8 +228,7 @@ export default function DisclosurePage({ sharedToken }: Props) {
           token
             ? { form_data: flat }
             : {
-                property_identifier:
-                  flat.propertyIdentifier || "Untitled",
+                property_identifier: flat.propertyIdentifier || "Untitled",
                 form_data: flat,
               }
         ),
@@ -196,66 +236,134 @@ export default function DisclosurePage({ sharedToken }: Props) {
     }, 500);
   }
 
-  async function handleCompleted(values: FlatFormData) {
+  async function handleCompleted(
+    flatValues: FlatFormData,
+    allStepsFromWizard?: Record<string, FlatFormData>
+  ) {
     try {
-      /**
-       * ✅ SAFE FIX 1
-       * merge latest values into snapshot
-       */
-      const allSteps: Record<string, FlatFormData> = {
-        ...perStepValuesRef.current,
-        CURRENT: values,
+      // NOTE: Wizard.handleCompleted merges all step values into a single
+      // flat object before calling onCompleted. We use allStepsFromWizard
+      // unconditionally as the source of truth, bypassing the ref which
+      // might be completely blank upon reloading the Final step!
+      const allSteps = allStepsFromWizard || perStepValuesRef.current || {};
+
+      const safeMergeAll = (...objs: any[]) => {
+        const res: Record<string, any> = {};
+        objs.forEach((obj) => {
+          if (!obj) return;
+          Object.entries(obj).forEach(([k, v]) => {
+            if (v !== undefined && v !== null && v !== "") {
+              res[k] = v;
+            }
+          });
+        });
+        return res;
       };
 
-      // Merge appliances from both appliance steps
-      const appliancesPage1: Record<number, string> =
-        allSteps["Appliances"]?.appliances || {};
-      const appliancesPage2: Record<number, string> =
-        allSteps["Appliances Continued"]?.appliances || {};
-      const mergedAppliances = {
-        ...appliancesPage1,
-        ...appliancesPage2,
+      // ── Appliances ───────────────────────────────────────────────────
+      // Appliance checkboxes span three steps. The Wizard shallow merge overwrites them.
+      // So we merge them explicitly from the per-step snapshots here.
+      const appliancesA = allSteps["Appliances"]?.appliances || {};
+      const appliancesB = allSteps["Appliances Continued"]?.appliances || {};
+      const appliancesC = allSteps["Systems"]?.appliances || {};
+      
+      const mergedAppliances: Record<string, string> = safeMergeAll(
+        flatValues.appliances,
+        appliancesA,
+        appliancesB,
+        appliancesC
+      );
+
+      // ── MAP SYSTEMS BACK TO APPLIANCES ────────────────────────────────
+      // The Step3Systems page saves main status into `systems` rather than
+      // `appliances`. The PDF renderer strictly expects them in `appliances` 
+      // by their layout row index. Map them here:
+      const sys = allSteps["Systems"]?.systems || flatValues.systems || {};
+      
+      const systemToApplianceMap: Record<string, number> = {
+        waterHeater: 3,
+        waterSoftener: 5,
+        sewer: 9, 
+        ac: 10,
+        heating: 14,
+        gasSupply: 17,
+        propaneTank: 18,
+        security: 23,
+        fireSuppression: 25,
+        solar: 36,
+        generator: 37,
+        waterSource: 38,
       };
 
-      // Merge questions from all three question steps
-      const questionsA: Record<number, string> =
-        allSteps["Questions"]?.questions || {};
-      const questionsB: Record<number, string> =
-        allSteps["Questions Continued"]?.questions || {};
-      const questionsC: Record<number, string> =
-        allSteps["Questions Final"]?.questions || {};
-      const mergedQuestions = {
-        ...questionsA,
-        ...questionsB,
-        ...questionsC,
-      };
+      Object.entries(systemToApplianceMap).forEach(([sysKey, appIndex]) => {
+        if (sys[sysKey] && sys[sysKey] !== "") {
+          mergedAppliances[appIndex.toString()] = sys[sysKey];
+        }
+      });
 
-      const commentsA: Record<number, string> =
-        allSteps["Questions"]?.questionComments || {};
-      const commentsB: Record<number, string> =
-        allSteps["Questions Continued"]?.questionComments || {};
-      const commentsC: Record<number, string> =
-        allSteps["Questions Final"]?.questionComments || {};
-      const mergedComments = {
-        ...commentsA,
-        ...commentsB,
-        ...commentsC,
-      };
+      // ── Questions ────────────────────────────────────────────────────
+      // All three question steps write to `questions` and `questionComments`
+      // with different question number keys. Use perStepValuesRef to safely
+      // merge all three slices so no step clobbers another.
+      const questionsA = allSteps["Questions"]?.questions || {};
+      const questionsB = allSteps["Questions Continued"]?.questions || {};
+      const questionsC = allSteps["Questions Final"]?.questions || {};
+      const mergedQuestions = safeMergeAll(flatValues.questions, questionsA, questionsB, questionsC);
+
+      const commentsA = allSteps["Questions"]?.questionComments || {};
+      const commentsB = allSteps["Questions Continued"]?.questionComments || {};
+      const commentsC = allSteps["Questions Final"]?.questionComments || {};
+      const mergedComments = safeMergeAll(flatValues.questionComments, commentsA, commentsB, commentsC);
+
+      // ── Inline question fields ────────────────────────────────────────
+      const q16 = allSteps["Questions"]?.q16Inline || flatValues.q16Inline || {};
+      const q19 = allSteps["Questions"]?.q19Inline || flatValues.q19Inline || {};
+
+      // Step6QuestionsB registers dam maintenance as q37Inline.maintenance ("YES"/"NO").
+      // renderQ37Inline expects q37Inline as 0 (Yes) | 1 (No).
+      const q37MaintenanceRaw =
+        allSteps["Questions Continued"]?.q37Inline?.maintenance ||
+        flatValues?.q37Inline?.maintenance;
+      const q37Inline: 0 | 1 | undefined =
+        q37MaintenanceRaw === "YES" ? 0
+        : q37MaintenanceRaw === "NO" ? 1
+        : undefined;
 
       const q41 =
         allSteps["Questions Final"]?.q41Inline ||
-        values.q41Inline ||
+        flatValues.q41Inline ||
         {};
 
       const q46 =
         allSteps["Questions Final"]?.q46Inline ||
-        values.q46Inline ||
+        flatValues.q46Inline ||
         {};
 
       const q47 =
         allSteps["Questions Final"]?.q47Details ||
-        values.q47Details ||
+        flatValues.q47Details ||
         {};
+
+      // ── Appliance not-working comments ───────────────────────────────
+      const applianceCommentsPage1 =
+        allSteps["Appliances"]?.applianceComments || {};
+      const applianceCommentsPage2 =
+        allSteps["Appliances Continued"]?.applianceComments || {};
+      const allApplianceComments = safeMergeAll(
+        flatValues.applianceComments,
+        applianceCommentsPage1,
+        applianceCommentsPage2
+      );
+
+      const page1Notes = Object.entries(allApplianceComments)
+        .filter(([key, val]) => Number(key) < PAGE_2_APPLIANCE_OFFSET && val)
+        .map(([key, val]) => `Appliance ${key}: ${val}`)
+        .join("\n");
+
+      const page2Notes = Object.entries(allApplianceComments)
+        .filter(([key, val]) => Number(key) >= PAGE_2_APPLIANCE_OFFSET && val)
+        .map(([key, val]) => `Appliance ${key}: ${val}`)
+        .join("\n");
 
       const frequencyMap: Record<string, 0 | 1 | 2> = {
         Monthly: 0,
@@ -270,80 +378,53 @@ export default function DisclosurePage({ sharedToken }: Props) {
         Other: 3,
       };
 
-      const applianceComments = values.applianceComments || {};
-
-      const page1Notes = Object.entries(applianceComments)
-        .filter(([key, value]) => Number(key) < 100 && value)
-        .map(([key, value]) => `Appliance ${key}: ${value}`)
-        .join("\n");
-
-      const page2Notes = Object.entries(applianceComments)
-        .filter(([key, value]) => Number(key) >= 100 && value)
-        .map(([key, value]) => `Appliance ${key}: ${value}`)
-        .join("\n");
-
-      const q16 =
-        allSteps["Questions"]?.q16Inline ||
-        values.q16Inline ||
-        {};
-
-      const q19 =
-        allSteps["Questions"]?.q19Inline ||
-        values.q19Inline ||
-        {};
-
       const cleanPayload = {
         version: "01-01-2026" as const,
 
         propertyIdentifier:
-          values.propertyIdentifier ||
           allSteps["Property"]?.propertyIdentifier ||
+          flatValues.propertyIdentifier ||
           "",
 
         sellerOccupying:
-          values.sellerOccupying ??
-          allSteps["Property"]?.sellerOccupying,
+          allSteps["Property"]?.sellerOccupying ??
+          flatValues.sellerOccupying,
 
         appliances: mergedAppliances,
 
-        /**
-         * ✅ SAFE FIX 2
-         * freshest systems data wins
-         */
         systems:
-          values.systems ||
           allSteps["Systems"]?.systems ||
+          flatValues.systems ||
           {},
 
         inlineOptions:
           allSteps["Systems"]?.inlineOptions ||
-          values.inlineOptions ||
+          flatValues.inlineOptions ||
           {},
 
         sewerSystem:
           allSteps["Systems"]?.sewerSystem ||
-          values.sewerSystem ||
+          flatValues.sewerSystem ||
           {},
 
         page2Zoning:
           allSteps["Zoning"]?.page2Zoning ||
-          values.page2Zoning ||
+          flatValues.page2Zoning ||
           {},
 
         page2Flood:
           allSteps["Zoning"]?.page2Flood ||
-          values.page2Flood ||
+          flatValues.page2Flood ||
           {},
 
         questions: mergedQuestions,
         questionComments: mergedComments,
 
-        q37Inline: values.q37Inline,
+        q37Inline,
 
         q41Inline: {
           hoaAmount: q41.hoaAmount,
-          specialAssessmentAmount:
-            q41.specialAssessmentAmount,
+          specialAssessmentAmount: q41.specialAssessmentAmount,
           payableType:
             typeof q41.frequency === "string"
               ? frequencyMap[q41.frequency]
@@ -369,62 +450,51 @@ export default function DisclosurePage({ sharedToken }: Props) {
                 .map((s: string) => utilityMap[s])
                 .filter((v: number) => v !== undefined)
             : q47.utilities || [],
-          otherExplain:
-            q47.other || q47.otherExplain,
-          initialMembership:
-            q47.initialMembershipFee ||
-            q47.initialMembership,
-          annualMembership:
-            q47.annualMembershipFee ||
-            q47.annualMembership,
+          otherExplain: q47.other || q47.otherExplain,
+          initialMembership: q47.initialMembershipFee || q47.initialMembership,
+          annualMembership: q47.annualMembershipFee || q47.annualMembership,
         },
 
         page3TextFields: {
-          roofAge:
-            q16.roofAge ||
-            values["q16Inline.roofAge"],
-          roofLayers:
-            q16.layers ||
-            values["q16Inline.layers"],
-          termiteBaitAnnualCost:
-            q19.annualCost ||
-            values["q19Inline.annualCost"],
+          roofAge: q16.roofAge,
+          roofLayers: q16.layers,
+          termiteBaitAnnualCost: q19.annualCost,
         },
 
         explanation:
-          typeof values.explanation === "string"
-            ? values.explanation
+          typeof flatValues.explanation === "string"
+            ? flatValues.explanation
             : "",
 
         signatures:
           allSteps["Signatures"]?.signatures ||
-          values.signatures ||
+          flatValues.signatures ||
           {},
 
         page1NotWorkingExplanation:
-          values.page1NotWorkingExplanation ||
+          allSteps["Appliances"]?.page1NotWorkingExplanation ||
+          flatValues.page1NotWorkingExplanation ||
           page1Notes ||
           "",
 
         page2NotWorkingExplanation:
-          values.page2NotWorkingExplanation ||
+          allSteps["Appliances Continued"]?.page2NotWorkingExplanation ||
+          flatValues.page2NotWorkingExplanation ||
           page2Notes ||
           "",
 
         additionalPages:
           allSteps["Financial"]?.additionalPages ||
-          values.additionalPages,
+          flatValues.additionalPages,
 
         initials:
           allSteps["Property"]?.initials ||
-          values.initials,
+          flatValues.initials,
       };
 
       const res = await fetch("/api/disclosure/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cleanPayload),
       });
 
@@ -436,17 +506,13 @@ export default function DisclosurePage({ sharedToken }: Props) {
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
-
       const link = document.createElement("a");
       link.href = url;
       link.download = "disclosure.pdf";
       document.body.appendChild(link);
       link.click();
       link.remove();
-
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 2000);
+      setTimeout(() => window.URL.revokeObjectURL(url), 2000);
     } catch (error) {
       console.error("PDF generation failed:", error);
       alert("Something went wrong while generating PDF.");
