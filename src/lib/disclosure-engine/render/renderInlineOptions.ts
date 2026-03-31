@@ -25,6 +25,7 @@ export function renderInlineOptions(
     if (selectedIndex === undefined || selectedIndex === null) return;
 
     const y = resolveRowY(rowIndex);
+
     const idx = selectedIndex - 1;
     const x =
       selectedIndex === 0 || typeof deltas[idx] !== "number"

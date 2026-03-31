@@ -199,8 +199,26 @@ export default function DisclosurePage({ sharedToken }: Props) {
         if (acc.questionComments || value.questionComments) {
           merged.questionComments = safeMerge(acc.questionComments, value.questionComments);
         }
-        if (acc.applianceComments || value.applianceComments) {
-          merged.applianceComments = safeMerge(acc.applianceComments, value.applianceComments);
+        if (acc.systemComments || value.systemComments) {
+          merged.systemComments = safeMerge(acc.systemComments, value.systemComments);
+        }
+        if (acc.inlineOptions || value.inlineOptions) {
+          merged.inlineOptions = safeMerge(acc.inlineOptions, value.inlineOptions);
+        }
+        if (acc.sewerSystem || value.sewerSystem) {
+          merged.sewerSystem = safeMerge(acc.sewerSystem, value.sewerSystem);
+        }
+        if (acc.q41Inline || value.q41Inline) {
+          merged.q41Inline = safeMerge(acc.q41Inline, value.q41Inline);
+        }
+        if (acc.q46Inline || value.q46Inline) {
+          merged.q46Inline = safeMerge(acc.q46Inline, value.q46Inline);
+        }
+        if (acc.page2Flood || value.page2Flood) {
+          merged.page2Flood = safeMerge(acc.page2Flood, value.page2Flood);
+        }
+        if (acc.q47Details || value.q47Details) {
+          merged.q47Details = safeMerge(acc.q47Details, value.q47Details);
         }
         return merged;
       },
