@@ -20,5 +20,5 @@ export function renderQ37Inline(
       : raw.PAGE3_Q37_INLINE.firstX +
         raw.PAGE3_Q37_INLINE.deltaToSecond;
 
-  page.drawText("X", { x, y, size: 11, font });
+  if (!Number.isNaN(x)) page.drawText("X", { x, y, size: 11, font });
 }

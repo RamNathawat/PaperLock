@@ -22,7 +22,6 @@ import { renderSignatures } from "./render/renderSignatures";
 export async function generateDisclosurePDF(
   data: DisclosureInput
 ): Promise<Buffer> {
-
   if (data.version !== "01-01-2026") {
     throw new Error("Unsupported disclosure version");
   }
@@ -40,6 +39,19 @@ export async function generateDisclosurePDF(
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const pages = pdfDoc.getPages();
 
+  /**
+   * 1) Broad global renderers FIRST
+   * These are most likely to affect multiple pages.
+   */
+  renderCheckboxes(pages, font, data);
+  renderTextFields(pages, font, data);
+  renderExplanations(pages, font, data);
+
+  /**
+   * 2) Precise page renderers AFTER
+   * These should win final coordinate collisions.
+   */
+
   // PAGE 1
   renderPropertyIdentifier(pages, font, data);
   renderAppliances(pages, font, data);
@@ -55,12 +67,9 @@ export async function generateDisclosurePDF(
   renderQ41Q46Inline(pages, font, data);
   renderQ47Inline(pages, font, data);
 
-  // TEXT + FINANCIAL
-  renderCheckboxes(pages, font, data);
-  renderTextFields(pages, font, data);
-  renderExplanations(pages, font, data);
-
-  // SIGNATURES + INITIALS
+  /**
+   * 3) Signatures always LAST
+   */
   await renderSignatures(pdfDoc, pages, font, data);
 
   const finalBytes = await pdfDoc.save();

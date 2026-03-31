@@ -111,9 +111,10 @@ export interface WizardProps {
   /**
    * Function that is called when last step is submitted.
    *
-   * @param values Object containing all form field values from previous steps
+   * @param flatValues Shallow-merged values
+   * @param allSteps Dictionary of all per-step values
    */
-  onCompleted?: (values: Values) => void;
+  onCompleted?: (flatValues: Values, allSteps: WizardValues) => void;
   /**
    * Function that is called when step is changed to another one.
    *

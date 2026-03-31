@@ -20,11 +20,14 @@ export function renderQ47Inline(
     const y = raw.PAGE4_Q47_UTILITIES.y;
 
     data.q47Details.utilities.forEach((index) => {
+      const numericIndex = Number(index);
+      if (Number.isNaN(numericIndex)) return;
       let x = base;
-      if (index > 0) {
-        x = base + deltas[index - 1];
+      if (numericIndex > 0) {
+        const d = deltas[numericIndex - 1];
+        if (typeof d === "number") x += d;
       }
-      page.drawText("X", { x, y, size: 11, font });
+      if (!Number.isNaN(x)) page.drawText("X", { x, y, size: 11, font });
     });
   }
 

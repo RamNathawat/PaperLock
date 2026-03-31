@@ -23,12 +23,14 @@ export function renderSewerInline(
         : raw.SEWER_INLINE.publicX +
           raw.SEWER_INLINE.deltaToPrivate;
 
-    page.drawText("X", {
-      x,
-      y,
-      size: raw.SEWER_INLINE.size,
-      font,
-    });
+    if (!Number.isNaN(x)) {
+      page.drawText("X", {
+        x,
+        y,
+        size: raw.SEWER_INLINE.size,
+        font,
+      });
+    }
   }
 
   // ----------------------------
@@ -54,11 +56,13 @@ export function renderSewerInline(
         raw.SEPTIC_INLINE.deltaToThird;
     }
 
-    page.drawText("X", {
-      x,
-      y: septicY,
-      size: raw.SEPTIC_INLINE.size,
-      font,
-    });
+    if (!Number.isNaN(x)) {
+      page.drawText("X", {
+        x,
+        y: septicY,
+        size: raw.SEPTIC_INLINE.size,
+        font,
+      });
+    }
   }
 }

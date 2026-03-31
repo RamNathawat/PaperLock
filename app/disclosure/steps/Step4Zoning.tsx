@@ -2,19 +2,63 @@
 
 import { useFormContext } from "react-hook-form";
 
-export default function Step4Zoning() {
+function RadioGroup({
+  name,
+  options,
+}: {
+  name: string;
+  options: string[];
+}) {
   const { register } = useFormContext();
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-wrap gap-4">
+      {options.map((opt, i) => (
+        <label
+          key={opt}
+          className="flex items-center gap-2 text-sm text-gray-600"
+        >
+          <input
+            {...register(name)}
+            type="radio"
+            value={i}
+            className="accent-[#2463EB]"
+          />
+          {opt}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+export default function Step4Zoning() {
+  const { register, watch } = useFormContext();
+
+  const q3Main = watch("page2Flood.q3Main");
+  const q4 = watch("page2Flood.q4");
+  const q5 = watch("page2Flood.q5");
+
+  const showFloodDetails = String(q3Main) === "0";
+  const showInsuranceQuestions =
+    String(q3Main) === "0" || String(q4) === "0";
+
+  return (
+    <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold text-gray-800">Zoning & Flood</h2>
-        <p className="text-sm text-gray-500 mt-1">Provide zoning classification and flood zone information.</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">
+          Zoning
+        </p>
+        <h2 className="text-xl font-bold text-gray-900 mt-1">
+          Zoning & Flood
+        </h2>
       </div>
 
-      {/* Zoning Type */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Zoning Classification</label>
+      {/* Zoning */}
+      <div className="rounded-xl border border-gray-100 p-5 space-y-4">
+        <p className="text-sm font-semibold text-gray-800">
+          Zoning Classification
+        </p>
+
         <div className="flex flex-wrap gap-4">
           {[
             ["residential", "Residential"],
@@ -28,118 +72,126 @@ export default function Step4Zoning() {
             ["unknown", "Unknown"],
             ["no_zoning", "No Zoning"],
           ].map(([val, label]) => (
-            <label key={val} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("page2Zoning.zoningType")} type="radio" value={val} className="accent-blue-600" />
+            <label
+              key={val}
+              className="flex items-center gap-2 text-sm text-gray-600"
+            >
+              <input
+                {...register("page2Zoning.zoningType")}
+                type="radio"
+                value={val}
+                className="accent-[#2463EB]"
+              />
               {label}
             </label>
           ))}
         </div>
       </div>
 
-      {/* Historical District */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      {/* Historical district */}
+      <div className="rounded-xl border border-gray-100 p-5 space-y-4">
+        <p className="text-sm font-semibold text-gray-800">
           Is the property in a historical district?
-        </label>
-        <div className="flex gap-6">
-          {["Yes", "No"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("page2Zoning.historicalDistrict")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
+        </p>
+        <RadioGroup
+          name="page2Zoning.historicalDistrict"
+          options={["Yes", "No"]}
+        />
       </div>
 
-      {/* Q3 Flood Zone */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Q3. Is the property located in a flood zone?
-        </label>
-        <div className="flex gap-6">
-          {["Yes", "No", "Unknown"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("page2Flood.q3Main")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
+      {/* Flood zone */}
+      <div className="rounded-xl border border-gray-100 p-5 space-y-4">
+        <p className="text-sm font-semibold text-gray-800">
+          Is the property located in a flood zone?
+        </p>
 
-        {/* Q3 Flood Types */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            If yes, select flood zone type(s):
-          </label>
-          <div className="flex flex-wrap gap-4">
-            {["100-year flood zone", "500-year flood zone", "Floodway", "Outside hazard area"].map((opt, i) => (
-              <label key={i} className="flex items-center gap-2 text-sm text-black">
-                <input {...register(`page2Flood.q3Types`)} type="checkbox" value={i} className="accent-blue-600" />
-                {opt}
-              </label>
-            ))}
+        <RadioGroup
+          name="page2Flood.q3Main"
+          options={["Yes", "No", "Unknown"]}
+        />
+
+        {showFloodDetails && (
+          <div className="pt-3 border-t border-gray-100 space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-800 mb-3">
+                Select flood zone type(s)
+              </p>
+
+              <div className="flex flex-wrap gap-4">
+                {[
+                  "100-year flood zone",
+                  "500-year flood zone",
+                  "Floodway",
+                  "Outside hazard area",
+                ].map((opt, i) => (
+                  <label
+                    key={i}
+                    className="flex items-center gap-2 text-sm text-gray-600"
+                  >
+                    <input
+                      {...register("page2Flood.q3Types")}
+                      type="checkbox"
+                      value={i}
+                      className="accent-[#2463EB]"
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold text-gray-800 mb-3">
+                Is there a municipal flood ordinance?
+              </p>
+
+              <RadioGroup
+                name="page2Flood.q3Municipal"
+                options={["Yes", "No", "Unknown"]}
+              />
+            </div>
           </div>
-        </div>
-
-      {/* Q3 Municipal */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Is there a municipal flood ordinance that affects the property?
-        </label>
-        <div className="flex gap-6">
-          {["Yes", "No", "Unknown"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("page2Flood.q3Municipal")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
+        )}
       </div>
 
-      {/* Q4 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Q4. Has the property ever flooded?
-        </label>
-        <div className="flex gap-6">
-          {["Yes", "No", "Unknown"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("page2Flood.q4")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
+      {/* Ever flooded */}
+      <div className="rounded-xl border border-gray-100 p-5 space-y-4">
+        <p className="text-sm font-semibold text-gray-800">
+          Has the property ever flooded?
+        </p>
+
+        <RadioGroup
+          name="page2Flood.q4"
+          options={["Yes", "No", "Unknown"]}
+        />
       </div>
 
-      {/* Q5 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Q5. Is the property insured for flood damage?
-        </label>
-        <div className="flex gap-6">
-          {["YES", "NO"].map((opt) => (
-            <label key={opt} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("page2Flood.q5")} type="radio" value={opt} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
+      {/* Insurance branch */}
+      {showInsuranceQuestions && (
+        <>
+          <div className="rounded-xl border border-gray-100 p-5 space-y-4">
+            <p className="text-sm font-semibold text-gray-800">
+              Q5. Are you aware of any flood insurance requirements concerning the property?
+            </p>
 
-      {/* Q6 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Q6. Has a flood insurance claim ever been filed on the property?
-        </label>
-        <div className="flex gap-6">
-          {["YES", "NO"].map((opt) => (
-            <label key={opt} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("page2Flood.q6")} type="radio" value={opt} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
+            <RadioGroup
+              name="page2Flood.q5"
+              options={["Yes", "No"]}
+            />
+          </div>
+
+          <div className="rounded-xl border border-gray-100 p-5 space-y-4">
+            <p className="text-sm font-semibold text-gray-800">
+              Q6. Are you aware of any flood insurance on the property?
+            </p>
+
+            <RadioGroup
+              name="page2Flood.q6"
+              options={["Yes", "No"]}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

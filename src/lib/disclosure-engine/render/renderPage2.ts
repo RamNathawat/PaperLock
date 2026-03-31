@@ -24,7 +24,13 @@ export function renderPage2(
   const page = pages[1];
 
   // --------------------------------------------------
-  // Appliance continuation grid — indices 19+ only
+  // Appliance continuation grid
+  //
+  // Step3AppliancesExtended uses indexes 19–38.
+  // PAGE2_ROW_Y has keys 0–19.
+  // Mapping: applianceIndex = page2RowKey + 19
+  // So page2RowKey 0 → index 19 (Electric Air Purifier)
+  //    page2RowKey 19 → index 38 (Source of Household Water)
   // --------------------------------------------------
   if (data.appliances) {
     Object.entries(raw.PAGE2_ROW_Y).forEach(([keyStr, y]) => {
@@ -50,7 +56,6 @@ export function renderPage2(
 
   // --------------------------------------------------
   // Security system inline (rowIndex 4)
-  // ✅ fixed: handles selectedIndex === 0 correctly
   // --------------------------------------------------
   if (
     data.inlineOptions?.securitySystemType !== undefined &&
@@ -63,17 +68,16 @@ export function renderPage2(
       raw.PAGE2_SECURITY_INLINE.deltaToThird,
       raw.PAGE2_SECURITY_INLINE.deltaToFourth,
     ];
+    const idx = data.inlineOptions.securitySystemType - 1;
     const x =
-      data.inlineOptions.securitySystemType === 0
+      data.inlineOptions.securitySystemType === 0 || typeof deltas[idx] !== "number"
         ? base
-        : base + deltas[data.inlineOptions.securitySystemType - 1];
-
-    page.drawText("X", { x, y: securityY, size: 11, font });
+        : base + deltas[idx];
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: securityY, size: 11, font });
   }
 
   // --------------------------------------------------
   // Solar panels inline (rowIndex 17)
-  // ✅ fixed: handles selectedIndex === 0 correctly
   // --------------------------------------------------
   if (
     data.inlineOptions?.solarPanelType !== undefined &&
@@ -85,17 +89,16 @@ export function renderPage2(
       raw.PAGE2_SOLAR_INLINE.deltaToSecond,
       raw.PAGE2_SOLAR_INLINE.deltaToThird,
     ];
+    const idx = data.inlineOptions.solarPanelType - 1;
     const x =
-      data.inlineOptions.solarPanelType === 0
+      data.inlineOptions.solarPanelType === 0 || typeof deltas[idx] !== "number"
         ? base
-        : base + deltas[data.inlineOptions.solarPanelType - 1];
-
-    page.drawText("X", { x, y: solarY, size: 11, font });
+        : base + deltas[idx];
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: solarY, size: 11, font });
   }
 
   // --------------------------------------------------
   // Generators inline (rowIndex 18)
-  // ✅ fixed: handles selectedIndex === 0 correctly
   // --------------------------------------------------
   if (
     data.inlineOptions?.generatorType !== undefined &&
@@ -107,17 +110,16 @@ export function renderPage2(
       raw.PAGE2_GENERATORS_INLINE.deltaToSecond,
       raw.PAGE2_GENERATORS_INLINE.deltaToThird,
     ];
+    const idx = data.inlineOptions.generatorType - 1;
     const x =
-      data.inlineOptions.generatorType === 0
+      data.inlineOptions.generatorType === 0 || typeof deltas[idx] !== "number"
         ? base
-        : base + deltas[data.inlineOptions.generatorType - 1];
-
-    page.drawText("X", { x, y: generatorY, size: 11, font });
+        : base + deltas[idx];
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: generatorY, size: 11, font });
   }
 
   // --------------------------------------------------
   // Source of Household Water inline (rowIndex 19)
-  // ✅ fixed: handles selectedIndex === 0 correctly
   // --------------------------------------------------
   if (
     data.inlineOptions?.waterSourceType !== undefined &&
@@ -129,12 +131,12 @@ export function renderPage2(
       raw.PAGE2_WATER_SOURCE_INLINE.deltaToSecond,
       raw.PAGE2_WATER_SOURCE_INLINE.deltaToThird,
     ];
+    const idx = data.inlineOptions.waterSourceType - 1;
     const x =
-      data.inlineOptions.waterSourceType === 0
+      data.inlineOptions.waterSourceType === 0 || typeof deltas[idx] !== "number"
         ? base
-        : base + deltas[data.inlineOptions.waterSourceType - 1];
-
-    page.drawText("X", { x, y: waterSourceY, size: 11, font });
+        : base + deltas[idx];
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: waterSourceY, size: 11, font });
   }
 
   // --------------------------------------------------
@@ -181,101 +183,97 @@ if (data.page2NotWorkingExplanation) {
     data.page2Zoning?.historicalDistrict !== undefined &&
     data.page2Zoning.historicalDistrict !== null
   ) {
+    const val = Number(data.page2Zoning.historicalDistrict);
     const x =
-      data.page2Zoning.historicalDistrict === 0
+      val === 0
         ? raw.PAGE2_ZONING_Q2.firstX
-        : data.page2Zoning.historicalDistrict === 1
+        : val === 1
         ? raw.PAGE2_ZONING_Q2.firstX + raw.PAGE2_ZONING_Q2.deltas[0]
-        : raw.PAGE2_ZONING_Q2.firstX + raw.PAGE2_ZONING_Q2.deltas[1];
-
-    page.drawText("X", { x, y: raw.PAGE2_ZONING_Q2.y, size: 11, font });
+        : raw.PAGE2_ZONING_Q2.firstX + (raw.PAGE2_ZONING_Q2.deltas[1] || 0);
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_ZONING_Q2.y, size: 11, font });
   }
 
   // --------------------------------------------------
   // Flood Q3 Main (0=YES, 1=NO, 2=UNKNOWN)
   // --------------------------------------------------
-  if (
-    data.page2Flood?.q3Main !== undefined &&
-    data.page2Flood.q3Main !== null
-  ) {
+  if (data.page2Flood?.q3Main !== undefined && data.page2Flood.q3Main !== null) {
+    const val = Number(data.page2Flood.q3Main);
     const x =
-      data.page2Flood.q3Main === 0
+      val === 0
         ? raw.PAGE2_FLOOD_Q3_MAIN.firstX
-        : data.page2Flood.q3Main === 1
+        : val === 1
         ? raw.PAGE2_FLOOD_Q3_MAIN.firstX + raw.PAGE2_FLOOD_Q3_MAIN.deltas[0]
-        : raw.PAGE2_FLOOD_Q3_MAIN.firstX + raw.PAGE2_FLOOD_Q3_MAIN.deltas[1];
-
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MAIN.y, size: 11, font });
+        : raw.PAGE2_FLOOD_Q3_MAIN.firstX + (raw.PAGE2_FLOOD_Q3_MAIN.deltas[1] || 0);
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MAIN.y, size: 11, font });
   }
 
   // --------------------------------------------------
-  // Flood Q3 Types — multi-select array of indices
+  // Flood Q3 Types
   // --------------------------------------------------
   if (data.page2Flood?.q3Types) {
     data.page2Flood.q3Types.forEach((index) => {
+      const numIndex = Number(index);
+      if (Number.isNaN(numIndex)) return;
       let x = raw.PAGE2_FLOOD_Q3_TYPES.firstX;
-      if (index > 0) {
-        x = raw.PAGE2_FLOOD_Q3_TYPES.firstX + raw.PAGE2_FLOOD_Q3_TYPES.deltas[index - 1];
+      if (numIndex > 0) {
+        const d = raw.PAGE2_FLOOD_Q3_TYPES.deltas[numIndex - 1];
+        if (typeof d === "number") x += d;
       }
-      page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_TYPES.y, size: 11, font });
+      if (!Number.isNaN(x)) {
+        page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_TYPES.y, size: 11, font });
+      }
     });
   }
 
   // --------------------------------------------------
   // Flood Q3 Municipal (0=YES, 1=NO, 2=UNKNOWN)
   // --------------------------------------------------
-  if (
-    data.page2Flood?.q3Municipal !== undefined &&
-    data.page2Flood.q3Municipal !== null
-  ) {
+  if (data.page2Flood?.q3Municipal !== undefined && data.page2Flood.q3Municipal !== null) {
+    const val = Number(data.page2Flood.q3Municipal);
     const x =
-      data.page2Flood.q3Municipal === 0
+      val === 0
         ? raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX
-        : data.page2Flood.q3Municipal === 1
+        : val === 1
         ? raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX + raw.PAGE2_FLOOD_Q3_MUNICIPAL.deltas[0]
-        : raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX + raw.PAGE2_FLOOD_Q3_MUNICIPAL.deltas[1];
-
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MUNICIPAL.y, size: 11, font });
+        : raw.PAGE2_FLOOD_Q3_MUNICIPAL.firstX + (raw.PAGE2_FLOOD_Q3_MUNICIPAL.deltas[1] || 0);
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q3_MUNICIPAL.y, size: 11, font });
   }
 
   // --------------------------------------------------
   // Flood Q4 (0=YES, 1=NO, 2=UNKNOWN)
   // --------------------------------------------------
-  if (
-    data.page2Flood?.q4 !== undefined &&
-    data.page2Flood.q4 !== null
-  ) {
+  if (data.page2Flood?.q4 !== undefined && data.page2Flood.q4 !== null) {
+    const val = Number(data.page2Flood.q4);
     const x =
-      data.page2Flood.q4 === 0
+      val === 0
         ? raw.PAGE2_FLOOD_Q4.firstX
-        : data.page2Flood.q4 === 1
+        : val === 1
         ? raw.PAGE2_FLOOD_Q4.firstX + raw.PAGE2_FLOOD_Q4.deltas[0]
-        : raw.PAGE2_FLOOD_Q4.firstX + raw.PAGE2_FLOOD_Q4.deltas[1];
-
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q4.y, size: 11, font });
+        : raw.PAGE2_FLOOD_Q4.firstX + (raw.PAGE2_FLOOD_Q4.deltas[1] || 0);
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q4.y, size: 11, font });
   }
 
   // --------------------------------------------------
   // Flood Q5
   // --------------------------------------------------
-  if (data.page2Flood?.q5) {
+  if (data.page2Flood?.q5 !== undefined && data.page2Flood?.q5 !== null) {
+    const v = Number(data.page2Flood.q5);
     const x =
-      data.page2Flood.q5 === "YES"
+      v === 0
         ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES
         : raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO;
-
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q5_Y, size: 11, font });
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q5_Y, size: 11, font });
   }
 
   // --------------------------------------------------
   // Flood Q6
   // --------------------------------------------------
-  if (data.page2Flood?.q6) {
+  if (data.page2Flood?.q6 !== undefined && data.page2Flood?.q6 !== null) {
+    const v = Number(data.page2Flood.q6);
     const x =
-      data.page2Flood.q6 === "YES"
+      v === 0
         ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES
         : raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO;
-
-    page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q6_Y, size: 11, font });
+    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q6_Y, size: 11, font });
   }
 }

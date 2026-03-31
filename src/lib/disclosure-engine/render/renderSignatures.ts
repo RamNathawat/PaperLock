@@ -16,6 +16,12 @@ export async function renderSignatures(
       SIGNATURE_LAYOUT.seller,
       data.signatures.sellerSignatureBase64
     );
+    await drawSignatureFromBase64(
+      pdfDoc,
+      pages,
+      SIGNATURE_LAYOUT.seller2,
+      data.signatures.sellerSignatureBase64
+    );
   }
 
   if (data.signatures?.buyerSignatureBase64) {
@@ -23,6 +29,12 @@ export async function renderSignatures(
       pdfDoc,
       pages,
       SIGNATURE_LAYOUT.buyer,
+      data.signatures.buyerSignatureBase64
+    );
+    await drawSignatureFromBase64(
+      pdfDoc,
+      pages,
+      SIGNATURE_LAYOUT.buyer2,
       data.signatures.buyerSignatureBase64
     );
   }
@@ -36,12 +48,15 @@ export async function renderSignatures(
         ? raw.PAGE5_ADDITIONAL_PAGES.yesX
         : raw.PAGE5_ADDITIONAL_PAGES.noX;
 
-    page5.drawText("X", {
-      x: Number(checkX),
-      y: Number(raw.PAGE5_ADDITIONAL_PAGES.y),
-      size: raw.CHECKBOX_SIZE,
-      font,
-    });
+    const numX = Number(checkX);
+    if (!Number.isNaN(numX)) {
+      page5.drawText("X", {
+        x: numX,
+        y: Number(raw.PAGE5_ADDITIONAL_PAGES.y),
+        size: raw.CHECKBOX_SIZE,
+        font,
+      });
+    }
 
     if (
       data.additionalPages.hasAdditionalPages === "YES" &&

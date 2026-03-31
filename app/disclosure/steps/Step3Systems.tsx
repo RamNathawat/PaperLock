@@ -1,181 +1,389 @@
 "use client";
 
+import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 
-export default function Step3Systems() {
+const STATUS_OPTIONS = [
+  { label: "Working", value: "WORKING" },
+  { label: "Not Working", value: "NOT_WORKING" },
+  { label: "Do Not Know if Working", value: "UNKNOWN" },
+  { label: "None / Not Included", value: "NONE" },
+];
+
+function shouldShowSubtype(value?: string) {
+  return !!value && value !== "NONE";
+}
+
+function StatusRow({
+  label,
+  name,
+  subtypeValue,
+  commentName,
+  children,
+}: {
+  label: string;
+  name: string;
+  subtypeValue?: string;
+  commentName: string;
+  children?: React.ReactNode;
+}) {
+  const { register, watch } = useFormContext();
+  const value = watch(name);
+
+  return (
+    <div className="rounded-xl border border-gray-100 p-5 space-y-4">
+      <p className="text-sm font-semibold text-gray-800">{label}</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {STATUS_OPTIONS.map((option) => (
+          <label
+            key={option.value}
+            className="flex items-center gap-2 text-sm text-gray-600"
+          >
+            <input
+              {...register(name)}
+              type="radio"
+              value={option.value}
+              className="accent-[#2463EB]"
+            />
+            {option.label}
+          </label>
+        ))}
+      </div>
+
+      {value === "NOT_WORKING" && (
+        <textarea
+          {...register(commentName)}
+          rows={3}
+          placeholder={`Describe issue with ${label.toLowerCase()}...`}
+          className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400"
+        />
+      )}
+
+      {shouldShowSubtype(subtypeValue) && children}
+    </div>
+  );
+}
+
+function InlineOptions({
+  name,
+  label = "Select type",
+  options,
+}: {
+  name: string;
+  label?: string;
+  options: string[];
+}) {
   const { register } = useFormContext();
 
   return (
-    <div className="space-y-8">
+    <div className="pt-2 border-t border-gray-100">
+      <p className="text-sm font-semibold text-gray-800 mb-3">
+        {label}
+      </p>
+
+      <div className="flex flex-wrap gap-4">
+        {options.map((opt, i) => (
+          <label
+            key={i}
+            className="flex items-center gap-2 text-sm text-gray-600"
+          >
+            <input
+              {...register(name)}
+              type="radio"
+              value={i}
+              className="accent-[#2463EB]"
+            />
+            {opt}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function Step3Systems() {
+  const { watch, setValue } = useFormContext();
+
+  /**
+   * ✅ CRITICAL FIX
+   * Persist nested systems.* keys so RHF does not drop them
+   * when the wizard step unmounts.
+   */
+  useEffect(() => {
+    const systemKeys = [
+      "waterHeater",
+      "ac",
+      "heating",
+      "gasSupply",
+      "generator",
+      "waterSource",
+      "security",
+      "solar",
+      "fireSuppression",
+      "waterSoftener",
+      "propaneTank",
+    ];
+
+    systemKeys.forEach((key) => {
+      const path = `systems.${key}`;
+      const current = watch(path);
+
+      if (current === undefined) {
+        setValue(path, "", {
+          shouldDirty: false,
+          shouldTouch: false,
+        });
+      }
+    });
+  }, [setValue, watch]);
+
+  const waterHeater = watch("systems.waterHeater");
+  const waterSoftener = watch("systems.waterSoftener");
+  const ac = watch("systems.ac");
+  const heating = watch("systems.heating");
+  const gasSupply = watch("systems.gasSupply");
+  const propaneTank = watch("systems.propaneTank");
+  const generator = watch("systems.generator");
+  const waterSource = watch("systems.waterSource");
+  const sewer = watch("sewerSystem.type");
+  const security = watch("systems.security");
+  const solar = watch("systems.solar");
+  const fireSuppression = watch("systems.fireSuppression");
+  const fireSuppresionDate = watch(
+    "inlineOptions.fireSuppresionDate"
+  );
+
+  return (
+    <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold text-gray-800">Systems & Utilities</h2>
-        <p className="text-sm text-gray-500 mt-1">Select the type for each system in the property.</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">
+          Systems
+        </p>
+        <h2 className="text-xl font-bold text-gray-900 mt-1">
+          Systems & Utilities
+        </h2>
       </div>
 
-      {/* Water Heater */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Water Heater Type</label>
-        <div className="flex flex-wrap gap-4">
-          {["Electric", "Gas", "Tankless", "Solar", "Other"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.waterHeaterType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Water Softener */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Water Softener</label>
-        <div className="flex flex-wrap gap-4">
-          {["Owned", "Leased", "None"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.waterSoftenerType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* AC */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Air Conditioning Type</label>
-        <div className="flex flex-wrap gap-4">
-          {["Central", "Window Units", "Evaporative/Swamp", "None", "Other"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.acType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Heating */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Heating Type</label>
-        <div className="flex flex-wrap gap-4">
-          {["Gas", "Electric", "Propane", "Oil", "Other"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.heatingType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Gas Supply */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Gas Supply</label>
-        <div className="flex flex-wrap gap-4">
-          {["Natural Gas", "Propane", "None"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.gasSupplyType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Propane Tank */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Propane Tank</label>
-        <div className="flex flex-wrap gap-4">
-          {["Owned", "Leased", "None"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.propaneTankType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Generator */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Generator</label>
-        <div className="flex flex-wrap gap-4">
-          {["Owned", "Leased", "None"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.generatorType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Water Source */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Water Source</label>
-        <div className="flex flex-wrap gap-4">
-          {["Public/Municipal", "Private Well", "Shared Well", "Other"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.waterSourceType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Sewer */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Sewer System</label>
-        <div className="flex flex-wrap gap-4">
-          {["Public", "Private"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("sewerSystem.type")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-4 mt-3 ml-4">
-          <p className="text-xs text-gray-500 w-full">If private, select type:</p>
-          {["Septic", "Aerobic", "Lagoon", "Other"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("sewerSystem.privateType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Security System */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Security System</label>
-        <div className="flex flex-wrap gap-4">
-          {["Leased", "Owned", "Monitored", "Financed"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.securitySystemType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Solar Panels */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Solar Panels</label>
-        <div className="flex flex-wrap gap-4">
-          {["Leased", "Owned", "Financed"].map((opt, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm text-black">
-              <input {...register("inlineOptions.solarPanelType")} type="radio" value={i} className="accent-blue-600" />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Fire Suppression Date */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Fire Suppression System — Last Inspection Date
-        </label>
-        <input
-          {...register("inlineOptions.fireSuppresionDate")}
-          type="text"
-          placeholder="MM/DD/YYYY"
-          className="border border-gray-300 rounded-lg px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+      <StatusRow
+        label="Water Heater"
+        name="systems.waterHeater"
+        subtypeValue={waterHeater}
+        commentName="systemComments.waterHeater"
+      >
+        <InlineOptions
+          name="inlineOptions.waterHeaterType"
+          options={[
+            "Electric",
+            "Gas",
+            "Tankless",
+            "Solar",
+            "Other",
+          ]}
         />
-      </div>
+      </StatusRow>
+
+      <StatusRow
+        label="Water Softener"
+        name="systems.waterSoftener"
+        subtypeValue={waterSoftener}
+        commentName="systemComments.waterSoftener"
+      >
+        <InlineOptions
+          name="inlineOptions.waterSoftenerType"
+          options={["Leased", "Owned"]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Air Conditioning"
+        name="systems.ac"
+        subtypeValue={ac}
+        commentName="systemComments.ac"
+      >
+        <InlineOptions
+          name="inlineOptions.acType"
+          options={[
+            "Central",
+            "Window Units",
+            "Evaporative / Swamp",
+            "Other",
+          ]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Heating System"
+        name="systems.heating"
+        subtypeValue={heating}
+        commentName="systemComments.heating"
+      >
+        <InlineOptions
+          name="inlineOptions.heatingType"
+          options={[
+            "Electric",
+            "Gas",
+            "Heat Pump",
+          ]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Gas Supply"
+        name="systems.gasSupply"
+        subtypeValue={gasSupply}
+        commentName="systemComments.gasSupply"
+      >
+        <InlineOptions
+          name="inlineOptions.gasSupplyType"
+          options={["Public", "Propane", "Butane"]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Propane Tank"
+        name="systems.propaneTank"
+        subtypeValue={propaneTank}
+        commentName="systemComments.propaneTank"
+      >
+        <InlineOptions
+          name="inlineOptions.propaneTankType"
+          options={["Leased", "Owned"]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Generator"
+        name="systems.generator"
+        subtypeValue={generator}
+        commentName="systemComments.generator"
+      >
+        <InlineOptions
+          name="inlineOptions.generatorType"
+          options={["Leased", "Owned", "Financed"]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Water Source"
+        name="systems.waterSource"
+        subtypeValue={waterSource}
+        commentName="systemComments.waterSource"
+      >
+        <InlineOptions
+          name="inlineOptions.waterSourceType"
+          options={[
+            "Public / Municipal",
+            "Private Well",
+            "Shared Well",
+            "Other",
+          ]}
+        />
+      </StatusRow>
+
+<StatusRow
+  label="Sewer System"
+  name="systems.sewer"
+  subtypeValue={String(watch("sewerSystem.type"))}
+  commentName="systemComments.sewer"
+>
+  <InlineOptions
+    name="sewerSystem.type"
+    label="Select sewer access"
+    options={["Public", "Private"]}
+  />
+
+  {String(watch("sewerSystem.type")) === "1" && (
+    <InlineOptions
+      name="sewerSystem.privateType"
+      label="If private, select type"
+      options={[
+        "Septic",
+        "Aerobic",
+        "Lagoon",
+        "Other",
+      ]}
+    />
+  )}
+</StatusRow>
+
+      <StatusRow
+        label="Security System"
+        name="systems.security"
+        subtypeValue={security}
+        commentName="systemComments.security"
+      >
+        <InlineOptions
+          name="inlineOptions.securitySystemType"
+          options={[
+            "Leased",
+            "Owned",
+            "Monitored",
+            "Financed",
+          ]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Solar Panels"
+        name="systems.solar"
+        subtypeValue={solar}
+        commentName="systemComments.solar"
+      >
+        <InlineOptions
+          name="inlineOptions.solarPanelType"
+          options={["Leased", "Owned", "Financed"]}
+        />
+      </StatusRow>
+
+      <StatusRow
+        label="Fire Suppression System"
+        name="systems.fireSuppression"
+        subtypeValue={fireSuppression}
+        commentName="systemComments.fireSuppression"
+      >
+        <div className="pt-2 border-t border-gray-100 space-y-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-800 mb-3">
+              Last inspection date
+            </p>
+
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={10}
+              value={fireSuppresionDate || ""}
+              placeholder="MM/DD/YYYY"
+              onChange={(e) => {
+                const digits = e.target.value
+                  .replace(/\D/g, "")
+                  .slice(0, 8);
+
+                let formatted = digits;
+
+                if (digits.length > 2) {
+                  formatted = `${digits.slice(0, 2)}/${digits.slice(
+                    2
+                  )}`;
+                }
+
+                if (digits.length > 4) {
+                  formatted = `${digits.slice(0, 2)}/${digits.slice(
+                    2,
+                    4
+                  )}/${digits.slice(4)}`;
+                }
+
+                setValue(
+                  "inlineOptions.fireSuppresionDate",
+                  formatted
+                );
+              }}
+              className="w-48 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2463EB]"
+            />
+          </div>
+        </div>
+      </StatusRow>
     </div>
   );
 }
