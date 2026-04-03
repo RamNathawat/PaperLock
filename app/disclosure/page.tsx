@@ -58,8 +58,6 @@ export function DisclosurePage({ sharedToken }: Props) {
   const draftIdRef = useRef<string | null>(disclosureId);
   const autosaveTimeoutRef = useRef<any>(null);
 
-  // Keyed by step ID — populated by onStepChanged which receives
-  // the full wizardValues Record<stepId, stepValues> from the Wizard.
   const perStepValuesRef = useRef<Record<string, FlatFormData>>({});
 
   useEffect(() => {
@@ -171,10 +169,8 @@ export function DisclosurePage({ sharedToken }: Props) {
   async function handleStepChanged(
     _from: any,
     _to: any,
-    // Wizard passes the full Record<stepId, stepValues> here
     allValues: Record<string, FlatFormData>
   ) {
-    // Helper to safely merge without empty array spots overwriting
     const safeMerge = (a: any, b: any) => {
       const res: Record<string, any> = { ...(a || {}) };
       if (b) {
@@ -259,10 +255,6 @@ export function DisclosurePage({ sharedToken }: Props) {
     allStepsFromWizard?: Record<string, FlatFormData>
   ) {
     try {
-      // NOTE: Wizard.handleCompleted merges all step values into a single
-      // flat object before calling onCompleted. We use allStepsFromWizard
-      // unconditionally as the source of truth, bypassing the ref which
-      // might be completely blank upon reloading the Final step!
       const allSteps = allStepsFromWizard || perStepValuesRef.current || {};
 
       const safeMergeAll = (...objs: any[]) => {
@@ -278,13 +270,10 @@ export function DisclosurePage({ sharedToken }: Props) {
         return res;
       };
 
-      // ── Appliances ───────────────────────────────────────────────────
-      // Appliance checkboxes span three steps. The Wizard shallow merge overwrites them.
-      // So we merge them explicitly from the per-step snapshots here.
       const appliancesA = allSteps["Appliances"]?.appliances || {};
       const appliancesB = allSteps["Appliances Continued"]?.appliances || {};
       const appliancesC = allSteps["Systems"]?.appliances || {};
-      
+
       const mergedAppliances: Record<string, string> = safeMergeAll(
         flatValues.appliances,
         appliancesA,
@@ -292,16 +281,12 @@ export function DisclosurePage({ sharedToken }: Props) {
         appliancesC
       );
 
-      // ── MAP SYSTEMS BACK TO APPLIANCES ────────────────────────────────
-      // The Step3Systems page saves main status into `systems` rather than
-      // `appliances`. The PDF renderer strictly expects them in `appliances` 
-      // by their layout row index. Map them here:
       const sys = allSteps["Systems"]?.systems || flatValues.systems || {};
-      
+
       const systemToApplianceMap: Record<string, number> = {
         waterHeater: 3,
         waterSoftener: 5,
-        sewer: 9, 
+        sewer: 9,
         ac: 10,
         heating: 14,
         gasSupply: 17,
@@ -319,10 +304,6 @@ export function DisclosurePage({ sharedToken }: Props) {
         }
       });
 
-      // ── Questions ────────────────────────────────────────────────────
-      // All three question steps write to `questions` and `questionComments`
-      // with different question number keys. Use perStepValuesRef to safely
-      // merge all three slices so no step clobbers another.
       const questionsA = allSteps["Questions"]?.questions || {};
       const questionsB = allSteps["Questions Continued"]?.questions || {};
       const questionsC = allSteps["Questions Final"]?.questions || {};
@@ -333,12 +314,9 @@ export function DisclosurePage({ sharedToken }: Props) {
       const commentsC = allSteps["Questions Final"]?.questionComments || {};
       const mergedComments = safeMergeAll(flatValues.questionComments, commentsA, commentsB, commentsC);
 
-      // ── Inline question fields ────────────────────────────────────────
       const q16 = allSteps["Questions"]?.q16Inline || flatValues.q16Inline || {};
       const q19 = allSteps["Questions"]?.q19Inline || flatValues.q19Inline || {};
 
-      // Step6QuestionsB registers dam maintenance as q37Inline.maintenance ("YES"/"NO").
-      // renderQ37Inline expects q37Inline as 0 (Yes) | 1 (No).
       const q37MaintenanceRaw =
         allSteps["Questions Continued"]?.q37Inline?.maintenance ||
         flatValues?.q37Inline?.maintenance;
@@ -347,26 +325,12 @@ export function DisclosurePage({ sharedToken }: Props) {
         : q37MaintenanceRaw === "NO" ? 1
         : undefined;
 
-      const q41 =
-        allSteps["Questions Final"]?.q41Inline ||
-        flatValues.q41Inline ||
-        {};
+      const q41 = allSteps["Questions Final"]?.q41Inline || flatValues.q41Inline || {};
+      const q46 = allSteps["Questions Final"]?.q46Inline || flatValues.q46Inline || {};
+      const q47 = allSteps["Questions Final"]?.q47Details || flatValues.q47Details || {};
 
-      const q46 =
-        allSteps["Questions Final"]?.q46Inline ||
-        flatValues.q46Inline ||
-        {};
-
-      const q47 =
-        allSteps["Questions Final"]?.q47Details ||
-        flatValues.q47Details ||
-        {};
-
-      // ── Appliance not-working comments ───────────────────────────────
-      const applianceCommentsPage1 =
-        allSteps["Appliances"]?.applianceComments || {};
-      const applianceCommentsPage2 =
-        allSteps["Appliances Continued"]?.applianceComments || {};
+      const applianceCommentsPage1 = allSteps["Appliances"]?.applianceComments || {};
+      const applianceCommentsPage2 = allSteps["Appliances Continued"]?.applianceComments || {};
       const allApplianceComments = safeMergeAll(
         flatValues.applianceComments,
         applianceCommentsPage1,
@@ -409,35 +373,13 @@ export function DisclosurePage({ sharedToken }: Props) {
           flatValues.sellerOccupying,
 
         appliances: mergedAppliances,
-
-        systems:
-          allSteps["Systems"]?.systems ||
-          flatValues.systems ||
-          {},
-
-        inlineOptions:
-          allSteps["Systems"]?.inlineOptions ||
-          flatValues.inlineOptions ||
-          {},
-
-        sewerSystem:
-          allSteps["Systems"]?.sewerSystem ||
-          flatValues.sewerSystem ||
-          {},
-
-        page2Zoning:
-          allSteps["Zoning"]?.page2Zoning ||
-          flatValues.page2Zoning ||
-          {},
-
-        page2Flood:
-          allSteps["Zoning"]?.page2Flood ||
-          flatValues.page2Flood ||
-          {},
-
+        systems: allSteps["Systems"]?.systems || flatValues.systems || {},
+        inlineOptions: allSteps["Systems"]?.inlineOptions || flatValues.inlineOptions || {},
+        sewerSystem: allSteps["Systems"]?.sewerSystem || flatValues.sewerSystem || {},
+        page2Zoning: allSteps["Zoning"]?.page2Zoning || flatValues.page2Zoning || {},
+        page2Flood: allSteps["Zoning"]?.page2Flood || flatValues.page2Flood || {},
         questions: mergedQuestions,
         questionComments: mergedComments,
-
         q37Inline,
 
         q41Inline: {
@@ -480,14 +422,9 @@ export function DisclosurePage({ sharedToken }: Props) {
         },
 
         explanation:
-          typeof flatValues.explanation === "string"
-            ? flatValues.explanation
-            : "",
+          typeof flatValues.explanation === "string" ? flatValues.explanation : "",
 
-        signatures:
-          allSteps["Signatures"]?.signatures ||
-          flatValues.signatures ||
-          {},
+        signatures: allSteps["Signatures"]?.signatures || flatValues.signatures || {},
 
         page1NotWorkingExplanation:
           allSteps["Appliances"]?.page1NotWorkingExplanation ||
@@ -502,14 +439,25 @@ export function DisclosurePage({ sharedToken }: Props) {
           "",
 
         additionalPages:
-          allSteps["Financial"]?.additionalPages ||
-          flatValues.additionalPages,
+          allSteps["Financial"]?.additionalPages || flatValues.additionalPages,
 
-        initials:
-          allSteps["Property"]?.initials ||
-          flatValues.initials,
+        initials: allSteps["Property"]?.initials || flatValues.initials,
       };
 
+      // ── If this is a shared link, fire is_submitted PATCH first ──
+      // This triggers the email send in the route handler.
+      if (token) {
+        await fetch(`/api/shared-links/${token}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            form_data: cleanPayload,
+            is_submitted: true,
+          }),
+        });
+      }
+
+      // ── Generate and download the PDF ──
       const res = await fetch("/api/disclosure/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -531,6 +479,7 @@ export function DisclosurePage({ sharedToken }: Props) {
       link.click();
       link.remove();
       setTimeout(() => window.URL.revokeObjectURL(url), 2000);
+
     } catch (error) {
       console.error("PDF generation failed:", error);
       alert("Something went wrong while generating PDF.");
@@ -538,56 +487,16 @@ export function DisclosurePage({ sharedToken }: Props) {
   }
 
   const steps = [
-    {
-      id: "Property",
-      component: <Step1Property />,
-      initialValues: initialValues?.Property,
-    },
-    {
-      id: "Appliances",
-      component: <Step2AppliancesPrimary />,
-      initialValues: initialValues?.AppliancesPrimary,
-    },
-    {
-      id: "Appliances Continued",
-      component: <Step3AppliancesExtended />,
-      initialValues: initialValues?.AppliancesExtended,
-    },
-    {
-      id: "Systems",
-      component: <Step3Systems />,
-      initialValues: initialValues?.Systems,
-    },
-    {
-      id: "Zoning",
-      component: <Step4Zoning />,
-      initialValues: initialValues?.Zoning,
-    },
-    {
-      id: "Questions",
-      component: <Step5QuestionsA />,
-      initialValues: initialValues?.QuestionsA,
-    },
-    {
-      id: "Questions Continued",
-      component: <Step6QuestionsB />,
-      initialValues: initialValues?.QuestionsB,
-    },
-    {
-      id: "Questions Final",
-      component: <Step7QuestionsC />,
-      initialValues: initialValues?.QuestionsC,
-    },
-    {
-      id: "Financial",
-      component: <Step6Financial />,
-      initialValues: initialValues?.Financial,
-    },
-    {
-      id: "Signatures",
-      component: <Step7Signatures />,
-      initialValues: initialValues?.Signatures,
-    },
+    { id: "Property", component: <Step1Property />, initialValues: initialValues?.Property },
+    { id: "Appliances", component: <Step2AppliancesPrimary />, initialValues: initialValues?.AppliancesPrimary },
+    { id: "Appliances Continued", component: <Step3AppliancesExtended />, initialValues: initialValues?.AppliancesExtended },
+    { id: "Systems", component: <Step3Systems />, initialValues: initialValues?.Systems },
+    { id: "Zoning", component: <Step4Zoning />, initialValues: initialValues?.Zoning },
+    { id: "Questions", component: <Step5QuestionsA />, initialValues: initialValues?.QuestionsA },
+    { id: "Questions Continued", component: <Step6QuestionsB />, initialValues: initialValues?.QuestionsB },
+    { id: "Questions Final", component: <Step7QuestionsC />, initialValues: initialValues?.QuestionsC },
+    { id: "Financial", component: <Step6Financial />, initialValues: initialValues?.Financial },
+    { id: "Signatures", component: <Step7Signatures />, initialValues: initialValues?.Signatures },
   ];
 
   if (loading) {

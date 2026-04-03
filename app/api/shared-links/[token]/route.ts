@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -86,9 +89,7 @@ export async function PATCH(
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // 3. only create/update disclosure on final submit
-  // ✅ this prevents the race condition where multiple autosaves
-  //    each try to insert a new disclosure simultaneously
+  // 3. only create/update disclosure + send email on final submit
   if (!isSubmitted) {
     return NextResponse.json({ link: updatedLink });
   }
@@ -97,9 +98,7 @@ export async function PATCH(
   const disclosureId = existingLink.disclosure_id;
 
   if (!disclosureId) {
-    // no disclosure yet — create one under the realtor's account
     if (!realtorUserId) {
-      // no realtor user_id — skip disclosure creation
       return NextResponse.json({ link: updatedLink });
     }
 
@@ -126,7 +125,6 @@ export async function PATCH(
         .eq("token", token);
     }
   } else {
-    // disclosure already exists — update it to submitted
     await supabase
       .from("disclosures")
       .update({
@@ -136,6 +134,54 @@ export async function PATCH(
         updated_at: new Date().toISOString(),
       })
       .eq("id", disclosureId);
+  }
+
+  // 5. generate PDF and email to buyer + seller
+  const buyerEmail = existingLink.buyer_email;
+  const sellerEmail = existingLink.seller_email;
+
+  if (buyerEmail || sellerEmail) {
+    try {
+      // generate the PDF
+      const pdfRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/disclosure/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body.form_data),
+      });
+
+      if (pdfRes.ok) {
+        const pdfBuffer = await pdfRes.arrayBuffer();
+        const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
+        const property = body.form_data?.propertyIdentifier || "Oklahoma Property";
+
+        const recipients = [buyerEmail, sellerEmail].filter(Boolean) as string[];
+
+        await resend.emails.send({
+          from: "onboarding@resend.dev",
+          to: recipients,
+          subject: `Disclosure Form — ${property}`,
+          html: `
+            <p>Hello,</p>
+            <p>The Oklahoma RPCD Disclosure form for <strong>${property}</strong> has been completed and signed.</p>
+            <p>Please find the completed disclosure attached to this email.</p>
+            <p>This document was generated via the Oklahoma RPCD Disclosure App.</p>
+          `,
+          attachments: [
+            {
+              filename: "oklahoma-disclosure.pdf",
+              content: pdfBase64,
+            },
+          ],
+        });
+
+        console.log(`✅ Disclosure PDF emailed to: ${recipients.join(", ")}`);
+      } else {
+        console.error("PDF generation failed for email:", await pdfRes.text());
+      }
+    } catch (emailError) {
+      // don't fail the whole request if email fails
+      console.error("Email send failed:", emailError);
+    }
   }
 
   return NextResponse.json({ link: updatedLink });

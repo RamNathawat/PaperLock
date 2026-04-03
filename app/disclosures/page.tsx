@@ -130,6 +130,10 @@ export default function DisclosuresPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
+  // ── new: email fields for the modal ──
+  const [buyerEmail, setBuyerEmail] = useState("");
+  const [sellerEmail, setSellerEmail] = useState("");
+
   const router = useRouter();
   const supabase = createClient();
 
@@ -196,12 +200,21 @@ export default function DisclosuresPage() {
 
   async function handleCreateLink() {
     if (creating) return;
+    if (!buyerEmail.trim() || !sellerEmail.trim()) {
+      alert("Please enter both buyer and seller email addresses.");
+      return;
+    }
     setCreating(true);
     const token = crypto.randomUUID();
     const { data: { user } } = await supabase.auth.getUser();
     const { data: newLink, error } = await supabase
       .from("shared_links")
-      .insert({ token, created_by: user?.id || null })
+      .insert({
+        token,
+        created_by: user?.id || null,
+        buyer_email: buyerEmail.trim(),
+        seller_email: sellerEmail.trim(),
+      })
       .select()
       .single();
     if (error) { alert(error.message); setCreating(false); return; }
@@ -258,7 +271,7 @@ export default function DisclosuresPage() {
 
   return (
     <div className="min-h-screen flex bg-[#f7f9fb] font-[Inter,sans-serif]">
-      <Sidebar email={email} onSignOut={handleSignOut} onShare={() => { setShowModal(true); setLink(null); }} />
+      <Sidebar email={email} onSignOut={handleSignOut} onShare={() => { setShowModal(true); setLink(null); setBuyerEmail(""); setSellerEmail(""); }} />
 
       <main className="ml-60 flex-1 px-10 py-10">
         <div className="mb-10">
@@ -405,7 +418,7 @@ export default function DisclosuresPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 tracking-tight">Share Disclosure</h3>
-                  <p className="text-sm text-gray-400 mt-1">Generate a unique link for your client</p>
+                  <p className="text-sm text-gray-400 mt-1">Enter client emails and generate a unique link</p>
                 </div>
                 <button onClick={() => setShowModal(false)} className="text-gray-300 hover:text-gray-600 text-lg">✕</button>
               </div>
@@ -413,8 +426,34 @@ export default function DisclosuresPage() {
             <div className="px-8 py-8 space-y-6">
               {!link ? (
                 <div className="space-y-4">
-                  <p className="text-sm text-gray-500 leading-relaxed">
-                    Generate a unique link your client can use to fill out the disclosure form. No account required.
+                  {/* Seller email */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 block">
+                      Seller Email
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="seller@example.com"
+                      value={sellerEmail}
+                      onChange={e => setSellerEmail(e.target.value)}
+                      className="w-full h-10 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 rounded-lg transition-colors"
+                    />
+                  </div>
+                  {/* Buyer email */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 block">
+                      Buyer Email
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="buyer@example.com"
+                      value={buyerEmail}
+                      onChange={e => setBuyerEmail(e.target.value)}
+                      className="w-full h-10 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 rounded-lg transition-colors"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    The completed PDF will be emailed to both addresses automatically when the form is submitted.
                   </p>
                   <button
                     onClick={handleCreateLink}
@@ -452,7 +491,7 @@ export default function DisclosuresPage() {
                   <div className="flex gap-3 p-4 bg-gray-50 border border-gray-100 rounded-lg">
                     <span className="text-blue-500 text-sm flex-shrink-0">ℹ</span>
                     <p className="text-xs text-gray-500 leading-relaxed">
-                      No account needed. Progress appears on your dashboard in real time.
+                      No account needed. The PDF will be emailed to both buyer and seller on submission.
                     </p>
                   </div>
                 </div>
