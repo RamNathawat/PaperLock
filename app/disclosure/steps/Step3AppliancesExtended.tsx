@@ -2,33 +2,29 @@
 
 import { useFormContext } from "react-hook-form";
 
-// PAGE 2 OFFSET: Page 1 occupies PDF rows 0–18.
-// PAGE2_ROW_Y keys are 0–19, so applianceIndex = 19 + page2RowKey.
-// index 19 → row 0 (Electric Air Purifier)
-// index 38 → row 19 (Source of Household Water)
 const PAGE_2_OFFSET = 19;
 
 const ITEMS = [
-  "Electric Air Purifier",     // index 19, page2RowKey 0
-  "Garage Door Opener",        // index 20, page2RowKey 1
-  "Intercom",                  // index 21, page2RowKey 2
-  "Central Vacuum",            // index 22, page2RowKey 3
-  "Security System",           // index 23, page2RowKey 4
-  "Smoke Detectors",           // index 24, page2RowKey 5
-  "Fire Suppression System",   // index 25, page2RowKey 6
-  "Dishwasher",                // index 26, page2RowKey 7
-  "Electrical Wiring",         // index 27, page2RowKey 8
-  "Garbage Disposal",          // index 28, page2RowKey 9
-  "Gas Grill",                 // index 29, page2RowKey 10
-  "Vent Hood",                 // index 30, page2RowKey 11
-  "Microwave Oven",            // index 31, page2RowKey 12
-  "Built-In Oven / Range",     // index 32, page2RowKey 13
-  "Kitchen Stove",             // index 33, page2RowKey 14
-  "Trash Compactor",           // index 34, page2RowKey 15
-  "Built-In Icemaker",         // index 35, page2RowKey 16
-  "Solar Panels",              // index 36, page2RowKey 17
-  "Generators",                // index 37, page2RowKey 18
-  "Source of Household Water", // index 38, page2RowKey 19
+  "Electric Air Purifier",
+  "Garage Door Opener",
+  "Intercom",
+  "Central Vacuum",
+  "Security System",
+  "Smoke Detectors",
+  "Fire Suppression System",
+  "Dishwasher",
+  "Electrical Wiring",
+  "Garbage Disposal",
+  "Gas Grill",
+  "Vent Hood",
+  "Microwave Oven",
+  "Built-In Oven / Range",
+  "Kitchen Stove",
+  "Trash Compactor",
+  "Built-In Icemaker",
+  "Solar Panels",
+  "Generators",
+  "Source of Household Water",
 ];
 
 const OPTIONS = [
@@ -47,12 +43,37 @@ function ApplianceRow({
   name: string;
   commentName: string;
 }) {
-  const { register, watch } = useFormContext();
+  const {
+    register,
+    watch,
+    formState: { errors, submitCount },
+  } = useFormContext();
+
   const value = watch(name);
+  const showErrors = submitCount > 0;
+
+  const nameParts = name.split(".");
+  let fieldError: any = errors;
+  for (const part of nameParts) {
+    fieldError = fieldError?.[part];
+    if (!fieldError) break;
+  }
+  const hasError = showErrors && !!fieldError;
 
   return (
-    <div className="rounded-xl border border-gray-100 p-5 space-y-4">
-      <p className="text-sm font-semibold text-gray-800">{label}</p>
+    <div
+      className={`rounded-xl border p-5 space-y-4 ${
+        hasError ? "border-red-400 bg-red-50" : "border-gray-100"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-gray-800">{label}</p>
+        {hasError && (
+          <span className="text-xs font-bold text-red-600 uppercase tracking-wide whitespace-nowrap">
+            Required before continuing
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {OPTIONS.map((option) => (
@@ -61,7 +82,7 @@ function ApplianceRow({
             className="flex items-center gap-2 text-sm text-gray-600"
           >
             <input
-              {...register(name)}
+              {...register(name, { required: true })}
               type="radio"
               value={option.value}
               className="accent-[#2463EB]"
@@ -93,6 +114,9 @@ export default function Step3AppliancesExtended() {
         <h2 className="text-xl font-bold text-gray-900 mt-1">
           Appliances Continued
         </h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Select the condition of each item. All fields are required.
+        </p>
       </div>
 
       {ITEMS.map((item, index) => (

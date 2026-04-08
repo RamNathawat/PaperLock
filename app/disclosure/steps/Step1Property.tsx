@@ -3,62 +3,93 @@
 import { useFormContext } from "react-hook-form";
 
 export default function Step1Property() {
-  const { register, formState: { errors } } = useFormContext();
+  const {
+    register,
+    formState: { errors, submitCount },
+  } = useFormContext();
+
+  const showErrors = submitCount > 0;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-800">Property Information</h2>
-
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Location of Subject Property
-        </label>
-        <input
-          {...register("propertyIdentifier", { required: "Property address is required" })}
-          type="text"
-          placeholder="1234 Elm Street, Tulsa, OK 74103"
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        {errors.propertyIdentifier && (
-          <p className="text-red-500 text-xs mt-1">
-            {errors.propertyIdentifier.message as string}
-          </p>
-        )}
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">
+          Property
+        </p>
+        <h2 className="text-xl font-bold text-gray-900 mt-1">Property Information</h2>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      {/* Property Address */}
+      <div
+        className={`rounded-xl border p-5 space-y-3 ${
+          showErrors && errors.propertyIdentifier
+            ? "border-red-400 bg-red-50"
+            : "border-gray-100"
+        }`}
+      >
+        <label className="block text-sm font-semibold text-gray-800">
+          Location of Subject Property
+        </label>
+        {showErrors && errors.propertyIdentifier && (
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wide">
+            Required before continuing
+          </p>
+        )}
+        <input
+          {...register("propertyIdentifier", {
+            required: "Property address is required",
+          })}
+          type="text"
+          placeholder="1234 Elm Street, Tulsa, OK 74103"
+          className={`w-full border rounded-lg px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB] ${
+            showErrors && errors.propertyIdentifier
+              ? "border-red-400 bg-white"
+              : "border-gray-300"
+          }`}
+        />
+      </div>
+
+      {/* Seller Occupying */}
+      <div
+        className={`rounded-xl border p-5 space-y-3 ${
+          showErrors && errors.sellerOccupying
+            ? "border-red-400 bg-red-50"
+            : "border-gray-100"
+        }`}
+      >
+        <label className="block text-sm font-semibold text-gray-800">
           Is the seller currently occupying the property?
         </label>
+        {showErrors && errors.sellerOccupying && (
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wide">
+            Required before continuing
+          </p>
+        )}
         <div className="flex gap-6">
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-gray-600">
             <input
               {...register("sellerOccupying", { required: true })}
               type="radio"
               value={0}
-              className="accent-blue-600"
+              className="accent-[#2463EB]"
             />
             Yes, currently occupying
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-gray-600">
             <input
               {...register("sellerOccupying", { required: true })}
               type="radio"
               value={1}
-              className="accent-blue-600"
+              className="accent-[#2463EB]"
             />
             Not occupying
           </label>
         </div>
-        {errors.sellerOccupying && (
-          <p className="text-red-500 text-xs mt-1">This field is required</p>
-        )}
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Initials
-        </label>
+      {/* Initials */}
+      <div className="rounded-xl border border-gray-100 p-5 space-y-3">
+        <p className="text-sm font-semibold text-gray-800">Initials</p>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-gray-500 mb-1">Buyer Initials</p>

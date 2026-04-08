@@ -2,10 +2,6 @@
 
 import { useFormContext } from "react-hook-form";
 
-// Each index here matches the exact PDF row number on page 1.
-// Rows 3 (Water Heater), 5 (Water Softener), 9 (Sewer), 10 (AC),
-// 14 (Heating), 17 (Gas Supply), 18 (Propane Tank) are omitted
-// because they are handled by Step3Systems with inline type selectors.
 const ITEMS: { index: number; label: string }[] = [
   { index: 0,  label: "Sprinkler System" },
   { index: 1,  label: "Swimming Pool" },
@@ -22,10 +18,10 @@ const ITEMS: { index: number; label: string }[] = [
 ];
 
 const OPTIONS = [
-  { label: "Working",              value: "WORKING" },
-  { label: "Not Working",          value: "NOT_WORKING" },
+  { label: "Working",                value: "WORKING" },
+  { label: "Not Working",            value: "NOT_WORKING" },
   { label: "Do Not Know if Working", value: "UNKNOWN" },
-  { label: "None / Not Included",  value: "NONE" },
+  { label: "None / Not Included",    value: "NONE" },
 ];
 
 function ApplianceRow({
@@ -37,12 +33,38 @@ function ApplianceRow({
   name: string;
   commentName: string;
 }) {
-  const { register, watch } = useFormContext();
+  const {
+    register,
+    watch,
+    formState: { errors, submitCount },
+  } = useFormContext();
+
   const value = watch(name);
+  const showErrors = submitCount > 0;
+
+  // Drill into nested error path like "appliances.0"
+  const nameParts = name.split(".");
+  let fieldError: any = errors;
+  for (const part of nameParts) {
+    fieldError = fieldError?.[part];
+    if (!fieldError) break;
+  }
+  const hasError = showErrors && !!fieldError;
 
   return (
-    <div className="rounded-xl border border-gray-100 p-5 space-y-4">
-      <p className="text-sm font-semibold text-gray-800">{label}</p>
+    <div
+      className={`rounded-xl border p-5 space-y-4 ${
+        hasError ? "border-red-400 bg-red-50" : "border-gray-100"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-gray-800">{label}</p>
+        {hasError && (
+          <span className="text-xs font-bold text-red-600 uppercase tracking-wide whitespace-nowrap">
+            Required before continuing
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {OPTIONS.map((option) => (
@@ -51,7 +73,7 @@ function ApplianceRow({
             className="flex items-center gap-2 text-sm text-gray-600"
           >
             <input
-              {...register(name)}
+              {...register(name, { required: true })}
               type="radio"
               value={option.value}
               className="accent-[#2463EB]"
@@ -83,6 +105,9 @@ export default function Step2AppliancesPrimary() {
         <h2 className="text-xl font-bold text-gray-900 mt-1">
           Appliances & Equipment
         </h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Select the condition of each item. All fields are required.
+        </p>
       </div>
 
       {ITEMS.map(({ index, label }) => (

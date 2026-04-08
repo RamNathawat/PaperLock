@@ -1,6 +1,7 @@
 "use client";
 
 import { useWizard } from "@/lib/wizard/index";
+import { useFormContext } from "react-hook-form";
 
 const DISPLAY_STEPS = [
   "Property",
@@ -12,44 +13,43 @@ const DISPLAY_STEPS = [
   "Signatures",
 ];
 
+function countErrors(errors: Record<string, any>): number {
+  if (!errors || typeof errors !== "object") return 0;
+  let count = 0;
+  for (const key of Object.keys(errors)) {
+    const val = errors[key];
+    if (!val) continue;
+    if (val.message !== undefined || val.type !== undefined) count += 1;
+    else count += countErrors(val);
+  }
+  return count;
+}
+
 export default function ProgressBar() {
   const { stepNumber } = useWizard();
+  const { formState: { errors, submitCount } } = useFormContext();
 
-  /**
-   * REAL WIZARD FLOW (1-based)
-   * 1 Property
-   * 2 Appliances A
-   * 3 Appliances B
-   * 4 Systems
-   * 5 Zoning
-   * 6 Questions A
-   * 7 Questions B
-   * 8 Questions C
-   * 9 Financial
-   * 10 Signatures
-   */
+  const hasErrors = submitCount > 0 && countErrors(errors) > 0;
 
   const applianceProgress =
     stepNumber === 2 ? 50 : stepNumber >= 3 ? 100 : 0;
 
   let questionsProgress = 0;
-
   if (stepNumber === 6) questionsProgress = 33;
   if (stepNumber === 7) questionsProgress = 66;
   if (stepNumber >= 8) questionsProgress = 100;
 
   const bars = [
-    stepNumber >= 1 ? 100 : 0, // Property
-    applianceProgress, // Appliances shared
-    stepNumber >= 4 ? 100 : 0, // Systems
-    stepNumber >= 5 ? 100 : 0, // Zoning
-    questionsProgress, // Questions shared
-    stepNumber >= 9 ? 100 : 0, // Financial
-    stepNumber >= 10 ? 100 : 0, // Signatures
+    stepNumber >= 1 ? 100 : 0,   // Property
+    applianceProgress,            // Appliances
+    stepNumber >= 4 ? 100 : 0,   // Systems
+    stepNumber >= 5 ? 100 : 0,   // Zoning
+    questionsProgress,            // Questions
+    stepNumber >= 9 ? 100 : 0,   // Financial
+    stepNumber >= 10 ? 100 : 0,  // Signatures
   ];
 
   let visibleStepIndex = 0;
-
   if (stepNumber === 1) visibleStepIndex = 0;
   else if (stepNumber <= 3) visibleStepIndex = 1;
   else if (stepNumber === 4) visibleStepIndex = 2;
@@ -59,9 +59,7 @@ export default function ProgressBar() {
   else visibleStepIndex = 6;
 
   const completionPercent = Math.round(
-    (bars.reduce((sum, value) => sum + value, 0) /
-      (DISPLAY_STEPS.length * 100)) *
-      100
+    (bars.reduce((sum, v) => sum + v, 0) / (DISPLAY_STEPS.length * 100)) * 100
   );
 
   return (
@@ -70,27 +68,42 @@ export default function ProgressBar() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">
           {DISPLAY_STEPS[visibleStepIndex]}
         </p>
-
         <p className="text-[11px] font-medium text-gray-400">
           {completionPercent}% Complete
         </p>
       </div>
 
       <div className="grid grid-cols-7 gap-2">
-        {bars.map((value, i) => (
-          <div
-            key={i}
-            className="h-2 rounded-full bg-gray-100 overflow-hidden"
-          >
-            <div
-              className="h-full rounded-full transition-all duration-300"
-              style={{
-                width: `${value}%`,
-                backgroundColor: "#2463EB",
-              }}
-            />
-          </div>
-        ))}
+        {bars.map((value, i) => {
+          const isActive = i === visibleStepIndex;
+          return (
+            <div key={i} className="flex flex-col gap-[3px]">
+              {/* Main bar */}
+              <div
+                className={`h-2 rounded-full overflow-hidden transition-all duration-300 ${
+                  isActive
+                    ? "bg-gray-100 shadow-[0_0_0_3px_rgba(36,99,235,0.15)]"
+                    : "bg-gray-100"
+                }`}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${value}%`,
+                    backgroundColor: "#2463EB",
+                  }}
+                />
+              </div>
+
+              {/* Red error underline — only on active step when there are errors */}
+              <div
+                className={`h-[2px] rounded-full transition-all duration-200 ${
+                  isActive && hasErrors ? "bg-red-400" : "bg-transparent"
+                }`}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
