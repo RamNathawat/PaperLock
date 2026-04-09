@@ -16,10 +16,10 @@ const ZONING_X: Record<ZoningType, { y: number; x: number }> = {
   no_zoning:          { y: raw.PAGE2_ZONING_Q1_ROW2.y, x: raw.PAGE2_ZONING_Q1_ROW2.firstX + raw.PAGE2_ZONING_Q1_ROW2.deltas[2] },
 };
 
-// The actual bottom Y of the "Not Working" explanation box on the template PDF.
-// Box top: 370, Box bottom: 245 (just above "Zoning and Historical" section).
-// At 14pt line height this gives (370-245)/14 ≈ 8 lines before overflow.
-const NOT_WORKING_BOX_Y_BOTTOM = 245;
+// The layout previously allowed 6 lines, but the 6th line's baseline (y ≈ 300) 
+// overlaps the text of the "Zoning and Historical" heading just above the checkboxes (y=280).
+// We restrict maxLines to 5 by raising the yBottom coordinate by one line height.
+const NOT_WORKING_BOX_Y_BOTTOM = raw.PAGE2_NOT_WORKING_BOX.yTop - ((raw.PAGE2_NOT_WORKING_BOX.maxLines - 1) * raw.PAGE2_NOT_WORKING_BOX.lineHeight);
 
 export function renderPage2(
   pages: PDFPage[],
@@ -126,25 +126,19 @@ export function renderPage2(
   if (notWorkingText) {
     const box = raw.PAGE2_NOT_WORKING_BOX;
 
-    if (pdfDoc) {
-      drawOverflowText({
-        pdfDoc,
-        page,
-        font,
-        text:       notWorkingText,
-        x:          box.x,
-        yTop:       box.yTop,
-        yBottom:    NOT_WORKING_BOX_Y_BOTTOM,  // ← real template boundary, not maxLines guess
-        maxWidth:   box.width,
-        size:       10,
-        lineHeight: box.lineHeight,
-        continuationHeader: "Oklahoma RPCD Disclosure — Not Working Details (Continued)",
-      });
-    } else {
-      // Fallback: draw what fits (no overflow pages without pdfDoc)
-      const { drawWrappedText } = require("../utils/drawWrappedText");
-      drawWrappedText({ page, font, text: notWorkingText, x: box.x, y: box.yTop, maxWidth: box.width, size: 10, lineHeight: box.lineHeight });
-    }
+    drawOverflowText({
+      pdfDoc,
+      page,
+      font,
+      text:       notWorkingText,
+      x:          box.x,
+      yTop:       box.yTop,
+      yBottom:    NOT_WORKING_BOX_Y_BOTTOM,
+      maxWidth:   box.width,
+      size:       10,
+      lineHeight: box.lineHeight,
+      continuationHeader: "Oklahoma RPCD Disclosure — Not Working Details (Continued)",
+    });
   }
 
   // --------------------------------------------------

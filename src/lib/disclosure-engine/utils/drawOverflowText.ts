@@ -1,7 +1,7 @@
 import { PDFDocument, PDFPage, PDFFont, rgb } from "pdf-lib";
 
 interface OverflowTextOptions {
-  pdfDoc: PDFDocument;
+  pdfDoc?: PDFDocument;
   page: PDFPage;           // the page containing the built-in box
   font: PDFFont;
   text: string;
@@ -80,13 +80,13 @@ export function drawOverflowText({
 
   // ── 4. Overflow → continuation pages ────────────────────────
   let remaining = allLines.slice(linesPerBox);
-  if (remaining.length === 0) return;
+  if (remaining.length === 0 || !pdfDoc) return;
 
   const { width, height } = pages0Size(pdfDoc);
 
-  const CONT_Y_TOP    = height - 60;
+  const CONT_Y_TOP = height - 60;
   const CONT_Y_BOTTOM = 50;
-  const linesPerCont  = Math.max(1, Math.floor((CONT_Y_TOP - CONT_Y_BOTTOM) / lineHeight));
+  const linesPerCont = Math.max(1, Math.floor((CONT_Y_TOP - CONT_Y_BOTTOM) / lineHeight));
 
   while (remaining.length > 0) {
     const contPage = pdfDoc.addPage([width, height]);
@@ -103,14 +103,14 @@ export function drawOverflowText({
     // Horizontal rule under header
     contPage.drawLine({
       start: { x, y: CONT_Y_TOP + 14 },
-      end:   { x: x + maxWidth, y: CONT_Y_TOP + 14 },
+      end: { x: x + maxWidth, y: CONT_Y_TOP + 14 },
       thickness: 0.5,
       color: rgb(0.8, 0.8, 0.8),
     });
 
     const batch = remaining.slice(0, linesPerCont);
-    remaining   = remaining.slice(linesPerCont);
-    let y       = CONT_Y_TOP;
+    remaining = remaining.slice(linesPerCont);
+    let y = CONT_Y_TOP;
 
     for (const line of batch) {
       if (line) {
