@@ -1,19 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Wizard } from "@/lib/wizard/index";
-import Step1Property from "./steps/Step1Property";
-import Step2AppliancesPrimary from "./steps/Step2AppliancesPrimary";
-import Step3AppliancesExtended from "./steps/Step3AppliancesExtended";
-import Step3Systems from "./steps/Step3Systems";
-import Step4Zoning from "./steps/Step4Zoning";
-import Step5QuestionsA from "./steps/Step5QuestionsA";
-import Step6QuestionsB from "./steps/Step6QuestionsB";
-import Step7QuestionsC from "./steps/Step7QuestionsC";
-import Step6Financial from "./steps/Step6Financial";
-import Step7Signatures from "./steps/Step7Signatures";
+
+const Step1Property           = dynamic(() => import("./steps/Step1Property"));
+const Step2AppliancesPrimary  = dynamic(() => import("./steps/Step2AppliancesPrimary"));
+const Step3AppliancesExtended = dynamic(() => import("./steps/Step3AppliancesExtended"));
+const Step3Systems            = dynamic(() => import("./steps/Step3Systems"));
+const Step4Zoning             = dynamic(() => import("./steps/Step4Zoning"));
+const Step5QuestionsA         = dynamic(() => import("./steps/Step5QuestionsA"));
+const Step6QuestionsB         = dynamic(() => import("./steps/Step6QuestionsB"));
+const Step7QuestionsC         = dynamic(() => import("./steps/Step7QuestionsC"));
+const Step6Financial          = dynamic(() => import("./steps/Step6Financial"));
+const Step7Signatures         = dynamic(() => import("./steps/Step7Signatures"));
+
 import Navigation from "./components/Navigation";
 import ProgressBar from "./components/ProgressBar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type Props = {
@@ -405,7 +408,7 @@ export function DisclosurePage({ sharedToken }: Props) {
     }
   }
 
-  const steps = [
+  const steps = useMemo(() => [
     { id: "Property",            component: <Step1Property />,           initialValues: initialValues?.Property },
     { id: "Appliances",          component: <Step2AppliancesPrimary />,  initialValues: initialValues?.AppliancesPrimary },
     { id: "Appliances Continued",component: <Step3AppliancesExtended />, initialValues: initialValues?.AppliancesExtended },
@@ -416,7 +419,7 @@ export function DisclosurePage({ sharedToken }: Props) {
     { id: "Questions Final",     component: <Step7QuestionsC />,         initialValues: initialValues?.QuestionsC },
     { id: "Financial",           component: <Step6Financial />,          initialValues: initialValues?.Financial },
     { id: "Signatures",          component: <Step7Signatures />,         initialValues: initialValues?.Signatures },
-  ];
+  ], [initialValues]);
 
   if (loading) {
     return (
