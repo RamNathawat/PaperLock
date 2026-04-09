@@ -34,22 +34,22 @@ export async function generateDisclosurePDF(
   );
 
   const templateBytes = fs.readFileSync(templatePath);
-  const pdfDoc = await PDFDocument.load(templateBytes);
-
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const pages = pdfDoc.getPages();
+  const pdfDoc        = await PDFDocument.load(templateBytes);
+  const font          = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const pages         = pdfDoc.getPages();
 
   /**
-   * 1) Broad global renderers FIRST
-   * These are most likely to affect multiple pages.
+   * 1) Broad global renderers FIRST.
+   *    Both explanation boxes receive pdfDoc so overflow text
+   *    is automatically spilled onto appended continuation pages
+   *    instead of being clipped.
    */
   renderCheckboxes(pages, font, data);
   renderTextFields(pages, font, data);
-  renderExplanations(pages, font, data);
+  renderExplanations(pages, font, data, pdfDoc);  // Page 4 explanation box
 
   /**
-   * 2) Precise page renderers AFTER
-   * These should win final coordinate collisions.
+   * 2) Precise page renderers AFTER.
    */
 
   // PAGE 1
@@ -58,19 +58,23 @@ export async function generateDisclosurePDF(
   renderInlineOptions(pages, font, data);
   renderSewerInline(pages, font, data);
 
-  // PAGE 2
-  renderPage2(pages, font, data);
+  // PAGE 2 — pass pdfDoc so the "not working" box also overflows cleanly
+  renderPage2(pages, font, data, pdfDoc);
 
-  // PAGE 3–4
+  // PAGES 3–4
   renderQuestions(pages, font, data);
   renderQ37Inline(pages, font, data);
   renderQ41Q46Inline(pages, font, data);
   renderQ47Inline(pages, font, data);
 
   /**
-   * 3) Signatures always LAST
+   * 3) Signatures LAST.
+   *    Re-fetch pages after explanation/not-working overflow may have
+   *    added continuation pages, so renderSignatures still targets
+   *    the correct original page 5.
    */
-  await renderSignatures(pdfDoc, pages, font, data);
+  const updatedPages = pdfDoc.getPages();
+  await renderSignatures(pdfDoc, updatedPages, font, data);
 
   const finalBytes = await pdfDoc.save();
   return Buffer.from(finalBytes);

@@ -48,19 +48,10 @@ export function validateDisclosureInput(data: DisclosureInput) {
     }
   }
 
-  if (data.explanation && data.explanation.length > 1500)
-    throw new Error("explanation exceeds 1500 character limit");
-  if (data.page1NotWorkingExplanation && data.page1NotWorkingExplanation.length > 1500)
-    throw new Error("page1NotWorkingExplanation exceeds 1500 character limit");
-  if (data.page2NotWorkingExplanation && data.page2NotWorkingExplanation.length > 1500)
-    throw new Error("page2NotWorkingExplanation exceeds 1500 character limit");
-
-  if (
-    data.additionalPages?.hasAdditionalPages === "YES" &&
-    !data.additionalPages.howMany?.trim()
-  ) {
-    throw new Error("additionalPages.howMany is required when hasAdditionalPages is YES");
-  }
+  // ── Character limits removed ──────────────────────────────────
+  // Text overflow is handled automatically by renderExplanations.ts
+  // which appends continuation pages to the PDF when needed.
+  // There is no upper bound on explanation length.
 
   if (data.sewerSystem?.type === 1 && data.sewerSystem.privateType === undefined) {
     throw new Error("sewerSystem.privateType is required when sewer type is Private");
