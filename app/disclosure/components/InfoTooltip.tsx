@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface InfoTooltipProps {
   text: string;
@@ -15,6 +16,8 @@ export default function InfoTooltip({ text }: InfoTooltipProps) {
   const [above, setAbove]     = useState(false);
   const btnRef  = useRef<HTMLButtonElement>(null);
   const tipRef  = useRef<HTMLDivElement>(null);
+
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
 
   // Close when clicking outside
   useEffect(() => {
@@ -31,12 +34,31 @@ export default function InfoTooltip({ text }: InfoTooltipProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [visible]);
 
-  function handleToggle() {
-    if (!visible && btnRef.current) {
-      // Check if we should open above or below
-      const rect = btnRef.current.getBoundingClientRect();
-      setAbove(rect.bottom + 160 > window.innerHeight);
+  function updatePosition() {
+    if (!btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    const isAbove = rect.bottom + 160 > window.innerHeight;
+    setAbove(isAbove);
+    setCoords({
+      top: rect.top + window.scrollY + (isAbove ? -8 : rect.height + 8),
+      left: rect.left + window.scrollX + rect.width / 2,
+    });
+  }
+
+  useEffect(() => {
+    if (visible) {
+      updatePosition();
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, { passive: true });
+      return () => {
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition);
+      }
     }
+  }, [visible]);
+
+  function handleToggle(e: React.MouseEvent) {
+    if (!visible) updatePosition();
     setVisible((v) => !v);
   }
 
@@ -70,13 +92,12 @@ export default function InfoTooltip({ text }: InfoTooltipProps) {
         </svg>
       </button>
 
-      {visible && (
+      {visible && createPortal(
         <div
           ref={tipRef}
-          className={`absolute z-50 w-64 bg-gray-900 text-white text-xs rounded-lg px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none ${
-            above
-              ? "bottom-full mb-2 left-1/2 -translate-x-1/2"
-              : "top-full mt-2 left-1/2 -translate-x-1/2"
+          style={{ top: coords.top, left: coords.left }}
+          className={`absolute z-[9999] w-64 bg-gray-900 text-white text-xs rounded-lg px-3 py-2.5 shadow-xl leading-relaxed pointer-events-none -translate-x-1/2 ${
+            above ? "-translate-y-full" : ""
           }`}
           role="tooltip"
         >
@@ -89,7 +110,8 @@ export default function InfoTooltip({ text }: InfoTooltipProps) {
             }`}
           />
           {text}
-        </div>
+        </div>,
+        document.body
       )}
     </span>
   );

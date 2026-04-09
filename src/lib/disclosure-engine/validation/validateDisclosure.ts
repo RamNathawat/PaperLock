@@ -16,14 +16,14 @@ export function validateDisclosureInput(data: DisclosureInput) {
 
   if (data.initials) {
     const { buyerInitial1, buyerInitial2, sellerInitial1, sellerInitial2 } = data.initials;
-    if (buyerInitial1 && buyerInitial1.length !== 1)
-      throw new Error("initials.buyerInitial1 must be exactly 1 character");
-    if (buyerInitial2 && buyerInitial2.length !== 1)
-      throw new Error("initials.buyerInitial2 must be exactly 1 character");
-    if (sellerInitial1 && sellerInitial1.length !== 1)
-      throw new Error("initials.sellerInitial1 must be exactly 1 character");
-    if (sellerInitial2 && sellerInitial2.length !== 1)
-      throw new Error("initials.sellerInitial2 must be exactly 1 character");
+    if (buyerInitial1 && buyerInitial1.length > 5)
+      throw new Error("initials.buyerInitial1 must be 5 characters or less");
+    if (buyerInitial2 && buyerInitial2.length > 5)
+      throw new Error("initials.buyerInitial2 must be 5 characters or less");
+    if (sellerInitial1 && sellerInitial1.length > 5)
+      throw new Error("initials.sellerInitial1 must be 5 characters or less");
+    if (sellerInitial2 && sellerInitial2.length > 5)
+      throw new Error("initials.sellerInitial2 must be 5 characters or less");
   }
 
   if (data.appliances) {

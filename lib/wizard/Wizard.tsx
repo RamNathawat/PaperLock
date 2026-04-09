@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { AnimatePresence, motion } from "framer-motion";
 import { getMode, getResolver } from "./helpers/form";
 import { WizardContext } from "./helpers/hooks";
 import { buildHashSteps, resolveHashStep, updateHash } from "./helpers/hash";
@@ -211,7 +212,11 @@ function Wizard({
     updateStep,
     goToPreviousStep: () => handlePrevious(methods.getValues()),
     goToNextStep: () => handleNext(methods.getValues()),
-    goToStep: (index: number) => setActiveStep(steps[index]),
+    goToStep: (index: number) => {
+      const stepValues = methods.getValues();
+      setValues((v) => ({ ...v, [activeStep.id]: { ...stepValues } }));
+      setActiveStep(steps[index]);
+    },
     activeStep,
     stepNumber,
     totalSteps,
@@ -225,7 +230,20 @@ function Wizard({
       <FormProvider {...methods}>
         <form onSubmit={methods.handleSubmit(handleNext)}>
           {header}
-          {wrapper || activeStep.component}
+          <div className="relative overflow-hidden w-full">
+            <AnimatePresence mode="popLayout" custom={stepNumber}>
+              <motion.div
+                key={activeStep.id}
+                custom={stepNumber}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20, position: "absolute", top: 0, left: 0, right: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+              >
+                {wrapper || activeStep.component}
+              </motion.div>
+            </AnimatePresence>
+          </div>
           {footer}
         </form>
       </FormProvider>

@@ -148,7 +148,9 @@ export async function POST(req: NextRequest) {
 
     const normalized = coerce(body);
 
-    validateDisclosureInput(normalized);
+    if (!body.isPreview) {
+      validateDisclosureInput(normalized);
+    }
 
     const pdfBuffer = await generateDisclosurePDF(
       normalized

@@ -3,81 +3,20 @@
 import { useFormContext } from "react-hook-form";
 import { useState, useEffect, useRef } from "react";
 import { useWizard } from "@/lib/wizard/index";
+import SignatureCanvas from "react-signature-canvas";
+import { motion, AnimatePresence } from "framer-motion";
+import { mergePayloads } from "@/src/lib/disclosure-engine/utils/mergePayloads";
+import { buildCleanPayload } from "@/src/lib/disclosure-engine/utils/buildCleanPayload";
 
 // ─────────────────────────────────────────────────────────────
-// Signature upload sub-component
-// ─────────────────────────────────────────────────────────────
-function SignatureUpload({
-  name,
-  required = false,
-}: {
-  name: string;
-  required?: boolean;
-}) {
-  const {
-    setValue,
-    register,
-    formState: { errors, submitCount },
-  } = useFormContext();
-  const [preview, setPreview] = useState<string | null>(null);
-
-  const parts = name.split(".");
-  let err: any = errors;
-  for (const p of parts) { err = err?.[p]; if (!err) break; }
-  const hasError = submitCount > 0 && required && !!err;
-
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = (reader.result as string).split(",")[1];
-      setValue(name, base64, { shouldValidate: true });
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  return (
-    <div className="space-y-2">
-      <input {...register(name, required ? { required: true } : {})} type="hidden" />
-      <label
-        className={`flex flex-col items-center justify-center w-full h-28 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${
-          preview
-            ? "border-[#2463EB]/40 bg-blue-50"
-            : hasError
-            ? "border-red-400 bg-red-50"
-            : "border-gray-200 bg-gray-50 hover:border-[#2463EB]/40 hover:bg-blue-50"
-        }`}
-      >
-        {preview ? (
-          <img src={preview} alt="Signature" className="h-20 object-contain p-2" />
-        ) : (
-          <div className="flex flex-col items-center gap-1.5 text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <span className="text-xs font-medium">Upload signature image</span>
-            <span className="text-[10px] text-gray-300">PNG or JPG</span>
-          </div>
-        )}
-        <input type="file" accept="image/png,image/jpeg" onChange={handleFile} className="hidden" />
-      </label>
-      {hasError && (
-        <p className="text-xs font-bold text-red-600 uppercase tracking-wide">
-          Signature required before continuing
-        </p>
-      )}
-    </div>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────
 // Main Step7Signatures
 // ─────────────────────────────────────────────────────────────
 export default function Step7Signatures() {
   const {
     register,
+    getValues,
+    watch,
     formState: { errors, submitCount },
   } = useFormContext();
   const { values } = useWizard();
@@ -89,6 +28,27 @@ export default function Step7Signatures() {
   const [pdfError,   setPdfError]   = useState(false);
   const prevUrlRef = useRef<string | null>(null);
 
+  const [isSigModalOpen, setIsSigModalOpen] = useState(false);
+  const sigPadRef = useRef<SignatureCanvas>(null);
+  
+  const currentBase64 = watch("signatures.sellerSignatureBase64");
+  
+  const handleSaveSignature = () => {
+    if (sigPadRef.current?.isEmpty()) {
+      alert("Please provide a signature first.");
+      return;
+    }
+    const dataUrl = sigPadRef.current?.getTrimmedCanvas().toDataURL("image/png");
+    register("signatures.sellerSignatureBase64").onChange({
+      target: { name: "signatures.sellerSignatureBase64", value: dataUrl }
+    });
+    setIsSigModalOpen(false);
+  };
+  
+  const handleClearSignature = () => {
+    sigPadRef.current?.clear();
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -97,15 +57,35 @@ export default function Step7Signatures() {
       setPdfError(false);
 
       try {
-        const flat: Record<string, any> = {};
-        Object.values(values || {}).forEach((stepVals: any) => {
-          if (stepVals && typeof stepVals === "object") Object.assign(flat, stepVals);
-        });
+        // Merge historical wizard steps + active RHF step using deep merge to protect shared objects (e.g. appliances)
+        const flat: Record<string, any> = mergePayloads(Object.values(values || {}));
+        
+        // Safely extract only Step 7 fields without pulling in 'undefined' from inactive steps
+        const sigs = getValues("signatures");
+        if (sigs) flat.signatures = { ...(flat.signatures || {}), ...sigs };
+        
+        // Emulate identical preprocessing as final app/disclosure/page.tsx
+        const cleanPayload = buildCleanPayload(flat, values as any);
+        
+        const payloadHash = JSON.stringify({ ...cleanPayload, version: "01-01-2026", isPreview: true });
+
+        // -- Cache hit: Eager pre-generation completed in Step 6
+        if ((window as any).__cachedPdfHash === payloadHash && (window as any).__cachedPdfUrl) {
+          if (prevUrlRef.current && prevUrlRef.current !== (window as any).__cachedPdfUrl) {
+            URL.revokeObjectURL(prevUrlRef.current);
+          }
+          prevUrlRef.current = (window as any).__cachedPdfUrl;
+          if (!cancelled) {
+            setPdfUrl((window as any).__cachedPdfUrl);
+            setPdfLoading(false);
+          }
+          return;
+        }
 
         const res = await fetch("/api/disclosure/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...flat, version: "01-01-2026" }),
+          body: payloadHash,
         });
 
         if (!res.ok || cancelled) return;
@@ -113,7 +93,9 @@ export default function Step7Signatures() {
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
 
-        if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
+        if (prevUrlRef.current && prevUrlRef.current !== (window as any).__cachedPdfUrl) {
+          URL.revokeObjectURL(prevUrlRef.current);
+        }
         prevUrlRef.current = url;
 
         if (!cancelled) { setPdfUrl(url); setPdfLoading(false); }
@@ -124,11 +106,14 @@ export default function Step7Signatures() {
 
     generatePreview();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentBase64, getValues, values]);
 
   useEffect(() => {
-    return () => { if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current); };
+    return () => { 
+      if (prevUrlRef.current && prevUrlRef.current !== (window as any).__cachedPdfUrl) {
+        URL.revokeObjectURL(prevUrlRef.current); 
+      }
+    };
   }, []);
 
   return (
@@ -225,7 +210,39 @@ export default function Step7Signatures() {
               Seller Signature <span className="text-red-500">*</span>
             </p>
 
-            <SignatureUpload name="signatures.sellerSignatureBase64" required />
+            <div className="space-y-3">
+              {/* Hidden input to keep it registered for RHF errors */}
+              <input type="hidden" {...register("signatures.sellerSignatureBase64", { required: true })} />
+
+              {currentBase64 ? (
+                <div className="border border-gray-200 rounded-xl p-2 bg-gray-50 flex flex-col items-center">
+                  <img src={currentBase64} alt="Seller Signature" className="max-h-24 object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => setIsSigModalOpen(true)}
+                    className="mt-2 text-[11px] font-semibold text-[#2463EB] hover:underline"
+                  >
+                    Tap to redraw signature
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsSigModalOpen(true)}
+                  className={`w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl h-28 bg-gray-50 hover:bg-gray-100 transition-colors ${
+                    showErrors && (errors as any)?.signatures?.sellerSignatureBase64
+                      ? "border-red-400 bg-red-50"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-600">Tap to Sign</span>
+                </button>
+              )}
+              <p className="text-[10px] text-gray-400">By signing, you are electronically signing this document.</p>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -266,36 +283,6 @@ export default function Step7Signatures() {
             </div>
           </div>
 
-          {/* Buyer — optional */}
-          <div className="rounded-xl border border-gray-100 bg-white p-5 space-y-4">
-            <p className="text-sm font-bold text-gray-800">
-              Buyer Signature{" "}
-              <span className="text-gray-400 text-xs font-normal">(optional)</span>
-            </p>
-
-            <SignatureUpload name="signatures.buyerSignatureBase64" />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Printed Name</label>
-                <input
-                  {...register("signatures.buyerName")}
-                  type="text"
-                  placeholder="Full name"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Date</label>
-                <input
-                  {...register("signatures.buyerDate")}
-                  type="date"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB]"
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Security notice */}
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-white border border-gray-100 flex items-center justify-center text-[#2463EB] shrink-0 shadow-sm">
@@ -313,6 +300,69 @@ export default function Step7Signatures() {
 
         </div>
       </div>
+
+      {/* Full screen Signature Modal */}
+      <AnimatePresence>
+        {isSigModalOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed inset-0 z-[100] bg-white flex flex-col"
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50 shadow-sm">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Sign Document</h3>
+                <p className="text-xs text-gray-500">Please provide your signature below</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSigModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex-1 bg-white relative">
+              <SignatureCanvas
+                ref={sigPadRef}
+                canvasProps={{
+                  className: "absolute inset-0 w-full h-full",
+                }}
+                minWidth={1.5}
+                maxWidth={3}
+                dotSize={2}
+                penColor="#2463EB"
+              />
+              <div className="absolute inset-x-0 bottom-1/4 pointer-events-none flex items-center justify-center pointer-events-none opacity-20">
+                <p className="text-3xl font-black uppercase tracking-widest text-gray-300 select-none">Sign Here</p>
+              </div>
+              {/* Optional Signature Line Tracker */}
+              <div className="absolute left-10 right-10 bottom-1/4 border-b-2 border-gray-200 pointer-events-none opacity-50"></div>
+            </div>
+
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-4">
+              <button
+                type="button"
+                onClick={handleClearSignature}
+                className="flex-1 py-4 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSignature}
+                className="flex-[2] py-4 text-sm font-bold text-white bg-[#2463EB] shadow-md rounded-xl hover:bg-blue-700 transition-colors flex justify-center items-center gap-2"
+              >
+                Save Signature 
+                <span className="bg-white text-blue-600 rounded-full w-5 h-5 flex items-center justify-center text-xs">✔</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

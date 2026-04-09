@@ -137,7 +137,6 @@ export default function DisclosuresClient({
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const [buyerEmail, setBuyerEmail] = useState("");
   const [sellerEmail, setSellerEmail] = useState("");
 
   const router = useRouter();
@@ -175,8 +174,8 @@ export default function DisclosuresClient({
 
   async function handleCreateLink() {
     if (creating) return;
-    if (!buyerEmail.trim() || !sellerEmail.trim()) {
-      alert("Please enter both buyer and seller email addresses.");
+    if (!sellerEmail.trim()) {
+      alert("Please enter the seller's email address.");
       return;
     }
     setCreating(true);
@@ -187,7 +186,6 @@ export default function DisclosuresClient({
       .insert({
         token,
         created_by: user?.id || null,
-        buyer_email: buyerEmail.trim(),
         seller_email: sellerEmail.trim(),
       })
       .select()
@@ -234,9 +232,41 @@ export default function DisclosuresClient({
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  async function downloadPdf(item: ActivityItem) {
+    let formData = null;
+    if (item.type === "draft") {
+      const parent = disclosures.find(d => d.id === item.id);
+      formData = parent?.form_data;
+    } else {
+      const parent = sharedLinks.find(l => l.token === item.token);
+      formData = parent?.form_data;
+    }
+    if (!formData) return;
+
+    try {
+      const res = await fetch("/api/disclosure/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Failed to generate PDF");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Disclosure-${item.address}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Failed to download PDF.");
+    }
+  }
+
   return (
     <div className="min-h-screen flex bg-[#f7f9fb] font-[Inter,sans-serif]">
-      <Sidebar email={email} onSignOut={handleSignOut} onShare={() => { setShowModal(true); setLink(null); setBuyerEmail(""); setSellerEmail(""); }} />
+      <Sidebar email={email} onSignOut={handleSignOut} onShare={() => { setShowModal(true); setLink(null); setSellerEmail(""); }} />
 
       <main className="ml-60 flex-1 px-10 py-10">
         <div className="mb-10">
@@ -308,14 +338,25 @@ export default function DisclosuresClient({
                   <p className="text-[11px] text-gray-400">{formatDate(item.date)}</p>
                 </div>
                 <div className="col-span-1 flex items-center gap-3">
+                  {(item.status === "submitted" || item.status === "completed") && (
+                    <button
+                      onClick={() => downloadPdf(item)}
+                      title="Download PDF"
+                      className="text-gray-400 hover:text-[#2463EB] transition-colors text-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    </button>
+                  )}
                   {item.type === "draft" ? (
                     <>
                       <button
-                        onClick={() => router.push(`/disclosure?id=${item.id}`)}
-                        title="Continue editing"
+                        onClick={() => copyLink(`${window.location.origin}/disclosure?id=${item.id}`)}
+                        title="Copy draft link"
                         className="text-gray-400 hover:text-blue-600 transition-colors text-sm"
                       >
-                        ✎
+                        ⎘
                       </button>
                       <button
                         onClick={() => handleDelete(item.id)}
@@ -404,21 +445,8 @@ export default function DisclosuresClient({
                       className="w-full h-10 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 rounded-lg transition-colors"
                     />
                   </div>
-                  {/* Buyer email */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 block">
-                      Buyer Email
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="buyer@example.com"
-                      value={buyerEmail}
-                      onChange={e => setBuyerEmail(e.target.value)}
-                      className="w-full h-10 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 rounded-lg transition-colors"
-                    />
-                  </div>
                   <p className="text-xs text-gray-400 leading-relaxed">
-                    The completed PDF will be emailed to both addresses automatically when the form is submitted.
+                    The completed PDF will be emailed to the seller automatically when the form is submitted.
                   </p>
                   <button
                     onClick={handleCreateLink}
@@ -456,7 +484,7 @@ export default function DisclosuresClient({
                   <div className="flex gap-3 p-4 bg-gray-50 border border-gray-100 rounded-lg">
                     <span className="text-blue-500 text-sm flex-shrink-0">ℹ</span>
                     <p className="text-xs text-gray-500 leading-relaxed">
-                      No account needed. The PDF will be emailed to both buyer and seller on submission.
+                      No account needed. The completed PDF will be emailed to the seller on submission.
                     </p>
                   </div>
                 </div>
