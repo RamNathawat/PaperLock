@@ -22,16 +22,20 @@ function FieldBox({
   const hasError = submitCount > 0 && !!getNestedError(errors, errorPath);
 
   return (
-    <div className={`rounded-xl border p-5 space-y-4 ${hasError ? "border-red-400 bg-red-50" : "border-gray-100"}`}>
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-gray-800">
+    <div className={`relative rounded-xl border p-5 space-y-4 ${hasError ? "border-red-400 bg-red-50" : "border-gray-100"}`}>
+      {tip && (
+        <div className="absolute top-5 right-5">
+          <InfoTooltip text={tip} />
+        </div>
+      )}
+      <div>
+        <p className="text-sm font-semibold text-gray-800 pr-8">
           {label}
-          {tip && <InfoTooltip text={tip} />}
         </p>
         {hasError && (
-          <span className="text-xs font-bold text-red-600 uppercase tracking-wide whitespace-nowrap shrink-0">
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wide mt-1">
             Required before continuing
-          </span>
+          </p>
         )}
       </div>
       {children}

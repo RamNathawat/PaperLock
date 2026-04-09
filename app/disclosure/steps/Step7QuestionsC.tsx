@@ -71,19 +71,21 @@ function YesNoRow({ num }: { num: number }) {
 
   return (
     <div
-      className={`rounded-xl border p-5 space-y-4 ${
+      className={`relative rounded-xl border p-5 space-y-4 ${
         hasError ? "border-red-400 bg-red-50" : "border-gray-100"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-gray-800">
+      <div className="absolute top-5 right-5">
+        <InfoTooltip text={tip} />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-800 pr-8">
           Q{num}. {text}
-          <InfoTooltip text={tip} />
         </p>
         {hasError && (
-          <span className="text-xs font-bold text-red-600 uppercase tracking-wide whitespace-nowrap shrink-0">
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wide mt-1">
             Required before continuing
-          </span>
+          </p>
         )}
       </div>
       <div className="flex gap-4">
@@ -132,13 +134,17 @@ export default function Step7QuestionsC() {
       {[38, 39, 40].map((n) => <YesNoRow key={n} num={n} />)}
 
       {/* Q41 HOA */}
-      <div className={`rounded-xl border p-5 space-y-4 ${showErrors && !!(errors as any)?.questions?.[41] ? "border-red-400 bg-red-50" : "border-gray-100"}`}>
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-gray-800">
+      <div className={`relative rounded-xl border p-5 space-y-4 ${showErrors && !!(errors as any)?.questions?.[41] ? "border-red-400 bg-red-50" : "border-gray-100"}`}>
+        <div className="absolute top-5 right-5">
+          <InfoTooltip text={QUESTIONS[41].tip} />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-800 pr-8">
             Q41. {QUESTIONS[41].text}
-            <InfoTooltip text={QUESTIONS[41].tip} />
           </p>
-          <InlineError show={showErrors && !!(errors as any)?.questions?.[41]} message="Required before continuing" />
+          <div className="mt-1">
+            <InlineError show={showErrors && !!(errors as any)?.questions?.[41]} message="Required before continuing" />
+          </div>
         </div>
         <div className="flex gap-4">
           {["YES", "NO"].map((opt) => (
@@ -150,7 +156,7 @@ export default function Step7QuestionsC() {
         </div>
         {q41 === "YES" && (
           <div className="pt-3 border-t border-gray-100 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Amount of dues ($)</label>
                 <input {...register("q41Inline.hoaAmount")} placeholder="e.g. 150" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />
@@ -197,7 +203,7 @@ export default function Step7QuestionsC() {
                 <input {...register("q41Inline.ifYesAmount", { required: true })} placeholder="e.g. 300" className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 placeholder:text-gray-400" />
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Manager name</label>
                 <input {...register("q41Inline.managerName")} placeholder="Manager name" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />
@@ -214,13 +220,17 @@ export default function Step7QuestionsC() {
       {[42, 43, 44, 45].map((n) => <YesNoRow key={n} num={n} />)}
 
       {/* Q46 Fire district */}
-      <div className={`rounded-xl border p-5 space-y-4 ${showErrors && !!(errors as any)?.questions?.[46] ? "border-red-400 bg-red-50" : "border-gray-100"}`}>
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-gray-800">
+      <div className={`relative rounded-xl border p-5 space-y-4 ${showErrors && !!(errors as any)?.questions?.[46] ? "border-red-400 bg-red-50" : "border-gray-100"}`}>
+        <div className="absolute top-5 right-5">
+          <InfoTooltip text={QUESTIONS[46].tip} />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-800 pr-8">
             Q46. {QUESTIONS[46].text}
-            <InfoTooltip text={QUESTIONS[46].tip} />
           </p>
-          <InlineError show={showErrors && !!(errors as any)?.questions?.[46]} message="Required before continuing" />
+          <div className="mt-1">
+            <InlineError show={showErrors && !!(errors as any)?.questions?.[46]} message="Required before continuing" />
+          </div>
         </div>
         <div className="flex gap-4">
           {["YES", "NO"].map((opt) => (
@@ -232,7 +242,7 @@ export default function Step7QuestionsC() {
         </div>
         {q46 === "YES" && (
           <div className="pt-3 border-t border-gray-100 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Fee amount ($)</label>
                 <input {...register("q46Inline.amount")} placeholder="e.g. 75" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />
@@ -261,13 +271,17 @@ export default function Step7QuestionsC() {
       </div>
 
       {/* Q47 Utility district */}
-      <div className={`rounded-xl border p-5 space-y-4 ${showErrors && !!(errors as any)?.questions?.[47] ? "border-red-400 bg-red-50" : "border-gray-100"}`}>
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-gray-800">
+      <div className={`relative rounded-xl border p-5 space-y-4 ${showErrors && !!(errors as any)?.questions?.[47] ? "border-red-400 bg-red-50" : "border-gray-100"}`}>
+        <div className="absolute top-5 right-5">
+          <InfoTooltip text={QUESTIONS[47].tip} />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-800 pr-8">
             Q47. {QUESTIONS[47].text}
-            <InfoTooltip text={QUESTIONS[47].tip} />
           </p>
-          <InlineError show={showErrors && !!(errors as any)?.questions?.[47]} message="Required before continuing" />
+          <div className="mt-1">
+            <InlineError show={showErrors && !!(errors as any)?.questions?.[47]} message="Required before continuing" />
+          </div>
         </div>
         <div className="flex gap-4">
           {["YES", "NO"].map((opt) => (
@@ -294,7 +308,7 @@ export default function Step7QuestionsC() {
               </div>
             </div>
             <input {...register("q47Details.other")} placeholder="If Other selected, explain (optional)" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Initial membership fee ($)</label>
                 <input {...register("q47Details.initialMembershipFee")} placeholder="e.g. 500" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />

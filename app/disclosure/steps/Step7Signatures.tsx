@@ -227,7 +227,7 @@ export default function Step7Signatures() {
 
             <SignatureUpload name="signatures.sellerSignatureBase64" required />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">
                   Printed Name <span className="text-red-400">*</span>
@@ -275,7 +275,7 @@ export default function Step7Signatures() {
 
             <SignatureUpload name="signatures.buyerSignatureBase64" />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Printed Name</label>
                 <input

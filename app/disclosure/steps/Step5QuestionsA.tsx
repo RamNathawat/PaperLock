@@ -67,19 +67,21 @@ function YesNoRow({ num }: { num: number }) {
 
   return (
     <div
-      className={`rounded-xl border p-5 space-y-4 ${
+      className={`relative rounded-xl border p-5 space-y-4 ${
         hasError ? "border-red-400 bg-red-50" : "border-gray-100"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-gray-800">
+      <div className="absolute top-5 right-5">
+        <InfoTooltip text={tip} />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-800 pr-8">
           Q{num}. {text}
-          <InfoTooltip text={tip} />
         </p>
         {hasError && (
-          <span className="text-xs font-bold text-red-600 uppercase tracking-wide whitespace-nowrap shrink-0">
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wide mt-1">
             Required before continuing
-          </span>
+          </p>
         )}
       </div>
 
@@ -136,11 +138,15 @@ export default function Step5QuestionsA() {
       {[7, 8, 9, 10, 11, 12, 13, 14, 15].map((n) => <YesNoRow key={n} num={n} />)}
 
       {/* Q16 — informational only */}
-      <div className="rounded-xl border border-gray-100 p-5 space-y-4">
-        <p className="text-sm font-semibold text-gray-800">
-          Q16. Approximate age of roof covering
+      <div className="relative rounded-xl border border-gray-100 p-5 space-y-4">
+        <div className="absolute top-5 right-5">
           <InfoTooltip text="How old is the current roof material (shingles, tile, etc.)? Also indicate how many layers are present — most codes allow a maximum of 2." />
-        </p>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-800 pr-8">
+            Q16. Approximate age of roof covering
+          </p>
+        </div>
         <input {...register("q16Inline.roofAge")} placeholder="Roof age (years)" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />
         <input {...register("q16Inline.layers")} placeholder="Number of layers" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />
       </div>
@@ -150,21 +156,23 @@ export default function Step5QuestionsA() {
 
       {/* Q19 */}
       <div
-        className={`rounded-xl border p-5 space-y-4 ${
+        className={`relative rounded-xl border p-5 space-y-4 ${
           showErrors && !!(errors as any)?.questions?.[19]
             ? "border-red-400 bg-red-50"
             : "border-gray-100"
         }`}
       >
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-gray-800">
+        <div className="absolute top-5 right-5">
+          <InfoTooltip text="A termite bait system is a set of underground stations around the home that attract and kill termite colonies. If one is in place, the buyer will need to maintain it (often through an annual contract)." />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-800 pr-8">
             Q19. Are you aware of a termite bait system installed on the property?
-            <InfoTooltip text="A termite bait system is a set of underground stations around the home that attract and kill termite colonies. If one is in place, the buyer will need to maintain it (often through an annual contract)." />
           </p>
           {showErrors && !!(errors as any)?.questions?.[19] && (
-            <span className="text-xs font-bold text-red-600 uppercase tracking-wide whitespace-nowrap shrink-0">
+            <p className="text-xs font-bold text-red-600 uppercase tracking-wide mt-1">
               Required before continuing
-            </span>
+            </p>
           )}
         </div>
         <div className="flex gap-4">

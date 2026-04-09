@@ -83,19 +83,21 @@ function YesNoRow({ num }: { num: number }) {
 
   return (
     <div
-      className={`rounded-xl border p-5 space-y-4 ${
+      className={`relative rounded-xl border p-5 space-y-4 ${
         hasError ? "border-red-400 bg-red-50" : "border-gray-100"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-gray-800">
+      <div className="absolute top-5 right-5">
+        <InfoTooltip text={tip} />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-800 pr-8">
           Q{num}. {text}
-          <InfoTooltip text={tip} />
         </p>
         {hasError && (
-          <span className="text-xs font-bold text-red-600 uppercase tracking-wide whitespace-nowrap shrink-0">
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wide mt-1">
             Required before continuing
-          </span>
+          </p>
         )}
       </div>
 
@@ -155,21 +157,23 @@ export default function Step6QuestionsB() {
 
       {/* Q37 — dam with conditional maintenance sub-question */}
       <div
-        className={`rounded-xl border p-5 space-y-4 ${
+        className={`relative rounded-xl border p-5 space-y-4 ${
           showErrors && !!(errors as any)?.questions?.[37]
             ? "border-red-400 bg-red-50"
             : "border-gray-100"
         }`}
       >
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-gray-800">
+        <div className="absolute top-5 right-5">
+          <InfoTooltip text="Does the property include any dam, berm, or water retention structure — even a small earthen dam on a pond? If so, note who is responsible for maintenance." />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-800 pr-8">
             Q37. Are you aware of any dams located on the property?
-            <InfoTooltip text="Does the property include any dam, berm, or water retention structure — even a small earthen dam on a pond? If so, note who is responsible for maintenance." />
           </p>
           {showErrors && !!(errors as any)?.questions?.[37] && (
-            <span className="text-xs font-bold text-red-600 uppercase tracking-wide whitespace-nowrap shrink-0">
+            <p className="text-xs font-bold text-red-600 uppercase tracking-wide mt-1">
               Required before continuing
-            </span>
+            </p>
           )}
         </div>
 
