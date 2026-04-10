@@ -231,13 +231,13 @@ function Wizard({
         <form onSubmit={methods.handleSubmit(handleNext)}>
           {header}
           <div className="relative overflow-hidden w-full">
-            <AnimatePresence mode="popLayout" custom={stepNumber}>
+            <AnimatePresence mode="wait" custom={stepNumber}>
               <motion.div
                 key={activeStep.id}
                 custom={stepNumber}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20, position: "absolute", top: 0, left: 0, right: 0 }}
+                exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
               >
                 {wrapper || activeStep.component}
