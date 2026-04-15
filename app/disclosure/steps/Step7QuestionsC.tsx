@@ -97,7 +97,16 @@ function YesNoRow({ num }: { num: number }) {
         ))}
       </div>
       {value === "YES" && (
-        <textarea {...register(`questionComments.${num}`)} rows={3} placeholder={`Add details for Q${num}… (optional)`} className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />
+        <textarea 
+          {...register(`questionComments.${num}`, { required: true })} 
+          rows={3} 
+          placeholder={`Add details for Q${num}…`} 
+          className={`w-full rounded-lg border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 ${
+            submitCount > 0 && !!(errors as any)?.questionComments?.[num]
+              ? "border-red-400 bg-red-50"
+              : "border-gray-200"
+          }`} 
+        />
       )}
     </div>
   );

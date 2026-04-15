@@ -101,10 +101,14 @@ function YesNoRow({ num }: { num: number }) {
 
       {value === "YES" && (
         <textarea
-          {...register(`questionComments.${num}`)}
+          {...register(`questionComments.${num}`, { required: true })}
           rows={3}
-          placeholder={`Add details for Q${num}… (optional)`}
-          className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400"
+          placeholder={`Add details for Q${num}…`}
+          className={`w-full rounded-lg border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 ${
+            submitCount > 0 && !!(errors as any)?.questionComments?.[num]
+              ? "border-red-400 bg-red-50"
+              : "border-gray-200"
+          }`}
         />
       )}
     </div>
@@ -147,8 +151,16 @@ export default function Step5QuestionsA() {
             Q16. Approximate age of roof covering
           </p>
         </div>
-        <input {...register("q16Inline.roofAge")} placeholder="Roof age (years)" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />
-        <input {...register("q16Inline.layers")} placeholder="Number of layers" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400" />
+        <input 
+          {...register("q16Inline.roofAge", { required: true })} 
+          placeholder="Roof age (years)" 
+          className={`w-full rounded-lg border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 ${showErrors && !!(errors as any)?.q16Inline?.roofAge ? "border-red-400 bg-red-50" : "border-gray-200"}`} 
+        />
+        <input 
+          {...register("q16Inline.layers", { required: true })} 
+          placeholder="Number of layers" 
+          className={`w-full rounded-lg border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 ${showErrors && !!(errors as any)?.q16Inline?.layers ? "border-red-400 bg-red-50" : "border-gray-200"}`} 
+        />
       </div>
 
       <YesNoRow num={17} />

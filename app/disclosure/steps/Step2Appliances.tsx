@@ -22,7 +22,7 @@ const OPTIONS = ["WORKING", "NOT_WORKING", "UNKNOWN", "NONE"] as const;
 const LABELS = ["Working", "Not Working", "Unknown", "None"];
 
 export default function Step2Appliances() {
-  const { register, watch } = useFormContext();
+  const { register, watch, formState: { errors, submitCount } } = useFormContext();
   const appliances = watch("appliances") || {};
   const hasNotWorking = Object.values(appliances).some(v => v === "NOT_WORKING");
 
@@ -73,10 +73,14 @@ export default function Step2Appliances() {
             Please explain items marked as Not Working
           </label>
           <textarea
-            {...register("page2NotWorkingExplanation")}
+            {...register("page2NotWorkingExplanation", { required: true })}
             rows={4}
             placeholder="Describe the issues with items marked as not working..."
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full border rounded-lg px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB] ${
+              submitCount > 0 && !!(errors as any)?.page2NotWorkingExplanation
+                ? "border-red-400 bg-red-50"
+                : "border-gray-300"
+            }`}
           />
         </div>
       )}

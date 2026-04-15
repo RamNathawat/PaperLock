@@ -51,6 +51,11 @@ function ApplianceRow({
   }
   const hasError = showErrors && !!fieldError;
 
+  // Helper to drill down for comments
+  function getNestedError(errs: any, path: string) {
+    return path.split(".").reduce((obj, key) => obj?.[key], errs);
+  }
+
   return (
     <div
       className={`rounded-xl border p-5 space-y-4 ${
@@ -85,10 +90,14 @@ function ApplianceRow({
 
       {value === "NOT_WORKING" && (
         <textarea
-          {...register(commentName)}
+          {...register(commentName, { required: true })}
           rows={3}
           placeholder={`Describe issue with ${label.toLowerCase()}...`}
-          className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400"
+          className={`w-full rounded-lg border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 ${
+            submitCount > 0 && !!getNestedError(errors, commentName)
+              ? "border-red-400 bg-red-50"
+              : "border-gray-200"
+          }`}
         />
       )}
     </div>

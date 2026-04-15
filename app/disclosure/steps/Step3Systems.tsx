@@ -137,10 +137,14 @@ function StatusRow({
 
       {value === "NOT_WORKING" && (
         <textarea
-          {...register(commentName)}
+          {...register(commentName, { required: true })}
           rows={3}
-          placeholder={`Describe issue with ${label.toLowerCase()}... (optional)`}
-          className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400"
+          placeholder={`Describe issue with ${label.toLowerCase()}...`}
+          className={`w-full rounded-lg border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 ${
+            submitCount > 0 && !!getNestedError(errors, commentName)
+              ? "border-red-400 bg-red-50"
+              : "border-gray-200"
+          }`}
         />
       )}
 

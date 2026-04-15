@@ -26,7 +26,22 @@ function buildUnifiedExplanation(data: any): string {
     });
   }
 
-  return lines.join("\n");
+  if (data.applianceComments) {
+    Object.entries(data.applianceComments).forEach(([k, v]) => {
+      if (typeof v === "string" && v.trim()) {
+        lines.push(`Appliance (Item ${k}): ${v.trim()}`);
+      }
+    });
+  }
+
+  if (data.page1NotWorkingExplanation?.trim()) {
+    lines.push(`Page 1 Not Working: ${data.page1NotWorkingExplanation.trim()}`);
+  }
+  if (data.page2NotWorkingExplanation?.trim()) {
+    lines.push(`Page 2 Not Working: ${data.page2NotWorkingExplanation.trim()}`);
+  }
+
+  return lines.join("\n\n");
 }
 
 export function renderExplanations(
