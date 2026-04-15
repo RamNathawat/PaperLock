@@ -138,6 +138,7 @@ export default function DisclosuresClient({
   const [page, setPage] = useState(1);
 
   const [sellerEmail, setSellerEmail] = useState("");
+  const [seller2Email, setSeller2Email] = useState("");
 
   const router = useRouter();
   const supabase = createClient();
@@ -187,6 +188,7 @@ export default function DisclosuresClient({
         token,
         created_by: user?.id || null,
         seller_email: sellerEmail.trim(),
+        seller2_email: seller2Email.trim() || null,
       })
       .select()
       .single();
@@ -266,7 +268,7 @@ export default function DisclosuresClient({
 
   return (
     <div className="min-h-screen flex bg-[#f7f9fb] font-[Inter,sans-serif]">
-      <Sidebar email={email} onSignOut={handleSignOut} onShare={() => { setShowModal(true); setLink(null); setSellerEmail(""); }} />
+      <Sidebar email={email} onSignOut={handleSignOut} onShare={() => { setShowModal(true); setLink(null); setSellerEmail(""); setSeller2Email(""); }} />
 
       <main className="ml-60 flex-1 px-10 py-10">
         <div className="mb-10">
@@ -442,6 +444,19 @@ export default function DisclosuresClient({
                       placeholder="seller@example.com"
                       value={sellerEmail}
                       onChange={e => setSellerEmail(e.target.value)}
+                      className="w-full h-10 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 rounded-lg transition-colors"
+                    />
+                  </div>
+                  {/* Secondary seller email (optional) */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 block">
+                      Secondary Seller Email <span className="normal-case font-normal text-gray-300">(optional)</span>
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="co-seller@example.com"
+                      value={seller2Email}
+                      onChange={e => setSeller2Email(e.target.value)}
                       className="w-full h-10 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 rounded-lg transition-colors"
                     />
                   </div>

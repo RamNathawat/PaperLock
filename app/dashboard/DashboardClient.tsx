@@ -123,6 +123,7 @@ export default function DashboardClient({
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sellerEmail, setSellerEmail] = useState("");
+  const [seller2Email, setSeller2Email] = useState("");
 
   const router = useRouter();
   const supabase = createClient();
@@ -153,6 +154,7 @@ export default function DashboardClient({
         token,
         created_by: user?.id || null,
         seller_email: sellerEmail.trim(),
+        seller2_email: seller2Email.trim() || null,
       })
       .select()
       .single();
@@ -332,7 +334,7 @@ export default function DashboardClient({
                   <h3 className="text-xl font-bold text-gray-900 tracking-tight">Share Disclosure</h3>
                   <p className="text-sm text-gray-400 mt-1">Generate a unique link for your client</p>
                 </div>
-                <button onClick={() => { setShowModal(false); setSellerEmail(""); }} className="text-gray-300 hover:text-gray-600 text-lg">✕</button>
+                <button onClick={() => { setShowModal(false); setSellerEmail(""); setSeller2Email(""); }} className="text-gray-300 hover:text-gray-600 text-lg">✕</button>
               </div>
             </div>
             <div className="px-8 py-8 space-y-6">
@@ -348,6 +350,19 @@ export default function DashboardClient({
                       placeholder="seller@example.com"
                       value={sellerEmail}
                       onChange={e => setSellerEmail(e.target.value)}
+                      className="w-full h-10 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 rounded-lg transition-colors"
+                    />
+                  </div>
+                  {/* Secondary seller email (optional) */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 block">
+                      Secondary Seller Email <span className="normal-case font-normal text-gray-300">(optional)</span>
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="co-seller@example.com"
+                      value={seller2Email}
+                      onChange={e => setSeller2Email(e.target.value)}
                       className="w-full h-10 px-3 bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:outline-none focus:border-blue-500 rounded-lg transition-colors"
                     />
                   </div>
