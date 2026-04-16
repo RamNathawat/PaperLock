@@ -195,7 +195,7 @@ export async function PATCH(
         `;
 
         await resend.emails.send({
-          from: "Disclosures <onboarding@resend.dev>", // TODO: Replace onboarding@resend.dev upon DNS validation
+          from: "Disclosures <noreply@ourokrealty.com>",
           to: recipients,
           subject: `✅ Completed Disclosure: ${property}`,
           html: htmlTemplate,

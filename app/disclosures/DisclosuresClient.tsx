@@ -197,6 +197,19 @@ export default function DisclosuresClient({
     setLink(url);
     copyLink(url);
     if (newLink) setSharedLinks(prev => [newLink, ...prev]);
+
+    // Email the link to the seller(s)
+    const inviteRecipients = [sellerEmail.trim(), seller2Email.trim()].filter(Boolean);
+    try {
+      await fetch("/api/send-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipients: inviteRecipients, link: url }),
+      });
+    } catch (e) {
+      console.warn("Invite email failed (non-fatal):", e);
+    }
+
     setCreating(false);
   }
 
