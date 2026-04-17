@@ -15,6 +15,7 @@ import { buildCleanPayload } from "@/src/lib/disclosure-engine/utils/buildCleanP
 export default function Step7Signatures() {
   const {
     register,
+    setValue,
     getValues,
     watch,
     formState: { errors, submitCount },
@@ -39,8 +40,10 @@ export default function Step7Signatures() {
       return;
     }
     const dataUrl = sigPadRef.current?.getTrimmedCanvas().toDataURL("image/png");
-    register("signatures.sellerSignatureBase64").onChange({
-      target: { name: "signatures.sellerSignatureBase64", value: dataUrl }
+    // Use setValue so RHF registers the value and clears the validation error
+    setValue("signatures.sellerSignatureBase64", dataUrl, {
+      shouldValidate: true,
+      shouldDirty: true,
     });
     setIsSigModalOpen(false);
   };
@@ -194,16 +197,16 @@ export default function Step7Signatures() {
 
           {/* Seller — required */}
           <div
-            className={`relative rounded-xl border p-5 space-y-4 bg-white ${
+            className={`rounded-xl border p-5 space-y-4 bg-white ${
               showErrors && (errors as any)?.signatures?.sellerSignatureBase64
                 ? "border-red-300"
                 : "border-gray-100"
             }`}
           >
             {showErrors && (errors as any)?.signatures?.sellerSignatureBase64 && (
-              <div className="absolute -top-3 right-4 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                Required before continuing
-              </div>
+              <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
+                ⚠ Signature required before continuing
+              </p>
             )}
 
             <p className="text-sm font-bold text-gray-800">

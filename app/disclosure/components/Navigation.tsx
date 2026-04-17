@@ -13,15 +13,15 @@ export default function Navigation() {
     <div className="mt-8 space-y-4">
       {/* Error banner — only shows after a failed submit attempt */}
       {errorCount > 0 && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 flex items-center justify-between gap-4">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-red-500 text-lg">⚠</span>
+            <span className="text-red-500 text-lg flex-shrink-0">⚠</span>
             <p className="text-sm font-semibold text-red-700 uppercase tracking-wide">
               Missing Required Fields
             </p>
           </div>
-          <p className="text-sm font-semibold text-red-500 text-right whitespace-nowrap">
-            {errorCount} required {errorCount === 1 ? "answer" : "answers"} missing in this section
+          <p className="text-sm font-semibold text-red-500 sm:text-right">
+            {errorCount} required {errorCount === 1 ? "answer" : "answers"} missing
           </p>
         </div>
       )}
