@@ -2,13 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/auth/login");
-  }
+  if (!user) redirect("/auth/login");
 
   const [discRes, linksRes] = await Promise.all([
     supabase
@@ -24,10 +24,10 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <DashboardClient 
-      email={user.email ?? ""} 
-      initialDisclosures={discRes.data || []} 
-      initialSharedLinks={linksRes.data || []} 
+    <DashboardClient
+      email={user.email ?? ""}
+      initialDisclosures={discRes.data || []}
+      initialSharedLinks={linksRes.data || []}
     />
   );
 }

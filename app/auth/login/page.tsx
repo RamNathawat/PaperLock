@@ -91,25 +91,29 @@ export default function LoginPage() {
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        <form onSubmit={handleEmailLogin} className="space-y-4">
+        <form onSubmit={handleEmailLogin} className="space-y-4" noValidate>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
+              id="email"
               type="email" value={email} onChange={e => setEmail(e.target.value)}
               required placeholder="you@example.com"
+              autoComplete="email"
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
+              id="password"
               type="password" value={password} onChange={e => setPassword(e.target.value)}
               required placeholder="••••••••"
+              autoComplete="current-password"
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {error && <p className="text-red-500 text-xs">{error}</p>}
+          {error && <p role="alert" aria-live="polite" className="text-red-600 text-xs">{error}</p>}
 
           <button
             type="submit" disabled={loading}

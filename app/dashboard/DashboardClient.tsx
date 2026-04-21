@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getPortalCache, setPortalCache, invalidatePortalCache } from "@/lib/portal-cache";
 
 interface Disclosure {
   id: string;
@@ -116,8 +117,14 @@ export default function DashboardClient({
   initialDisclosures: Disclosure[];
   initialSharedLinks: SharedLink[];
 }) {
-  const [disclosures] = useState<Disclosure[]>(initialDisclosures);
-  const [sharedLinks, setSharedLinks] = useState<SharedLink[]>(initialSharedLinks);
+  // Lazy initialisers: read from module-level cache synchronously on first
+  // render so navigating back to this page shows data with zero flash.
+  const [disclosures, setDisclosures] = useState<Disclosure[]>(() =>
+    (typeof window !== "undefined" ? getPortalCache()?.disclosures : null) ?? initialDisclosures
+  );
+  const [sharedLinks, setSharedLinks] = useState<SharedLink[]>(() =>
+    (typeof window !== "undefined" ? getPortalCache()?.sharedLinks : null) ?? initialSharedLinks
+  );
   const [showModal, setShowModal] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -127,6 +134,33 @@ export default function DashboardClient({
 
   const router = useRouter();
   const supabase = createClient();
+
+  // Seed cache with server-provided data on first mount, then refresh in background.
+  useEffect(() => {
+    // If no cache yet, seed immediately from server props so navigating away
+    // and back is instant from the very first page load.
+    if (!getPortalCache()) {
+      setPortalCache({ disclosures: initialDisclosures, sharedLinks: initialSharedLinks });
+    }
+
+    async function refresh() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [discRes, linksRes] = await Promise.all([
+        supabase.from("disclosures").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }),
+        supabase.from("shared_links").select("*").eq("created_by", user.id).order("created_at", { ascending: false }),
+      ]);
+      const fresh = {
+        disclosures: discRes.data ?? [],
+        sharedLinks: linksRes.data ?? [],
+      };
+      setPortalCache(fresh);
+      setDisclosures(fresh.disclosures);
+      setSharedLinks(fresh.sharedLinks);
+    }
+    refresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -162,7 +196,10 @@ export default function DashboardClient({
     const url = `${window.location.origin}/fill/${token}`;
     setLink(url);
     copyLink(url);
-    if (newLink) setSharedLinks(prev => [newLink, ...prev]);
+    if (newLink) {
+      setSharedLinks(prev => [newLink, ...prev]);
+      invalidatePortalCache(); // force fresh fetch next navigation
+    }
 
     // Email the link to the seller(s)
     const inviteRecipients = [sellerEmail.trim(), seller2Email.trim()].filter(Boolean);
