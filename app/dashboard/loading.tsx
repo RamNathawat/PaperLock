@@ -1,8 +1,8 @@
 export default function DashboardLoading() {
   return (
     <div className="min-h-screen flex bg-[#f7f9fb] font-[Inter,sans-serif]">
-      {/* Sidebar skeleton */}
-      <aside className="fixed left-0 top-0 h-full w-60 bg-white border-r border-gray-100 flex flex-col py-8 px-4 z-40">
+      {/* Sidebar skeleton — desktop only */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-100 flex-col py-8 px-4 z-40">
         <div className="px-2 mb-10">
           <div className="h-2.5 w-16 bg-gray-100 rounded mb-2 animate-pulse" />
           <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
