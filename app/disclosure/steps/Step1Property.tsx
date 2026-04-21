@@ -146,15 +146,33 @@ export default function Step1Property() {
       </div>
 
       {/* Initials */}
-      <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-5 space-y-3">
-        <p className="text-sm font-semibold text-gray-800">Seller Initials</p>
-        <p className="text-xs text-gray-400">Enter the initials of each seller on this disclosure.</p>
+      <div
+        className={`rounded-2xl border p-5 space-y-3 ${
+          showErrors && (errors as any)?.initials?.sellerInitial1
+            ? "border-amber-200 bg-amber-50/40"
+            : "border-gray-100 bg-gray-50/50"
+        }`}
+      >
+        <div>
+          <p className="text-sm font-semibold text-gray-800">Seller Initials <span className="text-red-500">*</span></p>
+          <p className="text-xs text-gray-400">Enter the initials of each seller on this disclosure.</p>
+          {showErrors && (errors as any)?.initials?.sellerInitial1 && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+              <span className="text-xs font-semibold text-amber-700">At least Seller 1 initials required</span>
+            </div>
+          )}
+        </div>
         <div className="flex gap-3">
           <input
-            {...register("initials.sellerInitial1")}
+            {...register("initials.sellerInitial1", { required: true })}
             maxLength={5}
             placeholder="JAD"
-            className="w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+            className={`w-20 border rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
+              showErrors && (errors as any)?.initials?.sellerInitial1
+                ? "border-amber-300 bg-amber-50"
+                : "border-gray-200"
+            }`}
           />
           <input
             {...register("initials.sellerInitial2")}

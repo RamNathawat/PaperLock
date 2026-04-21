@@ -21,6 +21,11 @@ export type SolarPanelType = 0 | 1 | 2;
 
 export interface SignatureBlock {
   sellerSignatureBase64?: string;
+  sellerName?: string;
+  sellerDate?: string;
+  seller2SignatureBase64?: string;
+  seller2Name?: string;
+  seller2Date?: string;
   buyerSignatureBase64?: string;
 }
 

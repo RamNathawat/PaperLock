@@ -81,6 +81,7 @@ export function DisclosurePage({ sharedToken }: Props) {
   const [initialValues, setInitialValues] = useState<any>(null);
   const [loading, setLoading]             = useState(!!disclosureId || !!token);
   const [generating, setGenerating]       = useState(false);
+  const [isSeller2Session, setIsSeller2Session] = useState(false);
 
   const draftIdRef            = useRef<string | null>(disclosureId);
   const autosaveTimeoutRef    = useRef<any>(null);
@@ -106,9 +107,18 @@ export function DisclosurePage({ sharedToken }: Props) {
 
         if (!flat) { setLoading(false); return; }
 
+        // Detect Seller 2: the link has already been submitted by Seller 1
+        // AND Seller 1's signature already exists in the saved data
+        const linkIsSubmitted = !!data.link?.is_submitted;
+        const seller1HasSigned = !!flat.signatures?.sellerSignatureBase64;
+        setIsSeller2Session(!!token && linkIsSubmitted && seller1HasSigned);
+
         setInitialValues({
           Property: {
             propertyIdentifier: flat.propertyIdentifier,
+            address: flat.address || {
+              street: flat.propertyIdentifier ? flat.propertyIdentifier.split(",")[0]?.trim() : "",
+            },
             sellerOccupying: flat.sellerOccupying,
             initials: flat.initials,
             disclosureId,
@@ -127,6 +137,7 @@ export function DisclosurePage({ sharedToken }: Props) {
             inlineOptions: flat.inlineOptions,
             sewerSystem: flat.sewerSystem,
             systems: flat.systems,
+            systemComments: flat.systemComments,
           },
           Zoning: {
             page2Zoning: flat.page2Zoning,
@@ -154,7 +165,10 @@ export function DisclosurePage({ sharedToken }: Props) {
             q46Inline: flat.q46Inline,
             q47Details: flat.q47Details,
           },
-          Financial: { additionalPages: flat.additionalPages },
+          Financial: { 
+            additionalPages: flat.additionalPages,
+            explanation: flat.explanation,
+          },
           Signatures: { signatures: flat.signatures },
         });
 
@@ -176,7 +190,8 @@ export function DisclosurePage({ sharedToken }: Props) {
       const res: Record<string, any> = { ...(a || {}) };
       if (b) {
         Object.entries(b).forEach(([k, v]) => {
-          if (v !== undefined && v !== null && v !== "") res[k] = v;
+          // Only skip explicitly undefined or null — allow empty strings so saved comments aren't wiped
+          if (v !== undefined && v !== null) res[k] = v;
         });
       }
       return res;
@@ -187,6 +202,8 @@ export function DisclosurePage({ sharedToken }: Props) {
         const merged = { ...acc, ...value };
         if (acc.appliances || value.appliances)
           merged.appliances = safeMerge(acc.appliances, value.appliances);
+        if (acc.applianceComments || value.applianceComments)
+          merged.applianceComments = safeMerge(acc.applianceComments, value.applianceComments);
         if (acc.questions || value.questions)
           merged.questions = safeMerge(acc.questions, value.questions);
         if (acc.questionComments || value.questionComments)
@@ -301,7 +318,7 @@ export function DisclosurePage({ sharedToken }: Props) {
     { id: "Questions Continued", component: <Step6QuestionsB />,         initialValues: initialValues?.QuestionsB },
     { id: "Questions Final",     component: <Step7QuestionsC />,         initialValues: initialValues?.QuestionsC },
     { id: "Financial",           component: <Step6Financial />,          initialValues: initialValues?.Financial },
-    { id: "Signatures",          component: <Step7Signatures />,         initialValues: initialValues?.Signatures },
+    { id: "Signatures",          component: <Step7Signatures isSeller2={isSeller2Session} />,         initialValues: initialValues?.Signatures },
   ], [initialValues]);
 
   if (loading) {

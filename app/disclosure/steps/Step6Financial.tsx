@@ -13,9 +13,44 @@ import { useWizard } from "@/lib/wizard/index";
 const CHARS_PER_BUILT_IN_BOX = 800;
 const CHARS_PER_CONT_PAGE    = 4400;
 
+/**
+ * Build the auto-explanation text from all YES answers that have comments.
+ * This is the same content the PDF engine auto-flows into Additional Explanations.
+ */
+function buildAutoExplanation(wizardValues: Record<string, any>): string {
+  const lines: string[] = [];
+
+  // Gather questionComments from any step that has them
+  const comments: Record<string, string> = {};
+  Object.values(wizardValues || {}).forEach((stepData: any) => {
+    if (stepData?.questionComments) {
+      Object.entries(stepData.questionComments).forEach(([k, v]) => {
+        if (typeof v === "string" && v.trim()) comments[k] = v.trim();
+      });
+    }
+  });
+
+  Object.entries(comments).forEach(([qNum, text]) => {
+    lines.push(`Q${qNum}: ${text}`);
+  });
+
+  return lines.join("\n\n");
+}
+
 export default function Step6Financial() {
   const { register, watch, setValue, getValues } = useFormContext();
   const { values: wizardValues } = useWizard();
+
+  // On first mount: if explanation is empty, pre-populate from questionComments
+  const didAutoPopulate = useRef(false);
+  useEffect(() => {
+    if (didAutoPopulate.current) return;
+    didAutoPopulate.current = true;
+    const current = getValues("explanation");
+    if (current && current.trim()) return; // already has content — don't overwrite
+    const auto = buildAutoExplanation(wizardValues);
+    if (auto) setValue("explanation", auto, { shouldDirty: false });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const explanation = (watch("explanation") as string) || "";
   const charCount   = explanation.length;
@@ -87,19 +122,24 @@ export default function Step6Financial() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">
-          Additional Notes
-        </p>
-        <h2 className="text-xl font-bold text-gray-900 mt-1">
-          Additional Explanations
-        </h2>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Additional Notes</p>
+        <h2 className="text-xl font-bold text-gray-900 mt-1">Additional Explanations</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Use this space to add context for any YES answers, or anything else the buyer should know.
+          Any YES answers you provided with comments have been pre-filled below. You may add more context or leave as-is.
           Write as much as you need — the PDF will automatically add pages if required.
         </p>
       </div>
 
-      {/* Textarea — no max length, no limit */}
+      {/* Info banner when auto-populated */}
+      {explanation.trim() && (
+        <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 flex items-start gap-2.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+          <p className="text-xs font-medium text-blue-700">
+            Pre-filled from your YES answers. You can edit, add to, or leave this as-is — it will appear in the PDF exactly as written.
+          </p>
+        </div>
+      )}
+
       <div className="space-y-1.5">
         <textarea
           {...register("explanation")}

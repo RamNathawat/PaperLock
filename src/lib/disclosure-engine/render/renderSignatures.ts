@@ -16,11 +16,14 @@ export async function renderSignatures(
       SIGNATURE_LAYOUT.seller,
       data.signatures.sellerSignatureBase64
     );
+  }
+
+  if (data.signatures?.seller2SignatureBase64) {
     await drawSignatureFromBase64(
       pdfDoc,
       pages,
       SIGNATURE_LAYOUT.seller2,
-      data.signatures.sellerSignatureBase64
+      data.signatures.seller2SignatureBase64
     );
   }
 

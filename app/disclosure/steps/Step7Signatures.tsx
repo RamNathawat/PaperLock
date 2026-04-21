@@ -8,11 +8,134 @@ import { motion, AnimatePresence } from "framer-motion";
 import { mergePayloads } from "@/src/lib/disclosure-engine/utils/mergePayloads";
 import { buildCleanPayload } from "@/src/lib/disclosure-engine/utils/buildCleanPayload";
 
+
 // ─────────────────────────────────────────────────────────────
+// Reusable signature pad + modal
+// ─────────────────────────────────────────────────────────────
+function SigPad({
+  fieldName,
+  label,
+  required = true,
+  showErrors,
+  errors,
+  register,
+  setValue,
+}: {
+  fieldName: string;
+  label: string;
+  required?: boolean;
+  showErrors: boolean;
+  errors: any;
+  register: any;
+  setValue: any;
+}) {
+  const [open, setOpen] = useState(false);
+  const padRef = useRef<SignatureCanvas>(null);
+
+  // Watch current value by reading it from the form at render time
+  const { watch } = useFormContext();
+  const current = watch(fieldName);
+
+  const fieldError = fieldName.split(".").reduce((obj: any, k) => obj?.[k], errors);
+  const hasError = showErrors && !!fieldError;
+
+  const handleSave = () => {
+    if (padRef.current?.isEmpty()) { alert("Please provide a signature first."); return; }
+    const dataUrl = padRef.current?.getTrimmedCanvas().toDataURL("image/png");
+    setValue(fieldName, dataUrl, { shouldValidate: true, shouldDirty: true });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <div className={`rounded-xl border p-5 space-y-4 bg-white ${hasError ? "border-amber-300" : "border-gray-100"}`}>
+        {hasError && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <p className="text-xs font-semibold text-amber-700">Signature required before continuing</p>
+          </div>
+        )}
+
+        <p className="text-sm font-bold text-gray-800">
+          {label} {required && <span className="text-red-500">*</span>}
+        </p>
+
+        <div className="space-y-3">
+          <input type="hidden" {...register(fieldName, required ? { required: true } : {})} />
+
+          {current ? (
+            <div className="border border-gray-200 rounded-xl p-2 bg-gray-50 flex flex-col items-center">
+              <img src={current} alt={label} className="max-h-24 object-contain" />
+              <button type="button" onClick={() => setOpen(true)}
+                className="mt-2 text-[11px] font-semibold text-[#2463EB] hover:underline">
+                Tap to redraw signature
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setOpen(true)}
+              className={`w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl h-28 bg-gray-50 hover:bg-gray-100 transition-colors ${
+                hasError ? "border-amber-300 bg-amber-50" : "border-gray-200"
+              }`}>
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              <span className="text-sm font-medium text-gray-600">Tap to Sign</span>
+            </button>
+          )}
+          <p className="text-[10px] text-gray-400">By signing, you are electronically signing this document.</p>
+        </div>
+      </div>
+
+      {/* Signature Modal */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed inset-0 z-[100] bg-white flex flex-col"
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50 shadow-sm">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Sign Document</h3>
+                <p className="text-xs text-gray-500">{label} — please sign below</p>
+              </div>
+              <button type="button" onClick={() => setOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors">✕</button>
+            </div>
+
+            <div className="flex-1 bg-white relative">
+              <SignatureCanvas ref={padRef}
+                canvasProps={{ className: "absolute inset-0 w-full h-full" }}
+                minWidth={1.5} maxWidth={3} dotSize={2} penColor="#2463EB" />
+              <div className="absolute inset-x-0 bottom-1/4 pointer-events-none flex items-center justify-center opacity-20">
+                <p className="text-3xl font-black uppercase tracking-widest text-gray-300 select-none">Sign Here</p>
+              </div>
+              <div className="absolute left-10 right-10 bottom-1/4 border-b-2 border-gray-200 pointer-events-none opacity-50" />
+            </div>
+
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-4">
+              <button type="button" onClick={() => padRef.current?.clear()}
+                className="flex-1 py-4 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors">
+                Clear
+              </button>
+              <button type="button" onClick={handleSave}
+                className="flex-[2] py-4 text-sm font-bold text-white bg-[#2463EB] shadow-md rounded-xl hover:bg-blue-700 transition-colors flex justify-center items-center gap-2">
+                Save Signature <span className="bg-white text-blue-600 rounded-full w-5 h-5 flex items-center justify-center text-xs">✔</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
 // Main Step7Signatures
 // ─────────────────────────────────────────────────────────────
-export default function Step7Signatures() {
+export default function Step7Signatures({ isSeller2 }: { isSeller2?: boolean }) {
   const {
     register,
     setValue,
@@ -22,35 +145,19 @@ export default function Step7Signatures() {
   } = useFormContext();
   const { values } = useWizard();
 
+
   const showErrors = submitCount > 0;
+
+  const seller1Sig = watch("signatures.sellerSignatureBase64");
 
   const [pdfUrl,     setPdfUrl]     = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError,   setPdfError]   = useState(false);
   const prevUrlRef = useRef<string | null>(null);
 
-  const [isSigModalOpen, setIsSigModalOpen] = useState(false);
-  const sigPadRef = useRef<SignatureCanvas>(null);
-  
-  const currentBase64 = watch("signatures.sellerSignatureBase64");
-  
-  const handleSaveSignature = () => {
-    if (sigPadRef.current?.isEmpty()) {
-      alert("Please provide a signature first.");
-      return;
-    }
-    const dataUrl = sigPadRef.current?.getTrimmedCanvas().toDataURL("image/png");
-    // Use setValue so RHF registers the value and clears the validation error
-    setValue("signatures.sellerSignatureBase64", dataUrl, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-    setIsSigModalOpen(false);
-  };
-  
-  const handleClearSignature = () => {
-    sigPadRef.current?.clear();
-  };
+  const currentBase64 = isSeller2
+    ? watch("signatures.seller2SignatureBase64")
+    : seller1Sig;
 
   useEffect(() => {
     let cancelled = false;
@@ -60,28 +167,18 @@ export default function Step7Signatures() {
       setPdfError(false);
 
       try {
-        // Merge historical wizard steps + active RHF step using deep merge to protect shared objects (e.g. appliances)
         const flat: Record<string, any> = mergePayloads(Object.values(values || {}));
-        
-        // Safely extract only Step 7 fields without pulling in 'undefined' from inactive steps
         const sigs = getValues("signatures");
         if (sigs) flat.signatures = { ...(flat.signatures || {}), ...sigs };
-        
-        // Emulate identical preprocessing as final app/disclosure/page.tsx
         const cleanPayload = buildCleanPayload(flat, values as any);
-        
         const payloadHash = JSON.stringify({ ...cleanPayload, version: "01-01-2026", isPreview: true });
 
-        // -- Cache hit: Eager pre-generation completed in Step 6
         if ((window as any).__cachedPdfHash === payloadHash && (window as any).__cachedPdfUrl) {
           if (prevUrlRef.current && prevUrlRef.current !== (window as any).__cachedPdfUrl) {
             URL.revokeObjectURL(prevUrlRef.current);
           }
           prevUrlRef.current = (window as any).__cachedPdfUrl;
-          if (!cancelled) {
-            setPdfUrl((window as any).__cachedPdfUrl);
-            setPdfLoading(false);
-          }
+          if (!cancelled) { setPdfUrl((window as any).__cachedPdfUrl); setPdfLoading(false); }
           return;
         }
 
@@ -100,7 +197,6 @@ export default function Step7Signatures() {
           URL.revokeObjectURL(prevUrlRef.current);
         }
         prevUrlRef.current = url;
-
         if (!cancelled) { setPdfUrl(url); setPdfLoading(false); }
       } catch {
         if (!cancelled) { setPdfError(true); setPdfLoading(false); }
@@ -112,9 +208,9 @@ export default function Step7Signatures() {
   }, [currentBase64, getValues, values]);
 
   useEffect(() => {
-    return () => { 
+    return () => {
       if (prevUrlRef.current && prevUrlRef.current !== (window as any).__cachedPdfUrl) {
-        URL.revokeObjectURL(prevUrlRef.current); 
+        URL.revokeObjectURL(prevUrlRef.current);
       }
     };
   }, []);
@@ -123,28 +219,34 @@ export default function Step7Signatures() {
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">
-          Final Step
-        </p>
-        <h2 className="text-2xl font-bold text-gray-900 mt-1">Review & Sign</h2>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Final Step</p>
+        <h2 className="text-2xl font-bold text-gray-900 mt-1">Review &amp; Sign</h2>
         <p className="text-sm text-gray-500 mt-1">
           Review the generated disclosure below, then add your signature to complete.
         </p>
       </div>
 
-      {/*
-        Layout:
-        - Mobile:  PDF preview stacked above signature panel, full width
-        - Tablet+: side by side, PDF left (7 cols), sig right (5 cols)
-      */}
-      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-5 lg:items-start">
+      {/* If Seller 2: show a notice explaining the context */}
+      {isSeller2 && (
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 flex items-start gap-3">
+          <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center mt-0.5 flex-shrink-0">
+            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-blue-900">Co-Seller Signature Required</p>
+            <p className="text-xs text-blue-700 mt-0.5">
+              The disclosure was completed and signed by Seller 1. Please review and add your own signature below to cosign the document.
+            </p>
+          </div>
+        </div>
+      )}
 
+      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-5 lg:items-start">
         {/* ── PDF Preview ── */}
         <div className="w-full lg:col-span-7 space-y-2">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            Document Preview
-          </p>
-
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Document Preview</p>
           <div className="relative rounded-xl bg-gray-50 border border-gray-100 overflow-hidden">
             {pdfLoading && (
               <div className="flex flex-col items-center justify-center gap-3 text-gray-400"
@@ -156,7 +258,6 @@ export default function Step7Signatures() {
                 <p className="text-sm">Generating preview…</p>
               </div>
             )}
-
             {pdfError && !pdfLoading && (
               <div className="flex flex-col items-center justify-center gap-2 text-gray-400"
                    style={{ height: "min(620px, 60vw)" }}>
@@ -167,21 +268,12 @@ export default function Step7Signatures() {
                 <p className="text-xs text-gray-300">The PDF will still be generated on submit</p>
               </div>
             )}
-
             {pdfUrl && !pdfLoading && (
               <>
-                <iframe
-                  src={pdfUrl}
-                  title="Disclosure PDF Preview"
-                  className="w-full rounded-xl"
-                  style={{ height: "min(620px, 75vw)" }}
-                />
-                <a
-                  href={pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
-                >
+                <iframe src={pdfUrl} title="Disclosure PDF Preview" className="w-full rounded-xl"
+                  style={{ height: "min(620px, 75vw)" }} />
+                <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
+                  className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm hover:bg-gray-50 transition-colors">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
@@ -195,96 +287,104 @@ export default function Step7Signatures() {
         {/* ── Signature panel ── */}
         <div className="w-full lg:col-span-5 lg:sticky lg:top-24 space-y-4">
 
-          {/* Seller — required */}
-          <div
-            className={`rounded-xl border p-5 space-y-4 bg-white ${
-              showErrors && (errors as any)?.signatures?.sellerSignatureBase64
-                ? "border-red-300"
-                : "border-gray-100"
-            }`}
-          >
-            {showErrors && (errors as any)?.signatures?.sellerSignatureBase64 && (
-              <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
-                ⚠ Signature required before continuing
-              </p>
-            )}
-
-            <p className="text-sm font-bold text-gray-800">
-              Seller Signature <span className="text-red-500">*</span>
-            </p>
-
-            <div className="space-y-3">
-              {/* Hidden input to keep it registered for RHF errors */}
-              <input type="hidden" {...register("signatures.sellerSignatureBase64", { required: true })} />
-
-              {currentBase64 ? (
-                <div className="border border-gray-200 rounded-xl p-2 bg-gray-50 flex flex-col items-center">
-                  <img src={currentBase64} alt="Seller Signature" className="max-h-24 object-contain" />
-                  <button
-                    type="button"
-                    onClick={() => setIsSigModalOpen(true)}
-                    className="mt-2 text-[11px] font-semibold text-[#2463EB] hover:underline"
-                  >
-                    Tap to redraw signature
-                  </button>
+          {isSeller2 ? (
+            <>
+              {/* Seller 1's signature is preserved in RHF's internal state because of shouldUnregister: false */}
+              {/* Seller 1 — locked read-only display */}
+              <div className="rounded-xl border border-gray-100 p-5 space-y-3 bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-bold text-gray-700">Seller 1 — Already Signed</p>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsSigModalOpen(true)}
-                  className={`w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl h-28 bg-gray-50 hover:bg-gray-100 transition-colors ${
-                    showErrors && (errors as any)?.signatures?.sellerSignatureBase64
-                      ? "border-red-400 bg-red-50"
-                      : "border-gray-200"
-                  }`}
-                >
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  <span className="text-sm font-medium text-gray-600">Tap to Sign</span>
-                </button>
-              )}
-              <p className="text-[10px] text-gray-400">By signing, you are electronically signing this document.</p>
-            </div>
+                {seller1Sig ? (
+                  <div className="border border-gray-200 rounded-xl p-2 bg-white flex flex-col items-center">
+                    <img src={seller1Sig} alt="Seller 1 Signature" className="max-h-20 object-contain opacity-75" />
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 italic">No signature on file for Seller 1</p>
+                )}
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  Printed Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  {...register("signatures.sellerName", { required: true })}
-                  type="text"
-                  placeholder="Full name"
-                  className={`w-full border rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB] ${
-                    showErrors && (errors as any)?.signatures?.sellerName
-                      ? "border-red-400 bg-red-50"
-                      : "border-gray-200"
-                  }`}
-                />
-                {showErrors && (errors as any)?.signatures?.sellerName && (
-                  <p className="text-[10px] font-bold text-red-600 uppercase tracking-wide mt-1">Required</p>
-                )}
+
+              {/* Seller 2 — active signature pad */}
+              <SigPad
+                fieldName="signatures.seller2SignatureBase64"
+                label="Your Signature (Seller 2)"
+                required={true}
+                showErrors={showErrors}
+                errors={errors}
+                register={register}
+                setValue={setValue}
+              />
+
+              {/* Seller 2 name + date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Printed Name <span className="text-red-400">*</span></label>
+                  <input
+                    {...register("signatures.seller2Name", { required: true })}
+                    type="text"
+                    placeholder="Full name"
+                    className={`w-full border rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB] ${
+                      showErrors && (errors as any)?.signatures?.seller2Name ? "border-amber-300 bg-amber-50" : "border-gray-200"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Date <span className="text-red-400">*</span></label>
+                  <input
+                    {...register("signatures.seller2Date", { required: true })}
+                    type="date"
+                    className={`w-full border rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB] ${
+                      showErrors && (errors as any)?.signatures?.seller2Date ? "border-amber-300 bg-amber-50" : "border-gray-200"
+                    }`}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  Date <span className="text-red-400">*</span>
-                </label>
-                <input
-                  {...register("signatures.sellerDate", { required: true })}
-                  type="date"
-                  className={`w-full border rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB] ${
-                    showErrors && (errors as any)?.signatures?.sellerDate
-                      ? "border-red-400 bg-red-50"
-                      : "border-gray-200"
-                  }`}
-                />
-                {showErrors && (errors as any)?.signatures?.sellerDate && (
-                  <p className="text-[10px] font-bold text-red-600 uppercase tracking-wide mt-1">Required</p>
-                )}
+            </>
+          ) : (
+            <>
+              {/* Seller 1 signature pad */}
+              <SigPad
+                fieldName="signatures.sellerSignatureBase64"
+                label="Seller Signature"
+                required={true}
+                showErrors={showErrors}
+                errors={errors}
+                register={register}
+                setValue={setValue}
+              />
+
+              {/* Seller 1 name + date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Printed Name <span className="text-red-400">*</span></label>
+                  <input
+                    {...register("signatures.sellerName", { required: true })}
+                    type="text"
+                    placeholder="Full name"
+                    className={`w-full border rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB] ${
+                      showErrors && (errors as any)?.signatures?.sellerName ? "border-amber-300 bg-amber-50" : "border-gray-200"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Date <span className="text-red-400">*</span></label>
+                  <input
+                    {...register("signatures.sellerDate", { required: true })}
+                    type="date"
+                    className={`w-full border rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB] ${
+                      showErrors && (errors as any)?.signatures?.sellerDate ? "border-amber-300 bg-amber-50" : "border-gray-200"
+                    }`}
+                  />
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* Security notice */}
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center gap-3">
@@ -300,72 +400,8 @@ export default function Step7Signatures() {
               </p>
             </div>
           </div>
-
         </div>
       </div>
-
-      {/* Full screen Signature Modal */}
-      <AnimatePresence>
-        {isSigModalOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-0 z-[100] bg-white flex flex-col"
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50 shadow-sm">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Sign Document</h3>
-                <p className="text-xs text-gray-500">Please provide your signature below</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSigModalOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="flex-1 bg-white relative">
-              <SignatureCanvas
-                ref={sigPadRef}
-                canvasProps={{
-                  className: "absolute inset-0 w-full h-full",
-                }}
-                minWidth={1.5}
-                maxWidth={3}
-                dotSize={2}
-                penColor="#2463EB"
-              />
-              <div className="absolute inset-x-0 bottom-1/4 pointer-events-none flex items-center justify-center pointer-events-none opacity-20">
-                <p className="text-3xl font-black uppercase tracking-widest text-gray-300 select-none">Sign Here</p>
-              </div>
-              {/* Optional Signature Line Tracker */}
-              <div className="absolute left-10 right-10 bottom-1/4 border-b-2 border-gray-200 pointer-events-none opacity-50"></div>
-            </div>
-
-            <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-4">
-              <button
-                type="button"
-                onClick={handleClearSignature}
-                className="flex-1 py-4 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveSignature}
-                className="flex-[2] py-4 text-sm font-bold text-white bg-[#2463EB] shadow-md rounded-xl hover:bg-blue-700 transition-colors flex justify-center items-center gap-2"
-              >
-                Save Signature 
-                <span className="bg-white text-blue-600 rounded-full w-5 h-5 flex items-center justify-center text-xs">✔</span>
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

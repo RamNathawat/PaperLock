@@ -119,7 +119,11 @@ export function buildCleanPayload(
       termiteBaitAnnualCost: q19.annualCost,
     },
     explanation: typeof flatValues.explanation === "string" ? flatValues.explanation : "",
-    signatures: allSteps["Signatures"]?.signatures || flatValues.signatures || {},
+    signatures: {
+      ...(flatValues.signatures || {}),
+      ...(allSteps["Signatures"]?.signatures || {}),
+    },
+
     page1NotWorkingExplanation:
       allSteps["Appliances"]?.page1NotWorkingExplanation ||
       flatValues.page1NotWorkingExplanation || page1Notes || "",
