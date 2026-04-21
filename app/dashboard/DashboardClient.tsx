@@ -64,7 +64,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function Sidebar({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+function Sidebar({ email, onSignOut, onShare }: { email: string; onSignOut: () => void; onShare: () => void }) {
   const router = useRouter();
   return (
     <aside className="fixed left-0 top-0 h-full w-60 bg-white border-r border-gray-100 flex flex-col py-8 px-4 z-40">
@@ -82,7 +82,7 @@ function Sidebar({ email, onSignOut }: { email: string; onSignOut: () => void })
       </nav>
       <div className="space-y-2 mt-4">
         <button
-          onClick={() => router.push("/disclosures?modal=share")}
+          onClick={onShare}
           className="w-full px-3 py-2.5 bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors rounded-lg"
         >
           + Send to Client
@@ -246,7 +246,7 @@ export default function DashboardClient({
 
   return (
     <div className="min-h-screen flex bg-[#f7f9fb] font-[Inter,sans-serif]">
-      <Sidebar email={email} onSignOut={handleSignOut} />
+      <Sidebar email={email} onSignOut={handleSignOut} onShare={() => { setShowModal(true); setLink(null); setSellerEmail(""); setSeller2Email(""); }} />
 
       <main className="ml-60 flex-1 px-10 py-10">
         <div className="mb-10">
