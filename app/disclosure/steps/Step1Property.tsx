@@ -33,18 +33,19 @@ export default function Step1Property() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">
+        <span className="inline-block px-2.5 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider mb-3">
           Property
-        </p>
-        <h2 className="text-xl font-bold text-gray-900 mt-1">Property Information</h2>
+        </span>
+        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Property Information</h2>
+        <p className="text-sm text-gray-400 mt-1">Enter the full property address and seller details.</p>
       </div>
 
       {/* Property Address */}
       <div
-        className={`rounded-xl border p-5 space-y-4 ${
+        className={`rounded-2xl border p-5 space-y-4 ${
           showErrors && errors.propertyIdentifier
-            ? "border-red-400 bg-red-50"
-            : "border-gray-100"
+            ? "border-red-300 bg-red-50"
+            : "border-gray-100 bg-gray-50/50"
         }`}
       >
         <div>
@@ -52,9 +53,9 @@ export default function Step1Property() {
             Location of Subject Property
           </label>
           {showErrors && errors.propertyIdentifier && (
-            <p className="text-xs font-bold text-red-600 uppercase tracking-wide mt-1">
-              Complete address required before continuing
-            </p>
+            <span className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-full border border-red-200 uppercase tracking-wider">
+              Complete address required
+            </span>
           )}
         </div>
         
@@ -63,41 +64,41 @@ export default function Step1Property() {
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Street Address</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Street Address</label>
             <input
               {...register("address.street")}
               type="text"
               placeholder="1234 Elm Street"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB]"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
             />
           </div>
           <div className="grid grid-cols-12 gap-3">
             <div className="col-span-6">
-              <label className="block text-xs text-gray-500 mb-1">City</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">City</label>
               <input
                 {...register("address.city")}
                 type="text"
                 placeholder="Tulsa"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB]"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
               />
             </div>
             <div className="col-span-3">
-              <label className="block text-xs text-gray-500 mb-1">State</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">State</label>
               <input
                 {...register("address.state")}
                 type="text"
                 placeholder="OK"
                 maxLength={2}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB] uppercase"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all uppercase"
               />
             </div>
             <div className="col-span-3">
-              <label className="block text-xs text-gray-500 mb-1">Zip</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">Zip</label>
               <input
                 {...register("address.zip")}
                 type="text"
                 placeholder="74103"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2463EB]"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
               />
             </div>
           </div>
@@ -106,36 +107,38 @@ export default function Step1Property() {
 
       {/* Seller Occupying */}
       <div
-        className={`rounded-xl border p-5 space-y-3 ${
+        className={`rounded-2xl border p-5 space-y-3 ${
           showErrors && errors.sellerOccupying
-            ? "border-red-400 bg-red-50"
-            : "border-gray-100"
+            ? "border-red-300 bg-red-50"
+            : "border-gray-100 bg-gray-50/50"
         }`}
       >
-        <label className="block text-sm font-semibold text-gray-800">
-          Is the seller currently occupying the property?
-        </label>
-        {showErrors && errors.sellerOccupying && (
-          <p className="text-xs font-bold text-red-600 uppercase tracking-wide">
-            Required before continuing
-          </p>
-        )}
-        <div className="flex gap-6">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+        <div>
+          <label className="block text-sm font-semibold text-gray-800">
+            Is the seller currently occupying the property?
+          </label>
+          {showErrors && errors.sellerOccupying && (
+            <span className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-full border border-red-200 uppercase tracking-wider">
+              Required
+            </span>
+          )}
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <label className="flex items-center gap-2.5 px-4 py-3 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-all text-sm text-gray-700 font-medium">
             <input
               {...register("sellerOccupying", { required: true })}
               type="radio"
               value={0}
-              className="accent-[#2463EB]"
+              className="accent-blue-600"
             />
             Yes, currently occupying
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2.5 px-4 py-3 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-all text-sm text-gray-700 font-medium">
             <input
               {...register("sellerOccupying", { required: true })}
               type="radio"
               value={1}
-              className="accent-[#2463EB]"
+              className="accent-blue-600"
             />
             Not occupying
           </label>
@@ -143,20 +146,21 @@ export default function Step1Property() {
       </div>
 
       {/* Initials */}
-      <div className="rounded-xl border border-gray-100 p-5 space-y-3">
+      <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-5 space-y-3">
         <p className="text-sm font-semibold text-gray-800">Seller Initials</p>
+        <p className="text-xs text-gray-400">Enter the initials of each seller on this disclosure.</p>
         <div className="flex gap-3">
           <input
             {...register("initials.sellerInitial1")}
             maxLength={5}
             placeholder="JAD"
-            className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-center text-sm text-black uppercase focus:outline-none focus:ring-2 focus:ring-[#2463EB]"
+            className="w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
           />
           <input
             {...register("initials.sellerInitial2")}
             maxLength={5}
             placeholder="MS"
-            className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-center text-sm text-black uppercase focus:outline-none focus:ring-2 focus:ring-[#2463EB]"
+            className="w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
           />
         </div>
       </div>

@@ -8,56 +8,52 @@ function ThankYouContent() {
   const searchParams = useSearchParams();
   const isSharedLink = searchParams.get("shared") === "1";
 
+  const nextSteps = isSharedLink
+    ? [
+        "Your realtor has been notified",
+        "A copy of the PDF has been sent to your email",
+        "You can safely close this tab",
+      ]
+    : [
+        "PDF saved to your downloads",
+        "Buyer & seller automatically emailed a copy",
+        "Disclosure saved to your dashboard",
+      ];
+
   return (
     <div className="min-h-screen bg-[#f7f9fb] flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center space-y-6">
+      <div className="max-w-sm w-full bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center space-y-6">
 
-        {/* Success icon */}
+        {/* Success icon — squircle with soft glow */}
         <div className="flex items-center justify-center">
-          <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
-            <svg
-              className="w-8 h-8 text-green-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center shadow-[0_0_0_8px_rgba(16,185,129,0.08)]">
+            <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
         </div>
 
         {/* Heading */}
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Disclosure Submitted
-          </h1>
-          <p className="text-sm text-gray-500 leading-relaxed">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Submitted!</h1>
+          <p className="text-sm text-gray-400 leading-relaxed">
             {isSharedLink
-              ? "Your disclosure has been submitted and the PDF has been sent to your realtor. You can close this tab."
-              : "The completed disclosure PDF has been downloaded and emailed to both the buyer and seller."}
+              ? "Your disclosure has been submitted and the PDF has been sent to your realtor."
+              : "The completed disclosure PDF has been downloaded and emailed to both parties."}
           </p>
         </div>
 
         {/* What happens next */}
-        <div className="bg-gray-50 rounded-xl p-4 text-left space-y-3">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            What happens next
-          </p>
-          <ul className="space-y-2">
-            {[
-              "PDF saved to your downloads",
-              "Buyer & seller automatically emailed a copy",
-              "Disclosure saved to your dashboard",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2 text-sm text-gray-600">
-                <svg className="w-4 h-4 text-[#2463EB] mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+        <div className="bg-gray-50 rounded-2xl p-5 text-left space-y-3">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">What happens next</p>
+          <ul className="space-y-2.5">
+            {nextSteps.map((item) => (
+              <li key={item} className="flex items-start gap-3 text-sm text-gray-600">
+                <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
                 {item}
               </li>
             ))}
@@ -68,15 +64,16 @@ function ThankYouContent() {
         {!isSharedLink && (
           <Link
             href="/dashboard"
-            className="block w-full py-3 bg-[#2463EB] text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+            className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 text-white text-sm font-bold rounded-2xl hover:bg-blue-700 active:scale-[0.97] transition-all"
           >
             Go to Dashboard
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
           </Link>
         )}
 
-        <p className="text-[11px] text-gray-400">
-          Oklahoma RPCD Disclosure — Form 01-01-2026
-        </p>
+        <p className="text-[10px] text-gray-300 font-medium">Oklahoma RPCD Disclosure · Form 01-01-2026</p>
       </div>
     </div>
   );

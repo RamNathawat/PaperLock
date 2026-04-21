@@ -1,6 +1,7 @@
 "use client";
 
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useFormState } from "react-hook-form";
+import { OptionCards } from "@/app/disclosure/components/OptionControls";
 
 const ITEMS: { index: number; label: string }[] = [
   { index: 0,  label: "Sprinkler System" },
@@ -18,87 +19,62 @@ const ITEMS: { index: number; label: string }[] = [
 ];
 
 const OPTIONS = [
-  { label: "Working",                value: "WORKING" },
-  { label: "Not Working",            value: "NOT_WORKING" },
-  { label: "Do Not Know if Working", value: "UNKNOWN" },
-  { label: "None / Not Included",    value: "NONE" },
+  { label: "Working",             value: "WORKING" },
+  { label: "Not Working",         value: "NOT_WORKING" },
+  { label: "Do Not Know",         value: "UNKNOWN" },
+  { label: "None / Not Included", value: "NONE" },
 ];
 
-function ApplianceRow({
-  label,
-  name,
-  commentName,
-}: {
-  label: string;
-  name: string;
-  commentName: string;
-}) {
-  const {
-    register,
-    watch,
-    formState: { errors, submitCount },
-  } = useFormContext();
+function getNestedError(errs: any, path: string) {
+  return path.split(".").reduce((obj, key) => obj?.[key], errs);
+}
 
+function ApplianceRow({ label, name, commentName }: { label: string; name: string; commentName: string }) {
+  const { register, watch, control } = useFormContext();
+  const { errors, submitCount } = useFormState({ control });
   const value = watch(name);
   const showErrors = submitCount > 0;
 
-  // Drill into nested error path like "appliances.0"
   const nameParts = name.split(".");
   let fieldError: any = errors;
-  for (const part of nameParts) {
-    fieldError = fieldError?.[part];
-    if (!fieldError) break;
-  }
+  for (const part of nameParts) { fieldError = fieldError?.[part]; if (!fieldError) break; }
   const hasError = showErrors && !!fieldError;
 
-  // Helper to drill down for comments
-  function getNestedError(errs: any, path: string) {
-    return path.split(".").reduce((obj, key) => obj?.[key], errs);
-  }
-
   return (
-    <div
-      className={`rounded-xl border p-5 space-y-4 ${
-        hasError ? "border-red-400 bg-red-50" : "border-gray-100"
-      }`}
-    >
+    <div className={`rounded-2xl border p-5 space-y-4 ${hasError ? "border-amber-200 bg-amber-50/40" : "border-gray-100 bg-gray-50/30"}`}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-gray-800">{label}</p>
         {hasError && (
-          <span className="text-xs font-bold text-red-600 uppercase tracking-wide whitespace-nowrap">
-            Required before continuing
-          </span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+            <span className="text-xs font-semibold text-amber-700 whitespace-nowrap">Required</span>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {OPTIONS.map((option) => (
-          <label
-            key={option.value}
-            className="flex items-center gap-2 text-sm text-gray-600"
-          >
-            <input
-              {...register(name, { required: true })}
-              type="radio"
-              value={option.value}
-              className="accent-[#2463EB]"
-            />
-            {option.label}
-          </label>
-        ))}
-      </div>
+      <OptionCards name={name} options={OPTIONS} cols={2} />
 
       {value === "NOT_WORKING" && (
         <textarea
-          {...register(commentName, { required: true })}
+          {...register(commentName, { required: true, shouldUnregister: true })}
           rows={3}
-          placeholder={`Describe issue with ${label.toLowerCase()}...`}
-          className={`w-full rounded-lg border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 ${
-            submitCount > 0 && !!getNestedError(errors, commentName)
-              ? "border-red-400 bg-red-50"
-              : "border-gray-200"
+          placeholder={`Describe the issue with ${label.toLowerCase()}…`}
+          className={`w-full rounded-xl border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+            submitCount > 0 && !!getNestedError(errors, commentName) ? "border-amber-300 bg-amber-50" : "border-gray-200"
           }`}
         />
+      )}
+
+      {value === "UNKNOWN" && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-gray-400">Optional — add context about why this is unknown</p>
+          <textarea
+            {...register(commentName, { required: false, shouldUnregister: true })}
+            rows={2}
+            placeholder={`e.g. "Never tested" or "Was here when we bought the property"`}
+            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
       )}
     </div>
   );
@@ -108,24 +84,12 @@ export default function Step2AppliancesPrimary() {
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">
-          Appliances
-        </p>
-        <h2 className="text-xl font-bold text-gray-900 mt-1">
-          Appliances & Equipment
-        </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Select the condition of each item. All fields are required.
-        </p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Appliances</p>
+        <h2 className="text-xl font-bold text-gray-900 mt-1">Appliances &amp; Equipment</h2>
+        <p className="text-sm text-gray-500 mt-1">Select the condition of each item. All fields are required.</p>
       </div>
-
       {ITEMS.map(({ index, label }) => (
-        <ApplianceRow
-          key={index}
-          label={label}
-          name={`appliances.${index}`}
-          commentName={`applianceComments.${index}`}
-        />
+        <ApplianceRow key={index} label={label} name={`appliances.${index}`} commentName={`applianceComments.${index}`} />
       ))}
     </div>
   );

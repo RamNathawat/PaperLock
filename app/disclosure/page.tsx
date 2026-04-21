@@ -54,14 +54,18 @@ function normalizeAppliances(flat: FlatFormData) {
 // ─────────────────────────────────────────────────────────────
 function GeneratingOverlay() {
   return (
-    <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-      <svg className="w-8 h-8 text-[#2463EB] animate-spin" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-      </svg>
-      <div className="text-center">
-        <p className="text-sm font-semibold text-gray-800">Generating your disclosure PDF…</p>
-        <p className="text-xs text-gray-400 mt-1">This usually takes a few seconds</p>
+    <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-center justify-center">
+      <div className="bg-white rounded-3xl shadow-2xl px-10 py-8 flex flex-col items-center gap-5 max-w-xs w-full mx-6">
+        <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center">
+          <svg className="w-7 h-7 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <p className="text-base font-bold text-gray-900 tracking-tight">Generating PDF…</p>
+          <p className="text-sm text-gray-400 mt-1">This usually takes a few seconds</p>
+        </div>
       </div>
     </div>
   );
@@ -303,7 +307,15 @@ export function DisclosurePage({ sharedToken }: Props) {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f7f9fb] flex items-center justify-center">
-        <p className="text-sm text-gray-400">Loading…</p>
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 px-10 py-8 flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center">
+            <svg className="w-5 h-5 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-gray-500">Loading your disclosure…</p>
+        </div>
       </div>
     );
   }
@@ -312,8 +324,8 @@ export function DisclosurePage({ sharedToken }: Props) {
     <div className="min-h-screen bg-[#f7f9fb]">
       {generating && <GeneratingOverlay />}
 
-      <div className="max-w-3xl mx-auto py-12 px-6">
-        <div className="bg-white border border-gray-100 rounded-xl p-8">
+      <div className="max-w-2xl mx-auto py-8 sm:py-12 px-4 sm:px-6">
+        <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-6 sm:p-8 disclosure-form">
           <Wizard
             steps={steps}
             onCompleted={handleCompleted}
