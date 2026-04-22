@@ -132,7 +132,10 @@ async function drawSignatureFromBase64(
   const page = pages[layout.page];
   if (!page) return;
 
-  const imageBytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  // Strip the data URL prefix if present (e.g. "data:image/png;base64,...")
+  const rawBase64 = base64.includes(",") ? base64.split(",")[1] : base64;
+
+  const imageBytes = Uint8Array.from(atob(rawBase64), (c) => c.charCodeAt(0));
 
   let image;
   try {
