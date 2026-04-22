@@ -1,7 +1,9 @@
 "use client";
 
+import { useContext } from "react";
 import { useFormContext, useFormState } from "react-hook-form";
 import { OptionCards } from "@/app/disclosure/components/OptionControls";
+import { ReadOnlyContext } from "../page";
 
 const PAGE_2_OFFSET = 19;
 
@@ -24,9 +26,21 @@ function getNestedError(errs: any, path: string) {
   return path.split(".").reduce((obj, key) => obj?.[key], errs);
 }
 
+function ReadOnlyComment({ name }: { name: string }) {
+  const { watch } = useFormContext();
+  const text = watch(name);
+  if (!text) return null;
+  return (
+    <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
+      {text}
+    </p>
+  );
+}
+
 function ApplianceRow({ label, name, commentName }: { label: string; name: string; commentName: string }) {
   const { register, watch, control } = useFormContext();
   const { errors, submitCount } = useFormState({ control });
+  const isReadOnly = useContext(ReadOnlyContext);
   const value = watch(name);
 
   const nameParts = name.split(".");
@@ -48,7 +62,7 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
 
       <OptionCards name={name} options={OPTIONS} cols={2} />
 
-      {value === "NOT_WORKING" && (
+      {value === "NOT_WORKING" && !isReadOnly && (
         <textarea
           {...register(commentName, { required: true, shouldUnregister: true })}
           rows={3}
@@ -58,8 +72,9 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
           }`}
         />
       )}
+      {value === "NOT_WORKING" && isReadOnly && <ReadOnlyComment name={commentName} />}
 
-      {value === "UNKNOWN" && (
+      {value === "UNKNOWN" && !isReadOnly && (
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-gray-400">Optional — add context about why this is unknown</p>
           <textarea
@@ -70,23 +85,25 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
           />
         </div>
       )}
+      {value === "UNKNOWN" && isReadOnly && <ReadOnlyComment name={commentName} />}
     </div>
   );
 }
 
-export default function Step3AppliancesExtended({ readOnly }: { readOnly?: boolean }) {
+export default function Step3AppliancesExtended() {
+  const isReadOnly = useContext(ReadOnlyContext);
   return (
-    <fieldset disabled={readOnly} className={readOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+    <fieldset disabled={isReadOnly} className={isReadOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
       <div className="space-y-5">
         <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Appliances</p>
-        <h2 className="text-xl font-bold text-gray-900 mt-1">Appliances Continued</h2>
-        <p className="text-sm text-gray-500 mt-1">Select the condition of each item. All fields are required.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Appliances</p>
+          <h2 className="text-xl font-bold text-gray-900 mt-1">Appliances Continued</h2>
+          <p className="text-sm text-gray-500 mt-1">Select the condition of each item. All fields are required.</p>
+        </div>
+        {ITEMS.map((item, index) => (
+          <ApplianceRow key={index} label={item} name={`appliances.${PAGE_2_OFFSET + index}`} commentName={`applianceComments.${PAGE_2_OFFSET + index}`} />
+        ))}
       </div>
-      {ITEMS.map((item, index) => (
-        <ApplianceRow key={index} label={item} name={`appliances.${PAGE_2_OFFSET + index}`} commentName={`applianceComments.${PAGE_2_OFFSET + index}`} />
-      ))}
-    </div>
     </fieldset>
   );
 }

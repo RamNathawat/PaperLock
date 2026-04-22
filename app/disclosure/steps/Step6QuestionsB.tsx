@@ -1,8 +1,10 @@
 "use client";
 
+import { useContext } from "react";
 import { useFormContext, useFormState } from "react-hook-form";
 import InfoTooltip from "@/app/disclosure/components/InfoTooltip";
 import { YesNoCards } from "@/app/disclosure/components/OptionControls";
+import { ReadOnlyContext } from "../page";
 
 const QUESTIONS: Record<number, { text: string; tip: string }> = {
   21: { text: "Are you aware of major fire, tornado, hail, earthquake or wind damage?", tip: "Has the property suffered significant structural or cosmetic damage from a natural disaster or severe weather event?" },
@@ -23,9 +25,21 @@ const QUESTIONS: Record<number, { text: string; tip: string }> = {
   36: { text: "Are you aware of any wells located on the property?", tip: "Are there any water wells, dry wells, or abandoned wells on the property? Include both active and capped/decommissioned wells." },
 };
 
+function ReadOnlyComment({ name }: { name: string }) {
+  const { watch } = useFormContext();
+  const text = watch(name);
+  if (!text) return null;
+  return (
+    <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
+      {text}
+    </p>
+  );
+}
+
 function YesNoRow({ num }: { num: number }) {
   const { register, watch, control } = useFormContext();
   const { errors, submitCount } = useFormState({ control });
+  const isReadOnly = useContext(ReadOnlyContext);
   const { text, tip } = QUESTIONS[num];
   const value    = watch(`questions.${num}`);
   const hasError = submitCount > 0 && !!(errors as any)?.questions?.[num];
@@ -47,7 +61,7 @@ function YesNoRow({ num }: { num: number }) {
 
       <YesNoCards name={`questions.${num}`} />
 
-      {value === "YES" && (
+      {value === "YES" && !isReadOnly && (
         <textarea
           {...register(`questionComments.${num}`, { required: true, shouldUnregister: true })}
           rows={3}
@@ -57,67 +71,73 @@ function YesNoRow({ num }: { num: number }) {
           }`}
         />
       )}
+      {value === "YES" && isReadOnly && <ReadOnlyComment name={`questionComments.${num}`} />}
     </div>
   );
 }
 
-export default function Step6QuestionsB({ readOnly }: { readOnly?: boolean }) {
+export default function Step6QuestionsB() {
+  const isReadOnly = useContext(ReadOnlyContext);
   const { register, watch, formState: { errors, submitCount } } = useFormContext();
   const showErrors = submitCount > 0;
   const q37 = watch("questions.37");
 
   return (
-    <fieldset disabled={readOnly} className={readOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+    <fieldset disabled={isReadOnly} className={isReadOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
       <div className="space-y-5">
         <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Questions</p>
-        <h2 className="text-xl font-bold text-gray-900 mt-1">Environmental &amp; Land Questions</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          All questions require a YES or NO answer. Tap <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[#2463EB] border border-[#2463EB]/30 bg-blue-50 text-[10px] font-bold">i</span> for plain-English help.
-        </p>
-      </div>
-
-      {[21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36].map((n) => (
-        <YesNoRow key={n} num={n} />
-      ))}
-
-      {/* Q37 — with conditional sub-form */}
-      <div className={`relative rounded-2xl border p-5 space-y-4 ${showErrors && !!(errors as any)?.questions?.[37] ? "border-red-300 bg-red-50" : "border-gray-100 bg-gray-50/30"}`}>
-        <div className="absolute top-5 right-5">
-          <InfoTooltip text="Does the property include any dam, berm, or water retention structure — even a small earthen dam on a pond? If so, note who is responsible for maintenance." />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Questions</p>
+          <h2 className="text-xl font-bold text-gray-900 mt-1">Environmental &amp; Land Questions</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            All questions require a YES or NO answer. Tap <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[#2463EB] border border-[#2463EB]/30 bg-blue-50 text-[10px] font-bold">i</span> for plain-English help.
+          </p>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-gray-800 pr-8">Q37. Are you aware of any dams located on the property?</p>
-          {showErrors && !!(errors as any)?.questions?.[37] && (
-            <span className="inline-flex mt-1.5 text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full uppercase tracking-wide">
-              Required before continuing
-            </span>
+
+        {[21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36].map((n) => (
+          <YesNoRow key={n} num={n} />
+        ))}
+
+        {/* Q37 — with conditional sub-form */}
+        <div className={`relative rounded-2xl border p-5 space-y-4 ${showErrors && !!(errors as any)?.questions?.[37] ? "border-red-300 bg-red-50" : "border-gray-100 bg-gray-50/30"}`}>
+          <div className="absolute top-5 right-5">
+            <InfoTooltip text="Does the property include any dam, berm, or water retention structure — even a small earthen dam on a pond? If so, note who is responsible for maintenance." />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-800 pr-8">Q37. Are you aware of any dams located on the property?</p>
+            {showErrors && !!(errors as any)?.questions?.[37] && (
+              <span className="inline-flex mt-1.5 text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                Required before continuing
+              </span>
+            )}
+          </div>
+
+          <YesNoCards name="questions.37" />
+
+          {q37 === "YES" && (
+            <div className="pt-3 border-t border-gray-100 space-y-4">
+              {!isReadOnly ? (
+                <textarea
+                  {...register("questionComments.37")}
+                  rows={3}
+                  placeholder="Add dam details… (optional)"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              ) : (
+                <ReadOnlyComment name="questionComments.37" />
+              )}
+              <div className={`rounded-xl border p-4 space-y-3 ${showErrors && !!(errors as any)?.q37Inline?.maintenance ? "border-red-300 bg-red-50" : "border-gray-100"}`}>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-800">Are you responsible for dam maintenance?</p>
+                  {showErrors && !!(errors as any)?.q37Inline?.maintenance && (
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full uppercase tracking-wide">Required</span>
+                  )}
+                </div>
+                <YesNoCards name="q37Inline.maintenance" />
+              </div>
+            </div>
           )}
         </div>
-
-        <YesNoCards name="questions.37" />
-
-        {q37 === "YES" && (
-          <div className="pt-3 border-t border-gray-100 space-y-4">
-            <textarea
-              {...register("questionComments.37")}
-              rows={3}
-              placeholder="Add dam details… (optional)"
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
-            <div className={`rounded-xl border p-4 space-y-3 ${showErrors && !!(errors as any)?.q37Inline?.maintenance ? "border-red-300 bg-red-50" : "border-gray-100"}`}>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-gray-800">Are you responsible for dam maintenance?</p>
-                {showErrors && !!(errors as any)?.q37Inline?.maintenance && (
-                  <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full uppercase tracking-wide">Required</span>
-                )}
-              </div>
-              <YesNoCards name="q37Inline.maintenance" />
-            </div>
-          </div>
-        )}
       </div>
-    </div>
     </fieldset>
   );
 }

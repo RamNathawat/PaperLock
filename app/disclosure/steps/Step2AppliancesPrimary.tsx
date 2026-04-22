@@ -1,7 +1,9 @@
 "use client";
 
+import { useContext } from "react";
 import { useFormContext, useFormState } from "react-hook-form";
 import { OptionCards } from "@/app/disclosure/components/OptionControls";
+import { ReadOnlyContext } from "../page";
 
 const ITEMS: { index: number; label: string }[] = [
   { index: 0,  label: "Sprinkler System" },
@@ -32,13 +34,13 @@ function getNestedError(errs: any, path: string) {
 function ApplianceRow({ label, name, commentName }: { label: string; name: string; commentName: string }) {
   const { register, watch, control } = useFormContext();
   const { errors, submitCount } = useFormState({ control });
+  const isReadOnly = useContext(ReadOnlyContext);
   const value = watch(name);
-  const showErrors = submitCount > 0;
 
   const nameParts = name.split(".");
   let fieldError: any = errors;
   for (const part of nameParts) { fieldError = fieldError?.[part]; if (!fieldError) break; }
-  const hasError = showErrors && !!fieldError;
+  const hasError = submitCount > 0 && !!fieldError;
 
   return (
     <div className={`rounded-2xl border p-5 space-y-4 ${hasError ? "border-amber-200 bg-amber-50/40" : "border-gray-100 bg-gray-50/30"}`}>
@@ -54,7 +56,7 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
 
       <OptionCards name={name} options={OPTIONS} cols={2} />
 
-      {value === "NOT_WORKING" && (
+      {value === "NOT_WORKING" && !isReadOnly && (
         <textarea
           {...register(commentName, { required: true, shouldUnregister: true })}
           rows={3}
@@ -65,7 +67,11 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
         />
       )}
 
-      {value === "UNKNOWN" && (
+      {value === "NOT_WORKING" && isReadOnly && (
+        <ReadOnlyComment name={commentName} />
+      )}
+
+      {value === "UNKNOWN" && !isReadOnly && (
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-gray-400">Optional — add context about why this is unknown</p>
           <textarea
@@ -76,23 +82,39 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
           />
         </div>
       )}
+
+      {value === "UNKNOWN" && isReadOnly && (
+        <ReadOnlyComment name={commentName} />
+      )}
     </div>
   );
 }
 
-export default function Step2AppliancesPrimary({ readOnly }: { readOnly?: boolean }) {
+function ReadOnlyComment({ name }: { name: string }) {
+  const { watch } = useFormContext();
+  const text = watch(name);
+  if (!text) return null;
   return (
-    <fieldset disabled={readOnly} className={readOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+    <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
+      {text}
+    </p>
+  );
+}
+
+export default function Step2AppliancesPrimary() {
+  const isReadOnly = useContext(ReadOnlyContext);
+  return (
+    <fieldset disabled={isReadOnly} className={isReadOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
       <div className="space-y-5">
         <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Appliances</p>
-        <h2 className="text-xl font-bold text-gray-900 mt-1">Appliances &amp; Equipment</h2>
-        <p className="text-sm text-gray-500 mt-1">Select the condition of each item. All fields are required.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Appliances</p>
+          <h2 className="text-xl font-bold text-gray-900 mt-1">Appliances &amp; Equipment</h2>
+          <p className="text-sm text-gray-500 mt-1">Select the condition of each item. All fields are required.</p>
+        </div>
+        {ITEMS.map(({ index, label }) => (
+          <ApplianceRow key={index} label={label} name={`appliances.${index}`} commentName={`applianceComments.${index}`} />
+        ))}
       </div>
-      {ITEMS.map(({ index, label }) => (
-        <ApplianceRow key={index} label={label} name={`appliances.${index}`} commentName={`applianceComments.${index}`} />
-      ))}
-    </div>
     </fieldset>
   );
 }

@@ -29,8 +29,6 @@ type Props = {
 
 type FlatFormData = Record<string, any>;
 
-const PAGE_2_APPLIANCE_OFFSET = 19;
-
 function normalizeAppliances(flat: FlatFormData) {
   const source =
     flat?.appliances ||
@@ -62,7 +60,7 @@ function normalizeQuestions(flat: FlatFormData) {
     });
     return result;
   }
-  
+
   return [];
 }
 
@@ -125,9 +123,10 @@ export function DisclosurePage({ sharedToken }: Props) {
 
         if (!flat) { setLoading(false); return; }
 
-        // Detect Seller 2: the link has already been submitted by Seller 1
-        // AND Seller 1's signature already exists in the saved data
-        const linkIsSubmitted = !!data.link?.is_submitted;
+        // Detect Seller 2 session:
+        // The link has been submitted by Seller 1 (is_submitted=true) AND
+        // Seller 1's signature is already saved in the form data.
+        const linkIsSubmitted  = !!data.link?.is_submitted;
         const seller1HasSigned = !!flat.signatures?.sellerSignatureBase64;
         setIsSeller2Session(!!token && linkIsSubmitted && seller1HasSigned);
 
@@ -186,7 +185,7 @@ export function DisclosurePage({ sharedToken }: Props) {
             q46Inline: flat.q46Inline,
             q47Details: flat.q47Details,
           },
-          Financial: { 
+          Financial: {
             additionalPages: flat.additionalPages,
             explanation: flat.explanation,
           },
@@ -219,7 +218,6 @@ export function DisclosurePage({ sharedToken }: Props) {
       const res: Record<string, any> = { ...(a || {}) };
       if (b) {
         Object.entries(b).forEach(([k, v]) => {
-          // Only skip explicitly undefined or null — allow empty strings so saved comments aren't wiped
           if (v !== undefined && v !== null) res[k] = v;
         });
       }
@@ -287,26 +285,44 @@ export function DisclosurePage({ sharedToken }: Props) {
     setGenerating(true);
 
     try {
-      const allSteps = allStepsFromWizard || perStepValuesRef.current || {};
-      
-      // CRITICAL: Must use deep merge, otherwise 'Appliances Extended' overwrites 'Appliances Primary'
-      const flatValues = mergePayloads(Object.values(allSteps));
+      const allSteps    = allStepsFromWizard || perStepValuesRef.current || {};
+      const flatValues  = mergePayloads(Object.values(allSteps));
       const cleanPayload = buildCleanPayload(flatValues, allSteps);
 
-      // ── Shared link: fire is_submitted PATCH (triggers email) ──
+      // ── Shared link: fire the appropriate submit flag ──
       if (token) {
-        await fetch(`/api/shared-links/${token}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ form_data: flatValues, pdf_payload: cleanPayload, is_submitted: true }),
-        });
+        if (isSeller2Session) {
+          // Seller 2 co-signing: this is the FINAL submit — triggers email + PDF
+          await fetch(`/api/shared-links/${token}`, {
+            method:  "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({
+              form_data:          flatValues,
+              pdf_payload:        cleanPayload,
+              seller2_submitted:  true,
+            }),
+          });
+        } else {
+          // Seller 1 submitting:
+          // - If hasSeller2: server will send Seller 2 an invite (no PDF email yet)
+          // - If no Seller 2: server will send the final PDF email immediately
+          await fetch(`/api/shared-links/${token}`, {
+            method:  "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({
+              form_data:    flatValues,
+              pdf_payload:  cleanPayload,
+              is_submitted: true,
+            }),
+          });
+        }
       }
 
       // ── Generate and download PDF ──
       const res = await fetch("/api/disclosure/generate", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cleanPayload),
+        body:    JSON.stringify(cleanPayload),
       });
 
       if (!res.ok) {
@@ -342,16 +358,16 @@ export function DisclosurePage({ sharedToken }: Props) {
 
   const steps = useMemo(() => [
     { id: "Property",            component: <Step1Property readOnly={isSeller2Session} isSeller2={isSeller2Session} hasSeller2Email={hasSeller2} />, initialValues: initialValues?.Property },
-    { id: "Appliances",          component: <Step2AppliancesPrimary readOnly={isSeller2Session} />,  initialValues: initialValues?.AppliancesPrimary },
-    { id: "Appliances Continued",component: <Step3AppliancesExtended readOnly={isSeller2Session} />, initialValues: initialValues?.AppliancesExtended },
-    { id: "Systems",             component: <Step3Systems readOnly={isSeller2Session} />,            initialValues: initialValues?.Systems },
-    { id: "Zoning",              component: <Step4Zoning readOnly={isSeller2Session} />,             initialValues: initialValues?.Zoning },
-    { id: "Questions",           component: <Step5QuestionsA readOnly={isSeller2Session} />,         initialValues: initialValues?.QuestionsA },
-    { id: "Questions Continued", component: <Step6QuestionsB readOnly={isSeller2Session} />,         initialValues: initialValues?.QuestionsB },
-    { id: "Questions Final",     component: <Step7QuestionsC readOnly={isSeller2Session} />,         initialValues: initialValues?.QuestionsC },
-    { id: "Financial",           component: <Step6Financial readOnly={isSeller2Session} />,          initialValues: initialValues?.Financial },
-    { id: "Signatures",          component: <Step7Signatures isSeller2={isSeller2Session} />,         initialValues: initialValues?.Signatures },
-  ], [initialValues, isSeller2Session]);
+    { id: "Appliances",          component: <Step2AppliancesPrimary />,  initialValues: initialValues?.AppliancesPrimary },
+    { id: "Appliances Continued",component: <Step3AppliancesExtended />, initialValues: initialValues?.AppliancesExtended },
+    { id: "Systems",             component: <Step3Systems />,            initialValues: initialValues?.Systems },
+    { id: "Zoning",              component: <Step4Zoning />,             initialValues: initialValues?.Zoning },
+    { id: "Questions",           component: <Step5QuestionsA />,         initialValues: initialValues?.QuestionsA },
+    { id: "Questions Continued", component: <Step6QuestionsB />,         initialValues: initialValues?.QuestionsB },
+    { id: "Questions Final",     component: <Step7QuestionsC />,         initialValues: initialValues?.QuestionsC },
+    { id: "Financial",           component: <Step6Financial />,          initialValues: initialValues?.Financial },
+    { id: "Signatures",          component: <Step7Signatures isSeller2={isSeller2Session} />, initialValues: initialValues?.Signatures },
+  ], [initialValues, isSeller2Session, hasSeller2]);
 
   if (loading) {
     return (
