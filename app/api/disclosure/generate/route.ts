@@ -60,18 +60,56 @@ function normalizeIndexedRecord<T>(
 }
 
 function coerce(data: any): DisclosureInput {
-  // Appliances arrive as a single merged record from page.tsx handleCompleted.
-  // Step2AppliancesPrimary uses indexes 0–11.
-  // Step3AppliancesExtended uses indexes 12–26.
-  // No remapping needed here — just normalize whatever comes in.
+  /**
+   * Appliances arrive as a single merged record from page.tsx handleCompleted.
+   * Step2AppliancesPrimary uses indexes 0–11.
+   * Step3AppliancesExtended uses indexes 12–26.
+   *
+   * No remapping needed here — just normalize whatever comes in.
+   */
   const appliances =
     normalizeIndexedRecord(data.appliances) ?? {};
+
+  /**
+   * CRITICAL FIX:
+   *
+   * Seller 2 flow may lose page1/page2 explanation fields because
+   * disabled RHF fields get dropped from payloads.
+   *
+   * Validation requires:
+   * - page1NotWorkingExplanation
+   * - page2NotWorkingExplanation
+   *
+   * We safely rebuild fallback text from applianceComments if needed.
+   */
+  const applianceCommentText = data.applianceComments
+    ? Object.entries(data.applianceComments)
+        .map(([k, v]) =>
+          typeof v === "string" && v.trim()
+            ? `Appliance ${Number(k) + 1}: ${v.trim()}`
+            : null
+        )
+        .filter(Boolean)
+        .join("\n")
+    : undefined;
 
   return {
     ...data,
     version: "01-01-2026",
 
     appliances,
+
+    /**
+     * CRITICAL FIX:
+     * validation depends on these fields
+     */
+    page1NotWorkingExplanation:
+      data.page1NotWorkingExplanation ||
+      applianceCommentText ||
+      "",
+
+    page2NotWorkingExplanation:
+      data.page2NotWorkingExplanation || "",
 
     sellerOccupying: toNum(data.sellerOccupying) as 0 | 1,
 
@@ -148,6 +186,9 @@ export async function POST(req: NextRequest) {
 
     const normalized = coerce(body);
 
+    /**
+     * Preview should never block on validation
+     */
     if (!body.isPreview) {
       validateDisclosureInput(normalized);
     }

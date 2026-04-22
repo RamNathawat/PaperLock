@@ -3,22 +3,46 @@ import { DisclosureInput } from "../schema/disclosure.schema";
 import { SIGNATURE_LAYOUT } from "../layout/rpcd_2026.semantic";
 import * as raw from "../../../forms/orec/2026/layout";
 
-// Width of each initials box in points (measured from the template).
-// buyer1 and buyer2 boxes are identical; same for seller1 and seller2.
+/**
+ * Width of each initials box in points (measured from template)
+ */
 const INITIALS_BOX_WIDTH = 22;
-const INITIALS_SIZE = 10;
 
 /**
- * Returns the x position that visually centers a single-character initial
- * inside its box.
+ * IMPORTANT FIX:
+ *
+ * Instead of fixed font size + fixed x position,
+ * dynamically resize and center initials so they never overflow.
+ *
+ * Fixes:
+ * - RN overflow
+ * - seller2 initials overflow
+ * - multi-character initials
  */
-function centeredInitialX(
+
+function getInitialPlacement(
   boxLeftX: number,
-  char: string,
+  text: string,
   font: PDFFont
-): number {
-  const charWidth = font.widthOfTextAtSize(char, INITIALS_SIZE);
-  return boxLeftX + (INITIALS_BOX_WIDTH - charWidth) / 2;
+) {
+  let size = 10;
+  let width = font.widthOfTextAtSize(text, size);
+
+  /**
+   * Auto shrink until it fits
+   */
+  while (width > INITIALS_BOX_WIDTH - 2 && size > 6) {
+    size--;
+    width = font.widthOfTextAtSize(text, size);
+  }
+
+  /**
+   * Auto center horizontally
+   */
+  return {
+    x: boxLeftX + (INITIALS_BOX_WIDTH - width) / 2,
+    size,
+  };
 }
 
 export async function renderSignatures(
@@ -27,7 +51,11 @@ export async function renderSignatures(
   font: PDFFont,
   data: DisclosureInput
 ) {
-  // ── Seller 1 signature → seller slot only ──────────────────────────────
+  /**
+   * ─────────────────────────────────────────────
+   * Seller 1 signature
+   * ─────────────────────────────────────────────
+   */
   if (data.signatures?.sellerSignatureBase64) {
     await drawSignatureFromBase64(
       pdfDoc,
@@ -37,8 +65,11 @@ export async function renderSignatures(
     );
   }
 
-  // ── Seller 2 signature → seller2 slot only ─────────────────────────────
-  // If seller2SignatureBase64 exists use it; otherwise leave the slot blank.
+  /**
+   * ─────────────────────────────────────────────
+   * Seller 2 signature
+   * ─────────────────────────────────────────────
+   */
   if (data.signatures?.seller2SignatureBase64) {
     await drawSignatureFromBase64(
       pdfDoc,
@@ -48,7 +79,11 @@ export async function renderSignatures(
     );
   }
 
-  // ── Buyer signatures (unchanged) ───────────────────────────────────────
+  /**
+   * ─────────────────────────────────────────────
+   * Buyer signatures
+   * ─────────────────────────────────────────────
+   */
   if (data.signatures?.buyerSignatureBase64) {
     await drawSignatureFromBase64(
       pdfDoc,
@@ -56,6 +91,7 @@ export async function renderSignatures(
       SIGNATURE_LAYOUT.buyer,
       data.signatures.buyerSignatureBase64
     );
+
     await drawSignatureFromBase64(
       pdfDoc,
       pages,
@@ -64,7 +100,11 @@ export async function renderSignatures(
     );
   }
 
-  // ── Additional pages checkbox ──────────────────────────────────────────
+  /**
+   * ─────────────────────────────────────────────
+   * Additional pages checkbox
+   * ─────────────────────────────────────────────
+   */
   if (data.additionalPages) {
     const page5 = pages[4];
     if (!page5) return;
@@ -75,6 +115,7 @@ export async function renderSignatures(
         : raw.PAGE5_ADDITIONAL_PAGES.noX;
 
     const numX = Number(checkX);
+
     if (!Number.isNaN(numX)) {
       page5.drawText("X", {
         x: numX,
@@ -97,49 +138,91 @@ export async function renderSignatures(
     }
   }
 
-  // ── Initials on every page (centered within each box) ─────────────────
+  /**
+   * ─────────────────────────────────────────────
+   * Initials on every page
+   * ─────────────────────────────────────────────
+   */
   if (data.initials) {
     pages.forEach((page, pageIndex) => {
       const isLastPage = pageIndex === pages.length - 1;
+
       const coords = isLastPage
         ? raw.PAGE5_INITIALS_BOXES
         : raw.PAGE_INITIALS_DEFAULT;
 
       const safeY = Number(coords.y);
+
       if (!Number.isFinite(safeY)) return;
 
+      /**
+       * Buyer Initial 1
+       */
       if (data.initials?.buyerInitial1) {
+        const placement = getInitialPlacement(
+          coords.buyer1X,
+          data.initials.buyerInitial1,
+          font
+        );
+
         page.drawText(data.initials.buyerInitial1, {
-          x: centeredInitialX(coords.buyer1X, data.initials.buyerInitial1, font),
+          x: placement.x,
           y: safeY,
-          size: INITIALS_SIZE,
+          size: placement.size,
           font,
         });
       }
 
+      /**
+       * Buyer Initial 2
+       */
       if (data.initials?.buyerInitial2) {
+        const placement = getInitialPlacement(
+          coords.buyer2X,
+          data.initials.buyerInitial2,
+          font
+        );
+
         page.drawText(data.initials.buyerInitial2, {
-          x: centeredInitialX(coords.buyer2X, data.initials.buyerInitial2, font),
+          x: placement.x,
           y: safeY,
-          size: INITIALS_SIZE,
+          size: placement.size,
           font,
         });
       }
 
+      /**
+       * Seller Initial 1
+       */
       if (data.initials?.sellerInitial1) {
+        const placement = getInitialPlacement(
+          coords.seller1X,
+          data.initials.sellerInitial1,
+          font
+        );
+
         page.drawText(data.initials.sellerInitial1, {
-          x: centeredInitialX(coords.seller1X, data.initials.sellerInitial1, font),
+          x: placement.x,
           y: safeY,
-          size: INITIALS_SIZE,
+          size: placement.size,
           font,
         });
       }
 
+      /**
+       * Seller Initial 2
+       */
       if (data.initials?.sellerInitial2) {
+        const placement = getInitialPlacement(
+          coords.seller2X,
+          data.initials.sellerInitial2,
+          font
+        );
+
         page.drawText(data.initials.sellerInitial2, {
-          x: centeredInitialX(coords.seller2X, data.initials.sellerInitial2, font),
+          x: placement.x,
           y: safeY,
-          size: INITIALS_SIZE,
+          size: placement.size,
           font,
         });
       }
@@ -160,14 +243,25 @@ async function drawSignatureFromBase64(
   base64: string
 ) {
   const page = pages[layout.page];
+
   if (!page) return;
 
-  // Strip the data URL prefix if present (e.g. "data:image/png;base64,...")
-  const rawBase64 = base64.includes(",") ? base64.split(",")[1] : base64;
+  /**
+   * Strip data URL prefix if present
+   * Example:
+   * data:image/png;base64,...
+   */
+  const rawBase64 = base64.includes(",")
+    ? base64.split(",")[1]
+    : base64;
 
-  const imageBytes = Uint8Array.from(atob(rawBase64), (c) => c.charCodeAt(0));
+  const imageBytes = Uint8Array.from(
+    atob(rawBase64),
+    (c) => c.charCodeAt(0)
+  );
 
   let image;
+
   try {
     image = await pdfDoc.embedPng(imageBytes);
   } catch {
@@ -182,10 +276,20 @@ async function drawSignatureFromBase64(
   const scaledWidth = image.width * scale;
   const scaledHeight = image.height * scale;
 
-  const offsetX = Number(layout.x) + (layout.width - scaledWidth) / 2;
-  const offsetY = Number(layout.y) + (layout.height - scaledHeight) / 2;
+  const offsetX =
+    Number(layout.x) +
+    (layout.width - scaledWidth) / 2;
 
-  if (!Number.isFinite(offsetX) || !Number.isFinite(offsetY)) return;
+  const offsetY =
+    Number(layout.y) +
+    (layout.height - scaledHeight) / 2;
+
+  if (
+    !Number.isFinite(offsetX) ||
+    !Number.isFinite(offsetY)
+  ) {
+    return;
+  }
 
   page.drawImage(image, {
     x: offsetX,
