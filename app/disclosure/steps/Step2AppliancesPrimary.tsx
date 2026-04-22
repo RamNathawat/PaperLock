@@ -42,6 +42,8 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
   for (const part of nameParts) { fieldError = fieldError?.[part]; if (!fieldError) break; }
   const hasError = submitCount > 0 && !!fieldError;
 
+  const showComment = value === "NOT_WORKING" || value === "UNKNOWN";
+
   return (
     <div className={`rounded-2xl border p-5 space-y-4 ${hasError ? "border-amber-200 bg-amber-50/40" : "border-gray-100 bg-gray-50/30"}`}>
       <div className="flex items-start justify-between gap-2">
@@ -56,9 +58,18 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
 
       <OptionCards name={name} options={OPTIONS} cols={2} />
 
+      {/*
+        Always register the comment field so RHF keeps the value in its store
+        regardless of which UI branch is visible. shouldUnregister was the bug:
+        in read-only mode the textarea was never mounted so the value from
+        defaultValues was never picked up, making watch(commentName) return
+        undefined and hiding Seller 1's comments from Seller 2.
+      */}
+      <input type="hidden" {...register(commentName)} />
+
       {value === "NOT_WORKING" && !isReadOnly && (
         <textarea
-          {...register(commentName, { required: true, shouldUnregister: true })}
+          {...register(commentName, { required: true })}
           rows={3}
           placeholder={`Describe the issue with ${label.toLowerCase()}…`}
           className={`w-full rounded-xl border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
@@ -75,7 +86,7 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-gray-400">Optional — add context about why this is unknown</p>
           <textarea
-            {...register(commentName, { required: false, shouldUnregister: true })}
+            {...register(commentName, { required: false })}
             rows={2}
             placeholder={`e.g. "Never tested" or "Was here when we bought the property"`}
             className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"

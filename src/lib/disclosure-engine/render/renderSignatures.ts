@@ -3,6 +3,24 @@ import { DisclosureInput } from "../schema/disclosure.schema";
 import { SIGNATURE_LAYOUT } from "../layout/rpcd_2026.semantic";
 import * as raw from "../../../forms/orec/2026/layout";
 
+// Width of each initials box in points (measured from the template).
+// buyer1 and buyer2 boxes are identical; same for seller1 and seller2.
+const INITIALS_BOX_WIDTH = 22;
+const INITIALS_SIZE = 10;
+
+/**
+ * Returns the x position that visually centers a single-character initial
+ * inside its box.
+ */
+function centeredInitialX(
+  boxLeftX: number,
+  char: string,
+  font: PDFFont
+): number {
+  const charWidth = font.widthOfTextAtSize(char, INITIALS_SIZE);
+  return boxLeftX + (INITIALS_BOX_WIDTH - charWidth) / 2;
+}
+
 export async function renderSignatures(
   pdfDoc: PDFDocument,
   pages: PDFPage[],
@@ -79,7 +97,7 @@ export async function renderSignatures(
     }
   }
 
-  // ── Initials on every page ─────────────────────────────────────────────
+  // ── Initials on every page (centered within each box) ─────────────────
   if (data.initials) {
     pages.forEach((page, pageIndex) => {
       const isLastPage = pageIndex === pages.length - 1;
@@ -92,25 +110,37 @@ export async function renderSignatures(
 
       if (data.initials?.buyerInitial1) {
         page.drawText(data.initials.buyerInitial1, {
-          x: Number(coords.buyer1X), y: safeY, size: 10, font,
+          x: centeredInitialX(coords.buyer1X, data.initials.buyerInitial1, font),
+          y: safeY,
+          size: INITIALS_SIZE,
+          font,
         });
       }
 
       if (data.initials?.buyerInitial2) {
         page.drawText(data.initials.buyerInitial2, {
-          x: Number(coords.buyer2X), y: safeY, size: 10, font,
+          x: centeredInitialX(coords.buyer2X, data.initials.buyerInitial2, font),
+          y: safeY,
+          size: INITIALS_SIZE,
+          font,
         });
       }
 
       if (data.initials?.sellerInitial1) {
         page.drawText(data.initials.sellerInitial1, {
-          x: Number(coords.seller1X), y: safeY, size: 10, font,
+          x: centeredInitialX(coords.seller1X, data.initials.sellerInitial1, font),
+          y: safeY,
+          size: INITIALS_SIZE,
+          font,
         });
       }
 
       if (data.initials?.sellerInitial2) {
         page.drawText(data.initials.sellerInitial2, {
-          x: Number(coords.seller2X), y: safeY, size: 10, font,
+          x: centeredInitialX(coords.seller2X, data.initials.sellerInitial2, font),
+          y: safeY,
+          size: INITIALS_SIZE,
+          font,
         });
       }
     });

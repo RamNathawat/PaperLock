@@ -19,6 +19,8 @@ import { renderTextFields } from "./render/renderTextFields";
 import { renderExplanations } from "./render/renderExplanations";
 import { renderSignatures } from "./render/renderSignatures";
 
+const TEMPLATE_PAGE_COUNT = 5;
+
 export async function generateDisclosurePDF(
   data: DisclosureInput
 ): Promise<Buffer> {
@@ -68,13 +70,32 @@ export async function generateDisclosurePDF(
   renderQ47Inline(pages, font, data);
 
   /**
-   * 3) Signatures LAST.
+   * 3) Derive the real continuation page count NOW, after all overflow
+   *    renderers have run and appended their pages.  This is the ground
+   *    truth the page-5 checkbox must reflect — never trust the value
+   *    the client sent, because the client estimates based on character
+   *    counts while the server knows the actual rendered page count.
+   */
+  const continuationPageCount = pdfDoc.getPageCount() - TEMPLATE_PAGE_COUNT;
+  const hasActualContinuation = continuationPageCount > 0;
+
+  // Patch data so renderSignatures writes the correct YES/NO and count.
+  const patchedData: DisclosureInput = {
+    ...data,
+    additionalPages: {
+      hasAdditionalPages: hasActualContinuation ? "YES" : "NO",
+      howMany: hasActualContinuation ? String(continuationPageCount) : "",
+    },
+  };
+
+  /**
+   * 4) Signatures LAST.
    *    Re-fetch pages after explanation/not-working overflow may have
    *    added continuation pages, so renderSignatures still targets
    *    the correct original page 5.
    */
   const updatedPages = pdfDoc.getPages();
-  await renderSignatures(pdfDoc, updatedPages, font, data);
+  await renderSignatures(pdfDoc, updatedPages, font, patchedData);
 
   const finalBytes = await pdfDoc.save();
   return Buffer.from(finalBytes);

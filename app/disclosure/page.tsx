@@ -285,7 +285,33 @@ export function DisclosurePage({ sharedToken }: Props) {
     setGenerating(true);
 
     try {
-      const allSteps    = allStepsFromWizard || perStepValuesRef.current || {};
+      // In the seller 2 (read-only) flow the wizard never calls handleNext on
+      // read-only steps, so allStepsFromWizard is missing those entries entirely.
+      // Seed each step from initialValues so that applianceComments,
+      // page1NotWorkingExplanation, and any other seller-1 data is always present
+      // in allSteps before buildCleanPayload runs.
+      const wizardSteps = allStepsFromWizard || perStepValuesRef.current || {};
+      const stepToInitialKey: Record<string, keyof NonNullable<typeof initialValues>> = {
+        "Appliances":          "AppliancesPrimary",
+        "Appliances Continued":"AppliancesExtended",
+        "Systems":             "Systems",
+        "Zoning":              "Zoning",
+        "Questions":           "QuestionsA",
+        "Questions Continued": "QuestionsB",
+        "Questions Final":     "QuestionsC",
+        "Financial":           "Financial",
+        "Property":            "Property",
+        "Signatures":          "Signatures",
+      };
+      const allSteps: Record<string, FlatFormData> = { ...wizardSteps };
+      if (initialValues) {
+        Object.entries(stepToInitialKey).forEach(([stepId, initKey]) => {
+          if (!allSteps[stepId] && initialValues[initKey]) {
+            allSteps[stepId] = initialValues[initKey];
+          }
+        });
+      }
+
       const flatValues  = mergePayloads(Object.values(allSteps));
       const cleanPayload = buildCleanPayload(flatValues, allSteps);
 
