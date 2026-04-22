@@ -4,72 +4,52 @@ import { DisclosureInput } from "../schema/disclosure.schema";
 import { drawOverflowText } from "../utils/drawOverflowText";
 
 /**
- * IMPORTANT FIX:
+ * IMPORTANT:
  *
- * We use ONLY:
+ * Use ONLY:
  * - page1NotWorkingExplanation
  * - page2NotWorkingExplanation
  *
  * for appliance explanations.
  *
- * We DO NOT render applianceComments separately because that causes:
- * - duplicate comments
- * - mismatch with validation
- * - seller2 PDF inconsistencies
+ * Do NOT render applianceComments separately,
+ * otherwise comments get printed twice.
  */
 
 function buildUnifiedExplanation(data: any): string {
-  const lines: string[] = [];
-
-  // General explanation block
-  if (data.explanation?.trim()) {
-    lines.push(data.explanation.trim());
-  }
-
-  // Question comments
-  if (data.questionComments) {
-    Object.entries(data.questionComments).forEach(([k, v]) => {
-      if (typeof v === "string" && v.trim()) {
-        lines.push(`Q${k}: ${v.trim()}`);
-      }
-    });
-  }
-
-  // System comments
-  if (data.systemComments) {
-    Object.entries(data.systemComments).forEach(([k, v]) => {
-      if (typeof v === "string" && v.trim()) {
-        lines.push(`${k}: ${v.trim()}`);
-      }
-    });
-  }
-
   /**
-   * DO NOT render:
-   * data.applianceComments
+   * CRITICAL FIX:
    *
-   * That was causing duplicated PDF text because
-   * page1/page2 explanations were also rendering.
+   * Only render true additional-page explanation here.
+   *
+   * DO NOT render:
+   * - questionComments
+   * - systemComments
+   * - page1NotWorkingExplanation
+   * - page2NotWorkingExplanation
+   *
+   * Those are already rendered directly
+   * inside the actual form pages.
+   *
+   * Rendering them here causes:
+   * - duplicate comments
+   * - duplicate overflow page
+   * - repeated appliance comments
+   * - repeated Q comments
    */
 
-  // Page 1 appliance explanations
-  if (data.page1NotWorkingExplanation?.trim()) {
-    lines.push(data.page1NotWorkingExplanation.trim());
+  if (data.explanation?.trim()) {
+    return data.explanation.trim();
   }
 
-  // Page 2 appliance explanations
-  if (data.page2NotWorkingExplanation?.trim()) {
-    lines.push(data.page2NotWorkingExplanation.trim());
-  }
-
-  return lines.join("\n\n");
+  return "";
 }
 
 export function renderExplanations(
   pages: PDFPage[],
   font: PDFFont,
   data: DisclosureInput,
-  pdfDoc?: PDFDocument // optional — needed only if overflow pages must be added
+  pdfDoc?: PDFDocument
 ) {
   const text = buildUnifiedExplanation(data);
 
@@ -88,7 +68,7 @@ export function renderExplanations(
 
     x: layout.x,
     yTop: layout.yTop,
-    yBottom: 40, // safe bottom margin
+    yBottom: 40,
     maxWidth: layout.width,
 
     size: 10,

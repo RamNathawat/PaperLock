@@ -1,23 +1,25 @@
+// src/lib/disclosure-engine/render/renderSignatures.ts
+
 import { PDFPage, PDFDocument, PDFFont } from "pdf-lib";
 import { DisclosureInput } from "../schema/disclosure.schema";
 import { SIGNATURE_LAYOUT } from "../layout/rpcd_2026.semantic";
 import * as raw from "../../../forms/orec/2026/layout";
 
 /**
- * Width of each initials box in points (measured from template)
+ * Width of each initials box in points
  */
-const INITIALS_BOX_WIDTH = 22;
+const INITIALS_BOX_WIDTH = 18;
 
 /**
- * IMPORTANT FIX:
+ * FINAL FIX:
  *
- * Instead of fixed font size + fixed x position,
- * dynamically resize and center initials so they never overflow.
+ * Auto-resize + auto-center initials so they
+ * never touch borders or spill over the black line.
  *
  * Fixes:
- * - RN overflow
+ * - RN / DNS overflow
  * - seller2 initials overflow
- * - multi-character initials
+ * - 3-letter initials touching line
  */
 
 function getInitialPlacement(
@@ -25,22 +27,33 @@ function getInitialPlacement(
   text: string,
   font: PDFFont
 ) {
-  let size = 10;
+  /**
+   * Start slightly smaller for safer fit
+   */
+  let size = 9;
+
   let width = font.widthOfTextAtSize(text, size);
 
   /**
-   * Auto shrink until it fits
+   * Keep shrinking until safely inside the box
    */
-  while (width > INITIALS_BOX_WIDTH - 2 && size > 6) {
+  while (
+    width > INITIALS_BOX_WIDTH - 4 &&
+    size > 6
+  ) {
     size--;
     width = font.widthOfTextAtSize(text, size);
   }
 
   /**
-   * Auto center horizontally
+   * True horizontal center
    */
+  const x =
+    boxLeftX +
+    (INITIALS_BOX_WIDTH - width) / 2;
+
   return {
-    x: boxLeftX + (INITIALS_BOX_WIDTH - width) / 2,
+    x,
     size,
   };
 }
@@ -167,7 +180,7 @@ export async function renderSignatures(
 
         page.drawText(data.initials.buyerInitial1, {
           x: placement.x,
-          y: safeY,
+          y: safeY + 1,
           size: placement.size,
           font,
         });
@@ -185,7 +198,7 @@ export async function renderSignatures(
 
         page.drawText(data.initials.buyerInitial2, {
           x: placement.x,
-          y: safeY,
+          y: safeY + 1,
           size: placement.size,
           font,
         });
@@ -203,7 +216,7 @@ export async function renderSignatures(
 
         page.drawText(data.initials.sellerInitial1, {
           x: placement.x,
-          y: safeY,
+          y: safeY + 1,
           size: placement.size,
           font,
         });
@@ -221,7 +234,7 @@ export async function renderSignatures(
 
         page.drawText(data.initials.sellerInitial2, {
           x: placement.x,
-          y: safeY,
+          y: safeY + 1,
           size: placement.size,
           font,
         });
