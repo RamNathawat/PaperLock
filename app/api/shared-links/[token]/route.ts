@@ -24,6 +24,35 @@ async function getSupabase() {
   );
 }
 
+const PAGE_2_APPLIANCE_OFFSET = 19;
+
+/**
+ * The autosave in handleStepChanged saves raw step values, which include
+ * applianceComments but NOT the derived page1/2NotWorkingExplanation fields
+ * (those are only computed inside buildCleanPayload on the client).
+ * This helper re-derives them server-side from applianceComments so the
+ * validator in generateDisclosurePDF never rejects a well-formed payload.
+ */
+function ensureNotWorkingExplanations(data: Record<string, any>): Record<string, any> {
+  const comments: Record<string, string> = data.applianceComments || {};
+
+  const page1Notes = Object.entries(comments)
+    .filter(([key, val]) => Number(key) < PAGE_2_APPLIANCE_OFFSET && val)
+    .map(([key, val]) => `Appliance ${key}: ${val}`)
+    .join("\n");
+
+  const page2Notes = Object.entries(comments)
+    .filter(([key, val]) => Number(key) >= PAGE_2_APPLIANCE_OFFSET && val)
+    .map(([key, val]) => `Appliance ${key}: ${val}`)
+    .join("\n");
+
+  return {
+    ...data,
+    page1NotWorkingExplanation: data.page1NotWorkingExplanation || page1Notes || "",
+    page2NotWorkingExplanation: data.page2NotWorkingExplanation || page2Notes || "",
+  };
+}
+
 // =============================
 // GET — load shared link data
 // =============================
@@ -231,20 +260,21 @@ export async function PATCH(
   if (recipients.length > 0) {
     try {
       // ── Build a trustworthy PDF payload ────────────────────────────────────
-      // When Seller 2 submits, the client-sent pdf_payload may be missing
-      // fields like page1NotWorkingExplanation because RHF drops disabled
-      // fieldset values. Always use the authoritative form_data that was
-      // saved to the database (Seller 1's complete record), then overlay
-      // only Seller 2's additions (signature + initials).
+      // The autosave stores raw form values which include applianceComments but
+      // NOT the derived page1/2NotWorkingExplanation fields (those are computed
+      // client-side in buildCleanPayload). ensureNotWorkingExplanations()
+      // re-derives them server-side from applianceComments so the validator
+      // never rejects an otherwise valid payload.
       let pdfPayload: Record<string, any>;
 
       if (isSeller2Submit) {
-        // Use the server-stored form_data as the base (Seller 1's full data)
+        // Base: Seller 1's full stored data (fetched before the update above,
+        // so existingLink.form_data is still Seller 1's original record).
         const storedData: Record<string, any> = existingLink.form_data || {};
 
-        // Overlay Seller 2's signature and initials from the incoming body
+        // Overlay only Seller 2's new fields (signature + initials).
         const incomingData: Record<string, any> = body.form_data || {};
-        pdfPayload = {
+        const merged = {
           ...storedData,
           signatures: {
             ...(storedData.signatures || {}),
@@ -255,8 +285,14 @@ export async function PATCH(
             ...(incomingData.initials || {}),
           },
         };
+
+        // Derive page1/2NotWorkingExplanation from applianceComments if absent.
+        pdfPayload = ensureNotWorkingExplanations(merged);
       } else {
-        pdfPayload = body.pdf_payload || body.form_data;
+        // Single-seller flow: pdf_payload was built by buildCleanPayload on the
+        // client and already contains the derived fields. Still run the helper
+        // as a safety net in case an older autosave is used as fallback.
+        pdfPayload = ensureNotWorkingExplanations(body.pdf_payload || body.form_data);
       }
 
       const pdfRes = await fetch(
