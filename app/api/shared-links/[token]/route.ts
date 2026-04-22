@@ -230,12 +230,41 @@ export async function PATCH(
 
   if (recipients.length > 0) {
     try {
+      // ── Build a trustworthy PDF payload ────────────────────────────────────
+      // When Seller 2 submits, the client-sent pdf_payload may be missing
+      // fields like page1NotWorkingExplanation because RHF drops disabled
+      // fieldset values. Always use the authoritative form_data that was
+      // saved to the database (Seller 1's complete record), then overlay
+      // only Seller 2's additions (signature + initials).
+      let pdfPayload: Record<string, any>;
+
+      if (isSeller2Submit) {
+        // Use the server-stored form_data as the base (Seller 1's full data)
+        const storedData: Record<string, any> = existingLink.form_data || {};
+
+        // Overlay Seller 2's signature and initials from the incoming body
+        const incomingData: Record<string, any> = body.form_data || {};
+        pdfPayload = {
+          ...storedData,
+          signatures: {
+            ...(storedData.signatures || {}),
+            ...(incomingData.signatures || {}),
+          },
+          initials: {
+            ...(storedData.initials || {}),
+            ...(incomingData.initials || {}),
+          },
+        };
+      } else {
+        pdfPayload = body.pdf_payload || body.form_data;
+      }
+
       const pdfRes = await fetch(
         `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/disclosure/generate`,
         {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify(body.pdf_payload || body.form_data),
+          body:    JSON.stringify(pdfPayload),
         }
       );
 

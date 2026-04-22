@@ -285,33 +285,7 @@ export function DisclosurePage({ sharedToken }: Props) {
     setGenerating(true);
 
     try {
-      // In the seller 2 (read-only) flow the wizard never calls handleNext on
-      // read-only steps, so allStepsFromWizard is missing those entries entirely.
-      // Seed each step from initialValues so that applianceComments,
-      // page1NotWorkingExplanation, and any other seller-1 data is always present
-      // in allSteps before buildCleanPayload runs.
-      const wizardSteps = allStepsFromWizard || perStepValuesRef.current || {};
-      const stepToInitialKey: Record<string, keyof NonNullable<typeof initialValues>> = {
-        "Appliances":          "AppliancesPrimary",
-        "Appliances Continued":"AppliancesExtended",
-        "Systems":             "Systems",
-        "Zoning":              "Zoning",
-        "Questions":           "QuestionsA",
-        "Questions Continued": "QuestionsB",
-        "Questions Final":     "QuestionsC",
-        "Financial":           "Financial",
-        "Property":            "Property",
-        "Signatures":          "Signatures",
-      };
-      const allSteps: Record<string, FlatFormData> = { ...wizardSteps };
-      if (initialValues) {
-        Object.entries(stepToInitialKey).forEach(([stepId, initKey]) => {
-          if (!allSteps[stepId] && initialValues[initKey]) {
-            allSteps[stepId] = initialValues[initKey];
-          }
-        });
-      }
-
+      const allSteps    = allStepsFromWizard || perStepValuesRef.current || {};
       const flatValues  = mergePayloads(Object.values(allSteps));
       const cleanPayload = buildCleanPayload(flatValues, allSteps);
 
@@ -345,10 +319,36 @@ export function DisclosurePage({ sharedToken }: Props) {
       }
 
       // ── Generate and download PDF ──
+      // For Seller 2, the client-side wizard payload is missing fields that
+      // RHF dropped (page1/2NotWorkingExplanation, applianceComments etc.)
+      // because the fieldsets were disabled. Fetch the complete stored
+      // form_data from the server and overlay only Seller 2's new fields.
+      let downloadPayload = cleanPayload;
+      if (isSeller2Session && token) {
+        try {
+          const storedRes  = await fetch(`/api/shared-links/${token}`);
+          const storedJson = await storedRes.json();
+          const storedData: Record<string, any> = storedJson?.link?.form_data || {};
+          downloadPayload = {
+            ...storedData,
+            signatures: {
+              ...(storedData.signatures || {}),
+              ...(flatValues.signatures || {}),
+            },
+            initials: {
+              ...(storedData.initials || {}),
+              ...(flatValues.initials || {}),
+            },
+          };
+        } catch {
+          // fall back to cleanPayload if fetch fails
+        }
+      }
+
       const res = await fetch("/api/disclosure/generate", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(cleanPayload),
+        body:    JSON.stringify(downloadPayload),
       });
 
       if (!res.ok) {
