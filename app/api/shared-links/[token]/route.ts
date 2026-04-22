@@ -160,7 +160,7 @@ export async function PATCH(
       const pdfRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/disclosure/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body.form_data),
+        body: JSON.stringify(body.pdf_payload || body.form_data),
       });
 
       if (pdfRes.ok) {

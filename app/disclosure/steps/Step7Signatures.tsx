@@ -288,38 +288,50 @@ export default function Step7Signatures({ isSeller2 }: { isSeller2?: boolean }) 
         <div className="w-full lg:col-span-5 lg:sticky lg:top-24 space-y-4">
 
           {isSeller2 ? (
-            <>
-              {/* Seller 1's signature is preserved in RHF's internal state because of shouldUnregister: false */}
-              {/* Seller 1 — locked read-only display */}
-              <div className="rounded-xl border border-gray-100 p-5 space-y-3 bg-gray-50">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                    </svg>
+            <div className="space-y-4">
+              {/* Persist Seller 1's signature data so RHF doesn't drop it */}
+              <input type="hidden" {...register("signatures.sellerSignatureBase64")} />
+              <input type="hidden" {...register("signatures.sellerName")} />
+              <input type="hidden" {...register("signatures.sellerDate")} />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Seller 1 — locked read-only display */}
+                <div className="rounded-xl border border-gray-100 p-5 space-y-3 bg-gray-50 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-bold text-gray-700">Seller 1</p>
+                    </div>
+                    <p className="text-xs text-green-700 font-medium">Already Signed</p>
                   </div>
-                  <p className="text-sm font-bold text-gray-700">Seller 1 — Already Signed</p>
+                  {seller1Sig ? (
+                    <div className="border border-gray-200 rounded-xl p-2 bg-white flex flex-col items-center">
+                      <img src={seller1Sig} alt="Seller 1 Signature" className="max-h-24 object-contain opacity-75" />
+                    </div>
+                  ) : (
+                    <div className="border border-gray-200 rounded-xl p-4 bg-white flex flex-col items-center justify-center h-28">
+                      <p className="text-xs text-gray-400 italic">No signature on file</p>
+                    </div>
+                  )}
                 </div>
-                {seller1Sig ? (
-                  <div className="border border-gray-200 rounded-xl p-2 bg-white flex flex-col items-center">
-                    <img src={seller1Sig} alt="Seller 1 Signature" className="max-h-20 object-contain opacity-75" />
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-400 italic">No signature on file for Seller 1</p>
-                )}
+
+                {/* Seller 2 — active signature pad */}
+                <div className="flex flex-col">
+                  <SigPad
+                    fieldName="signatures.seller2SignatureBase64"
+                    label="Seller 2"
+                    required={true}
+                    showErrors={showErrors}
+                    errors={errors}
+                    register={register}
+                    setValue={setValue}
+                  />
+                </div>
               </div>
-
-
-              {/* Seller 2 — active signature pad */}
-              <SigPad
-                fieldName="signatures.seller2SignatureBase64"
-                label="Your Signature (Seller 2)"
-                required={true}
-                showErrors={showErrors}
-                errors={errors}
-                register={register}
-                setValue={setValue}
-              />
 
               {/* Seller 2 name + date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -345,7 +357,7 @@ export default function Step7Signatures({ isSeller2 }: { isSeller2?: boolean }) 
                   />
                 </div>
               </div>
-            </>
+            </div>
           ) : (
             <>
               {/* Seller 1 signature pad */}

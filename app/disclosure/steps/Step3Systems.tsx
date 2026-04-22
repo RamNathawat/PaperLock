@@ -104,7 +104,7 @@ function StatusRow({
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function Step3Systems() {
+export default function Step3Systems({ readOnly }: { readOnly?: boolean }) {
   const { watch, setValue } = useFormContext();
 
   useEffect(() => {
@@ -135,10 +135,11 @@ export default function Step3Systems() {
   const sewerType        = String(watch("sewerSystem.type"));
 
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Systems</p>
-        <h2 className="text-xl font-bold text-gray-900 mt-1">Systems &amp; Utilities</h2>
+    <fieldset disabled={readOnly} className={readOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+      <div className="space-y-5">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Systems</p>
+          <h2 className="text-xl font-bold text-gray-900 mt-1">Systems &amp; Utilities</h2>
         <p className="text-sm text-gray-500 mt-1">All fields are required. If a system has a type, select it too.</p>
       </div>
 
@@ -210,5 +211,6 @@ export default function Step3Systems() {
         </div>
       </StatusRow>
     </div>
+    </fieldset>
   );
 }

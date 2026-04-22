@@ -5,8 +5,14 @@ export function mergePayloads(stepsArray: any[]) {
     
     Object.keys(stepVals).forEach((key) => {
       const val = stepVals[key];
-      // Note: we consider simple object maps for nested RHF state (e.g. appliances, questions)
-      if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+      if (Array.isArray(val)) {
+        if (!result[key] || !Array.isArray(result[key])) result[key] = [];
+        val.forEach((item, index) => {
+          if (item !== undefined && item !== null) {
+            result[key][index] = item;
+          }
+        });
+      } else if (typeof val === "object" && val !== null) {
         result[key] = { ...(result[key] || {}), ...val };
       } else {
         result[key] = val;

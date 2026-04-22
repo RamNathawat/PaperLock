@@ -61,7 +61,7 @@ function YesNoRow({ num }: { num: number }) {
   );
 }
 
-export default function Step7QuestionsC() {
+export default function Step7QuestionsC({ readOnly }: { readOnly?: boolean }) {
   const { register, watch, control } = useFormContext();
   const { errors, submitCount } = useFormState({ control });
   const showErrors = submitCount > 0;
@@ -71,10 +71,11 @@ export default function Step7QuestionsC() {
   const unpaidHoa = watch("q41Inline.unpaid");
 
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Questions</p>
-        <h2 className="text-xl font-bold text-gray-900 mt-1">Legal, HOA &amp; District Questions</h2>
+    <fieldset disabled={readOnly} className={readOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+      <div className="space-y-5">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Questions</p>
+          <h2 className="text-xl font-bold text-gray-900 mt-1">Legal, HOA &amp; District Questions</h2>
         <p className="text-sm text-gray-500 mt-1">
           All questions require a YES or NO answer. Tap <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[#2463EB] border border-[#2463EB]/30 bg-blue-50 text-[10px] font-bold">i</span> for plain-English help.
         </p>
@@ -213,5 +214,6 @@ export default function Step7QuestionsC() {
 
       {[48, 49, 50].map((n) => <YesNoRow key={n} num={n} />)}
     </div>
+    </fieldset>
   );
 }

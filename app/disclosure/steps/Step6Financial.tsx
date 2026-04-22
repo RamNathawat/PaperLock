@@ -37,7 +37,7 @@ function buildAutoExplanation(wizardValues: Record<string, any>): string {
   return lines.join("\n\n");
 }
 
-export default function Step6Financial() {
+export default function Step6Financial({ readOnly }: { readOnly?: boolean }) {
   const { register, watch, setValue, getValues } = useFormContext();
   const { values: wizardValues } = useWizard();
 
@@ -120,9 +120,10 @@ export default function Step6Financial() {
   }, [explanation, getValues]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Additional Notes</p>
+    <fieldset disabled={readOnly} className={readOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+      <div className="space-y-6">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Additional Notes</p>
         <h2 className="text-xl font-bold text-gray-900 mt-1">Additional Explanations</h2>
         <p className="text-sm text-gray-500 mt-1">
           Any YES answers you provided with comments have been pre-filled below. You may add more context or leave as-is.
@@ -183,5 +184,6 @@ export default function Step6Financial() {
         Text is automatically word-wrapped and paginated — it will never be cut off.
       </p>
     </div>
+    </fieldset>
   );
 }

@@ -44,7 +44,7 @@ function FieldBox({
   );
 }
 
-export default function Step4Zoning() {
+export default function Step4Zoning({ readOnly }: { readOnly?: boolean }) {
   const { register, watch, control } = useFormContext();
   const { errors, submitCount } = useFormState({ control });
   const showErrors = submitCount > 0;
@@ -52,10 +52,11 @@ export default function Step4Zoning() {
   const showFloodDetails = String(q3Main) === "0";
 
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Zoning</p>
-        <h2 className="text-xl font-bold text-gray-900 mt-1">Zoning &amp; Flood</h2>
+    <fieldset disabled={readOnly} className={readOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+      <div className="space-y-5">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Zoning</p>
+          <h2 className="text-xl font-bold text-gray-900 mt-1">Zoning &amp; Flood</h2>
       </div>
 
       {/* Zoning type — chip group (10 options) */}
@@ -147,5 +148,6 @@ export default function Step4Zoning() {
         <YesNoCards name="page2Flood.q6" />
       </FieldBox>
     </div>
+    </fieldset>
   );
 }

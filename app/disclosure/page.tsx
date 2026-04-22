@@ -18,8 +18,10 @@ const Step7Signatures         = dynamic(() => import("./steps/Step7Signatures"))
 
 import Navigation from "./components/Navigation";
 import ProgressBar from "./components/ProgressBar";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, createContext } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+
+export const ReadOnlyContext = createContext(false);
 
 type Props = {
   sharedToken?: string;
@@ -39,14 +41,29 @@ function normalizeAppliances(flat: FlatFormData) {
   if (Array.isArray(source)) return source;
 
   if (typeof source === "object" && source !== null) {
-    const result: Record<number, string> = {};
+    const result: string[] = [];
     Object.entries(source).forEach(([key, value]) => {
       result[Number(key)] = value as string;
     });
     return result;
   }
 
-  return {};
+  return [];
+}
+
+function normalizeQuestions(flat: FlatFormData) {
+  const source = flat?.questions || {};
+  if (Array.isArray(source)) return source;
+
+  if (typeof source === "object" && source !== null) {
+    const result: string[] = [];
+    Object.entries(source).forEach(([key, value]) => {
+      result[Number(key)] = value as string;
+    });
+    return result;
+  }
+  
+  return [];
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -82,6 +99,7 @@ export function DisclosurePage({ sharedToken }: Props) {
   const [loading, setLoading]             = useState(!!disclosureId || !!token);
   const [generating, setGenerating]       = useState(false);
   const [isSeller2Session, setIsSeller2Session] = useState(false);
+  const [hasSeller2, setHasSeller2]       = useState(false);
 
   const draftIdRef            = useRef<string | null>(disclosureId);
   const autosaveTimeoutRef    = useRef<any>(null);
@@ -112,6 +130,9 @@ export function DisclosurePage({ sharedToken }: Props) {
         const linkIsSubmitted = !!data.link?.is_submitted;
         const seller1HasSigned = !!flat.signatures?.sellerSignatureBase64;
         setIsSeller2Session(!!token && linkIsSubmitted && seller1HasSigned);
+
+        const hasSeller2Email = !!data.link?.seller2_email;
+        setHasSeller2(hasSeller2Email);
 
         setInitialValues({
           Property: {
@@ -144,7 +165,7 @@ export function DisclosurePage({ sharedToken }: Props) {
             page2Flood: flat.page2Flood,
           },
           QuestionsA: {
-            questions: flat.questions,
+            questions: normalizeQuestions(flat),
             questionComments: flat.questionComments,
             q16Inline: flat.page3TextFields
               ? { roofAge: flat.page3TextFields.roofAge, layers: flat.page3TextFields.roofLayers }
@@ -154,12 +175,12 @@ export function DisclosurePage({ sharedToken }: Props) {
               : flat.q19Inline,
           },
           QuestionsB: {
-            questions: flat.questions,
+            questions: normalizeQuestions(flat),
             questionComments: flat.questionComments,
             q37Inline: flat.q37Inline,
           },
           QuestionsC: {
-            questions: flat.questions,
+            questions: normalizeQuestions(flat),
             questionComments: flat.questionComments,
             q41Inline: flat.q41Inline,
             q46Inline: flat.q46Inline,
@@ -187,6 +208,14 @@ export function DisclosurePage({ sharedToken }: Props) {
     allValues: Record<string, FlatFormData>
   ) {
     const safeMerge = (a: any, b: any) => {
+      if (Array.isArray(a) || Array.isArray(b)) {
+        const res = [...(Array.isArray(a) ? a : [])];
+        const bArr = Array.isArray(b) ? b : [];
+        bArr.forEach((v, i) => {
+          if (v !== undefined && v !== null) res[i] = v;
+        });
+        return res;
+      }
       const res: Record<string, any> = { ...(a || {}) };
       if (b) {
         Object.entries(b).forEach(([k, v]) => {
@@ -252,13 +281,16 @@ export function DisclosurePage({ sharedToken }: Props) {
   }
 
   async function handleCompleted(
-    flatValues: FlatFormData,
+    rawFlatValues: FlatFormData,
     allStepsFromWizard?: Record<string, FlatFormData>
   ) {
     setGenerating(true);
 
     try {
       const allSteps = allStepsFromWizard || perStepValuesRef.current || {};
+      
+      // CRITICAL: Must use deep merge, otherwise 'Appliances Extended' overwrites 'Appliances Primary'
+      const flatValues = mergePayloads(Object.values(allSteps));
       const cleanPayload = buildCleanPayload(flatValues, allSteps);
 
       // ── Shared link: fire is_submitted PATCH (triggers email) ──
@@ -266,7 +298,7 @@ export function DisclosurePage({ sharedToken }: Props) {
         await fetch(`/api/shared-links/${token}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ form_data: cleanPayload, is_submitted: true }),
+          body: JSON.stringify({ form_data: flatValues, pdf_payload: cleanPayload, is_submitted: true }),
         });
       }
 
@@ -309,17 +341,17 @@ export function DisclosurePage({ sharedToken }: Props) {
   }
 
   const steps = useMemo(() => [
-    { id: "Property",            component: <Step1Property />,           initialValues: initialValues?.Property },
-    { id: "Appliances",          component: <Step2AppliancesPrimary />,  initialValues: initialValues?.AppliancesPrimary },
-    { id: "Appliances Continued",component: <Step3AppliancesExtended />, initialValues: initialValues?.AppliancesExtended },
-    { id: "Systems",             component: <Step3Systems />,            initialValues: initialValues?.Systems },
-    { id: "Zoning",              component: <Step4Zoning />,             initialValues: initialValues?.Zoning },
-    { id: "Questions",           component: <Step5QuestionsA />,         initialValues: initialValues?.QuestionsA },
-    { id: "Questions Continued", component: <Step6QuestionsB />,         initialValues: initialValues?.QuestionsB },
-    { id: "Questions Final",     component: <Step7QuestionsC />,         initialValues: initialValues?.QuestionsC },
-    { id: "Financial",           component: <Step6Financial />,          initialValues: initialValues?.Financial },
+    { id: "Property",            component: <Step1Property readOnly={isSeller2Session} isSeller2={isSeller2Session} hasSeller2Email={hasSeller2} />, initialValues: initialValues?.Property },
+    { id: "Appliances",          component: <Step2AppliancesPrimary readOnly={isSeller2Session} />,  initialValues: initialValues?.AppliancesPrimary },
+    { id: "Appliances Continued",component: <Step3AppliancesExtended readOnly={isSeller2Session} />, initialValues: initialValues?.AppliancesExtended },
+    { id: "Systems",             component: <Step3Systems readOnly={isSeller2Session} />,            initialValues: initialValues?.Systems },
+    { id: "Zoning",              component: <Step4Zoning readOnly={isSeller2Session} />,             initialValues: initialValues?.Zoning },
+    { id: "Questions",           component: <Step5QuestionsA readOnly={isSeller2Session} />,         initialValues: initialValues?.QuestionsA },
+    { id: "Questions Continued", component: <Step6QuestionsB readOnly={isSeller2Session} />,         initialValues: initialValues?.QuestionsB },
+    { id: "Questions Final",     component: <Step7QuestionsC readOnly={isSeller2Session} />,         initialValues: initialValues?.QuestionsC },
+    { id: "Financial",           component: <Step6Financial readOnly={isSeller2Session} />,          initialValues: initialValues?.Financial },
     { id: "Signatures",          component: <Step7Signatures isSeller2={isSeller2Session} />,         initialValues: initialValues?.Signatures },
-  ], [initialValues]);
+  ], [initialValues, isSeller2Session]);
 
   if (loading) {
     return (
@@ -342,14 +374,18 @@ export function DisclosurePage({ sharedToken }: Props) {
       {generating && <GeneratingOverlay />}
 
       <div className="max-w-2xl mx-auto py-8 sm:py-12 px-4 sm:px-6">
-        <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-6 sm:p-8 disclosure-form">
-          <Wizard
-            steps={steps}
-            onCompleted={handleCompleted}
-            onStepChanged={handleStepChanged}
-            footer={<Navigation />}
-            header={<ProgressBar />}
-          />
+        <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-6 sm:p-8">
+          <div className="py-2.5 disclosure-form">
+            <ReadOnlyContext.Provider value={isSeller2Session}>
+              <Wizard
+                steps={steps}
+                onCompleted={handleCompleted}
+                onStepChanged={handleStepChanged}
+                footer={<Navigation />}
+                header={<ProgressBar />}
+              />
+            </ReadOnlyContext.Provider>
+          </div>
         </div>
       </div>
     </div>

@@ -57,14 +57,15 @@ function YesNoRow({ num }: { num: number }) {
   );
 }
 
-export default function Step5QuestionsA() {
+export default function Step5QuestionsA({ readOnly }: { readOnly?: boolean }) {
   const { register, watch, formState: { errors, submitCount } } = useFormContext();
   const showErrors = submitCount > 0;
   const q19 = watch("questions.19");
 
   return (
-    <div className="space-y-5">
-      <div>
+    <fieldset disabled={readOnly} className={readOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+      <div className="space-y-5">
+        <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Questions</p>
         <h2 className="text-xl font-bold text-gray-900 mt-1">Structural, Roof &amp; Termite Questions</h2>
         <p className="text-sm text-gray-500 mt-1">
@@ -119,5 +120,6 @@ export default function Step5QuestionsA() {
 
       <YesNoRow num={20} />
     </div>
+    </fieldset>
   );
 }

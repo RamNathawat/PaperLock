@@ -80,10 +80,11 @@ function ApplianceRow({ label, name, commentName }: { label: string; name: strin
   );
 }
 
-export default function Step2AppliancesPrimary() {
+export default function Step2AppliancesPrimary({ readOnly }: { readOnly?: boolean }) {
   return (
-    <div className="space-y-5">
-      <div>
+    <fieldset disabled={readOnly} className={readOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+      <div className="space-y-5">
+        <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Appliances</p>
         <h2 className="text-xl font-bold text-gray-900 mt-1">Appliances &amp; Equipment</h2>
         <p className="text-sm text-gray-500 mt-1">Select the condition of each item. All fields are required.</p>
@@ -92,5 +93,6 @@ export default function Step2AppliancesPrimary() {
         <ApplianceRow key={index} label={label} name={`appliances.${index}`} commentName={`applianceComments.${index}`} />
       ))}
     </div>
+    </fieldset>
   );
 }

@@ -3,7 +3,7 @@
 import { useFormContext } from "react-hook-form";
 import { useEffect } from "react";
 
-export default function Step1Property() {
+export default function Step1Property({ readOnly, isSeller2, hasSeller2Email }: { readOnly?: boolean; isSeller2?: boolean; hasSeller2Email?: boolean }) {
   const {
     register,
     watch,
@@ -41,8 +41,9 @@ export default function Step1Property() {
       </div>
 
       {/* Property Address */}
-      <div
-        className={`rounded-2xl border p-5 space-y-4 ${
+      <div className={readOnly ? "pointer-events-none opacity-70" : ""}>
+        <div
+          className={`rounded-2xl border p-5 space-y-4 ${
           showErrors && errors.propertyIdentifier
             ? "border-red-300 bg-red-50"
             : "border-gray-100 bg-gray-50/50"
@@ -144,6 +145,7 @@ export default function Step1Property() {
           </label>
         </div>
       </div>
+      </div>
 
       {/* Initials */}
       <div
@@ -153,35 +155,101 @@ export default function Step1Property() {
             : "border-gray-100 bg-gray-50/50"
         }`}
       >
-        <div>
-          <p className="text-sm font-semibold text-gray-800">Seller Initials <span className="text-red-500">*</span></p>
-          <p className="text-xs text-gray-400">Enter the initials of each seller on this disclosure.</p>
-          {showErrors && (errors as any)?.initials?.sellerInitial1 && (
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
-              <span className="text-xs font-semibold text-amber-700">At least Seller 1 initials required</span>
+        {!hasSeller2Email ? (
+          <>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Seller Initials <span className="text-red-500">*</span></p>
+              <p className="text-xs text-gray-400">Enter the initials of each seller on this disclosure.</p>
+              {showErrors && (errors as any)?.initials?.sellerInitial1 && (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-amber-700">At least Seller 1 initials required</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="flex gap-3">
-          <input
-            {...register("initials.sellerInitial1", { required: true })}
-            maxLength={5}
-            placeholder="JAD"
-            className={`w-20 border rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
-              showErrors && (errors as any)?.initials?.sellerInitial1
-                ? "border-amber-300 bg-amber-50"
-                : "border-gray-200"
-            }`}
-          />
-          <input
-            {...register("initials.sellerInitial2")}
-            maxLength={5}
-            placeholder="MS"
-            className="w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-          />
-        </div>
+            <div className="flex gap-3">
+              <input
+                {...register("initials.sellerInitial1", { required: true })}
+                maxLength={5}
+                placeholder="JAD"
+                disabled={isSeller2}
+                className={`w-20 border rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
+                  isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" : "bg-white"
+                } ${
+                  showErrors && (errors as any)?.initials?.sellerInitial1
+                    ? "border-amber-300 bg-amber-50"
+                    : "border-gray-200"
+                }`}
+              />
+              <input
+                {...register("initials.sellerInitial2")}
+                maxLength={5}
+                placeholder="MS"
+                disabled={isSeller2}
+                className={`w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
+                  isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" : "bg-white"
+                }`}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Seller Initials <span className="text-red-500">*</span></p>
+              <p className="text-xs text-gray-500">
+                These initials will be automatically applied to the bottom of all pages of the generated PDF.
+              </p>
+              {showErrors && (errors as any)?.initials?.sellerInitial1 && (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-amber-700">Seller 1 initials required</span>
+                </div>
+              )}
+              {showErrors && isSeller2 && (errors as any)?.initials?.sellerInitial2 && (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-amber-700">Seller 2 initials required</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                 <label className="block text-xs font-medium text-gray-500">Seller 1</label>
+                 <input
+                   {...register("initials.sellerInitial1", { required: true })}
+                   maxLength={5}
+                   placeholder="JAD"
+                   disabled={isSeller2}
+                   className={`w-full border rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
+                     isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" : "bg-white"
+                   } ${
+                     showErrors && (errors as any)?.initials?.sellerInitial1
+                       ? "border-amber-300 bg-amber-50"
+                       : "border-gray-200"
+                   }`}
+                 />
+              </div>
+              <div className="space-y-1.5">
+                 <label className="block text-xs font-medium text-gray-500">Seller 2</label>
+                 <input
+                   {...register("initials.sellerInitial2", { required: isSeller2 })}
+                   maxLength={5}
+                   placeholder="MS"
+                   disabled={!isSeller2}
+                   className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
+                     !isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"
+                   } ${
+                     showErrors && isSeller2 && (errors as any)?.initials?.sellerInitial2
+                       ? "border-amber-300 bg-amber-50"
+                       : "border-gray-200"
+                   }`}
+                 />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
-}
+};
