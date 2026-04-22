@@ -327,7 +327,7 @@ export default function Step3Systems() {
       <StatusRow
         label="Sewer System"
         name="systems.sewer"
-        subtypeValue={String(watch("sewerSystem.type"))}
+        subtypeValue={watch("systems.sewer")}
         commentName="systemComments.sewer"
       >
         <InlineOptions

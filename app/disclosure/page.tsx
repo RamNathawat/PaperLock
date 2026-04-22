@@ -505,6 +505,7 @@ export function DisclosurePage({ sharedToken }: Props) {
         component: (
           <Step7Signatures
             isSeller2={isSeller2Session}
+            hasSeller2={hasSeller2}
           />
         ),
         initialValues: initialValues?.Signatures,
