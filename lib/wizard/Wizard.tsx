@@ -42,12 +42,8 @@ function Wizard({
     return initial;
   });
 
-  const defaultValues = useMemo(() => {
-    return getInitialValues(activeStep);
-  }, [activeStep, values]);
-
   const methods = useForm({
-    defaultValues,
+    defaultValues: getInitialValues(activeStep),
     mode: getMode(activeStep),
     resolver: getResolver(activeStep, values),
 
@@ -68,9 +64,16 @@ function Wizard({
   const isFirstStep: boolean = stepNumber === 1;
   const isLastStep: boolean = stepNumber === totalSteps;
 
+  /**
+   * Only reset when the active step actually changes — never on an in-flight
+   * values update from the same step. Resetting mid-step caused RHF to re-run
+   * the resolver against stale/empty defaults, producing false "field required"
+   * errors even when the user had already filled everything in.
+   */
   useEffect(() => {
-    reset(defaultValues);
-  }, [defaultValues, reset]);
+    reset(getInitialValues(activeStep));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStep.id, reset]);
 
   useEffect(() => {
     if (!enableHash) return;

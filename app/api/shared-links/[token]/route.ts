@@ -255,6 +255,8 @@ export async function PATCH(
     }
   }
 
+  // Seller 2 gets the completed PDF on final completion (they already got the invite earlier).
+  // Both flows include all parties who should receive the finished document.
   const recipients = [sellerEmail, seller2Email, agentEmail].filter(Boolean) as string[];
 
   if (recipients.length > 0) {

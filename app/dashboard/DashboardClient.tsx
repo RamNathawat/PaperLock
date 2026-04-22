@@ -293,7 +293,9 @@ export default function DashboardClient({ email, initialDisclosures, initialShar
     const url = `${window.location.origin}/fill/${token}`;
     setLink(url); copyLink(url);
     if (newLink) { setSharedLinks(prev => [newLink, ...prev]); invalidatePortalCache(); }
-    try { await fetch("/api/send-invite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recipients: [sellerEmail.trim(), seller2Email.trim()].filter(Boolean), link: url }) }); } catch { /* non-fatal */ }
+    // Only invite Seller 1 at link-creation time.
+    // Seller 2 gets their invite later (via PATCH route) once Seller 1 has submitted.
+    try { await fetch("/api/send-invite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recipients: [sellerEmail.trim()], link: url }) }); } catch { /* non-fatal */ }
     setCreating(false);
   }
 
