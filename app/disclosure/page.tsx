@@ -379,6 +379,20 @@ export function DisclosurePage({ sharedToken }: Props) {
         }
       }
 
+      /**
+       * Single-seller: mirror Seller 1's signature into the Seller 2 box
+       * so both signature fields in the PDF are populated.
+       */
+      if (!hasSeller2 && !isSeller2Session && downloadPayload.signatures?.sellerSignatureBase64) {
+        downloadPayload = {
+          ...downloadPayload,
+          signatures: {
+            ...downloadPayload.signatures,
+            seller2SignatureBase64: downloadPayload.signatures.sellerSignatureBase64,
+          },
+        };
+      }
+
       const res = await fetch(
         "/api/disclosure/generate",
         {

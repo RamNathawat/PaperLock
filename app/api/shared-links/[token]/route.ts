@@ -294,7 +294,16 @@ export async function PATCH(
         // Single-seller flow: pdf_payload was built by buildCleanPayload on the
         // client and already contains the derived fields. Still run the helper
         // as a safety net in case an older autosave is used as fallback.
-        pdfPayload = ensureNotWorkingExplanations(body.pdf_payload || body.form_data);
+        const base = ensureNotWorkingExplanations(body.pdf_payload || body.form_data);
+
+        // No second seller — mirror the single seller's signature into the
+        // seller2 slot so both PDF signature boxes are populated.
+        const sig = base.signatures?.sellerSignatureBase64;
+        if (!seller2Email && sig && !base.signatures?.seller2SignatureBase64) {
+          base.signatures = { ...base.signatures, seller2SignatureBase64: sig };
+        }
+
+        pdfPayload = base;
       }
 
       const pdfRes = await fetch(
