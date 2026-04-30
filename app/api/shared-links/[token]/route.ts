@@ -3,6 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { buildCleanPayload } from "@/src/lib/disclosure-engine/utils/buildCleanPayload";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -294,8 +295,11 @@ export async function PATCH(
           },
         };
 
+        // Convert the raw wizard data to a strict DisclosureInput format
+        const cleanMerged = buildCleanPayload(merged, {});
+
         // Derive page1/2NotWorkingExplanation from applianceComments if absent.
-        pdfPayload = ensureNotWorkingExplanations(merged);
+        pdfPayload = ensureNotWorkingExplanations(cleanMerged);
       } else {
         // Single-seller flow: pdf_payload was built by buildCleanPayload on the
         // client and already contains the derived fields. Still run the helper

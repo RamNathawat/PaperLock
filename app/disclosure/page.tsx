@@ -377,31 +377,30 @@ export function DisclosurePage({ sharedToken }: Props) {
           const storedData =
             storedJson?.link?.form_data || {};
 
-          downloadPayload = {
+          const completeFlatValues = {
             ...storedData,
-
-            page1NotWorkingExplanation:
-              storedData.page1NotWorkingExplanation ||
-              cleanPayload.page1NotWorkingExplanation,
-
-            page2NotWorkingExplanation:
-              storedData.page2NotWorkingExplanation ||
-              cleanPayload.page2NotWorkingExplanation,
-
-            applianceComments:
-              storedData.applianceComments ||
-              cleanPayload.applianceComments,
-
             signatures: {
               ...(storedData.signatures || {}),
               ...(flatValues.signatures || {}),
             },
-
             initials: {
               ...(storedData.initials || {}),
               ...(flatValues.initials || {}),
             },
+            // Overlay any extra fields from Seller 2's session
+            page1NotWorkingExplanation:
+              cleanPayload.page1NotWorkingExplanation ||
+              storedData.page1NotWorkingExplanation,
+            page2NotWorkingExplanation:
+              cleanPayload.page2NotWorkingExplanation ||
+              storedData.page2NotWorkingExplanation,
+            applianceComments:
+              cleanPayload.applianceComments ||
+              storedData.applianceComments,
           };
+
+          // Generate the final DisclosureInput format!
+          downloadPayload = buildCleanPayload(completeFlatValues, {});
         } catch {
           /**
            * fallback safely
