@@ -195,15 +195,34 @@ export function DisclosurePage({ sharedToken }: Props) {
           },
 
           Systems: {
-            inlineOptions: flat.inlineOptions,
-            sewerSystem: flat.sewerSystem,
-            systems: flat.systems,
-            systemComments: flat.systemComments,
+            // form_data may be stored flat (wizard format) or nested (clean payload)
+            inlineOptions:
+              flat.inlineOptions ??
+              flat.Systems?.inlineOptions ??
+              {},
+            sewerSystem:
+              flat.sewerSystem ??
+              flat.Systems?.sewerSystem ??
+              {},
+            systems:
+              flat.systems ??
+              flat.Systems?.systems ??
+              {},
+            systemComments:
+              flat.systemComments ??
+              flat.Systems?.systemComments ??
+              {},
           },
 
           Zoning: {
-            page2Zoning: flat.page2Zoning,
-            page2Flood: flat.page2Flood,
+            page2Zoning:
+              flat.page2Zoning ??
+              flat.Zoning?.page2Zoning ??
+              {},
+            page2Flood:
+              flat.page2Flood ??
+              flat.Zoning?.page2Flood ??
+              {},
           },
 
           QuestionsA: {
@@ -227,7 +246,18 @@ export function DisclosurePage({ sharedToken }: Props) {
           QuestionsB: {
             questions: normalizeQuestions(flat),
             questionComments: flat.questionComments,
-            q37Inline: flat.q37Inline,
+            // q37Inline in cleanPayload is numeric (0=YES,1=NO) but the form
+            // component (YesNoCards) expects the string "YES" or "NO".
+            // Handle both formats so pre-population works for Seller 2.
+            q37Inline: {
+              maintenance: (() => {
+                const raw =
+                  flat.q37Inline?.maintenance ??
+                  (flat.q37Inline === 0 ? "YES" :
+                   flat.q37Inline === 1 ? "NO" : undefined);
+                return raw;
+              })(),
+            },
           },
 
           QuestionsC: {
