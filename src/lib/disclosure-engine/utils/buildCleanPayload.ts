@@ -75,8 +75,26 @@ export function buildCleanPayload(
     .filter(([key, val]) => Number(key) >= PAGE_2_APPLIANCE_OFFSET && val)
     .map(([key, val]) => `Appliance ${key}: ${val}`).join("\n");
 
+  // ChipGroup (radio) stores the selected chip's index as a string ("0","1","2").
+  // The label-based frequencyMap is the primary lookup; if it returns undefined
+  // (because the value is already a numeric index string) fall back to Number().
   const frequencyMap: Record<string, 0 | 1 | 2> = { Monthly: 0, Quarterly: 1, Annually: 2 };
-  const utilityMap: Record<string, number>       = { Water: 0, Garbage: 1, Sewer: 2, Other: 3 };
+  const resolveFrequency = (raw: string | number | undefined): 0 | 1 | 2 | undefined => {
+    if (raw === undefined || raw === null || raw === "") return undefined;
+    if (typeof raw === "number") return raw as 0 | 1 | 2;
+    const byLabel = frequencyMap[raw];
+    if (byLabel !== undefined) return byLabel;
+    const n = Number(raw);
+    return Number.isNaN(n) ? undefined : (n as 0 | 1 | 2);
+  };
+
+  // ChipGroup (checkbox) stores selected indices as string arrays ("0","1").
+  // utilityMap handles label strings; fall back to Number() for index strings.
+  const utilityMap: Record<string, number> = { Water: 0, Garbage: 1, Sewer: 2, Other: 3 };
+  const resolveUtilities = (services: string[]): number[] =>
+    services
+      .map((s) => (utilityMap[s] !== undefined ? utilityMap[s] : Number(s)))
+      .filter((v) => !Number.isNaN(v));
 
   return {
     version: "01-01-2026",
@@ -94,7 +112,7 @@ export function buildCleanPayload(
     q41Inline: {
       hoaAmount: q41.hoaAmount,
       specialAssessmentAmount: q41.specialAssessmentAmount,
-      payableType: typeof q41.frequency === "string" ? frequencyMap[q41.frequency] : q41.payableType,
+      payableType: resolveFrequency(q41.frequency ?? q41.payableType),
       unpaid: q41.unpaid,
       ifYesAmount: q41.ifYesAmount,
       managerName: q41.managerName,
@@ -103,12 +121,14 @@ export function buildCleanPayload(
     q46Inline: {
       amount: q46.amount,
       paidTo: q46.paidTo,
-      payableType: typeof q46.frequency === "string" ? frequencyMap[q46.frequency] : q46.payableType,
+      payableType: resolveFrequency(q46.frequency ?? q46.payableType),
     },
     q47Details: {
       utilities: Array.isArray(q47.services)
-        ? q47.services.map((s: string) => utilityMap[s]).filter((v: number) => v !== undefined)
-        : q47.utilities || [],
+        ? resolveUtilities(q47.services)
+        : Array.isArray(q47.utilities)
+        ? resolveUtilities(q47.utilities.map(String))
+        : [],
       otherExplain: q47.other || q47.otherExplain,
       initialMembership: q47.initialMembershipFee || q47.initialMembership,
       annualMembership: q47.annualMembershipFee || q47.annualMembership,

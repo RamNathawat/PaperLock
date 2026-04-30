@@ -66,7 +66,7 @@ export async function renderSignatures(
 ) {
   /**
    * ─────────────────────────────────────────────
-   * Seller 1 signature
+   * Seller 1 signature + name + date
    * ─────────────────────────────────────────────
    */
   if (data.signatures?.sellerSignatureBase64) {
@@ -78,9 +78,29 @@ export async function renderSignatures(
     );
   }
 
+  const sig5 = pages[4];
+  if (sig5) {
+    if (data.signatures?.sellerName) {
+      sig5.drawText(String(data.signatures.sellerName), {
+        x: raw.PAGE5_SIGNATURES.seller1.x - 80,
+        y: raw.PAGE5_SIGNATURES.seller1.y - 26,
+        size: 9,
+        font,
+      });
+    }
+    if (data.signatures?.sellerDate) {
+      sig5.drawText(String(data.signatures.sellerDate), {
+        x: raw.PAGE5_SIGNATURES.seller1.x + 115,
+        y: raw.PAGE5_SIGNATURES.seller1.y - 26,
+        size: 9,
+        font,
+      });
+    }
+  }
+
   /**
    * ─────────────────────────────────────────────
-   * Seller 2 signature
+   * Seller 2 signature + name + date
    * ─────────────────────────────────────────────
    */
   if (data.signatures?.seller2SignatureBase64) {
@@ -90,6 +110,25 @@ export async function renderSignatures(
       SIGNATURE_LAYOUT.seller2,
       data.signatures.seller2SignatureBase64
     );
+  }
+
+  if (sig5) {
+    if (data.signatures?.seller2Name) {
+      sig5.drawText(String(data.signatures.seller2Name), {
+        x: raw.PAGE5_SIGNATURES.seller2.x - 80,
+        y: raw.PAGE5_SIGNATURES.seller2.y - 26,
+        size: 9,
+        font,
+      });
+    }
+    if (data.signatures?.seller2Date) {
+      sig5.drawText(String(data.signatures.seller2Date), {
+        x: raw.PAGE5_SIGNATURES.seller2.x + 115,
+        y: raw.PAGE5_SIGNATURES.seller2.y - 26,
+        size: 9,
+        font,
+      });
+    }
   }
 
   /**
