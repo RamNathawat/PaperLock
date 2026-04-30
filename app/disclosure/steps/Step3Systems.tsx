@@ -8,6 +8,11 @@ import {
   ChipGroup,
 } from "@/app/disclosure/components/OptionControls";
 
+/** Resolve a nested error object by dot-separated path */
+function getNestedVal(obj: any, path: string) {
+  return path.split(".").reduce((o: any, k) => o?.[k], obj);
+}
+
 const STATUS_OPTIONS = [
   { label: "Working",              value: "WORKING"     },
   { label: "Not Working",         value: "NOT_WORKING" },
@@ -17,6 +22,15 @@ const STATUS_OPTIONS = [
 
 function getNestedError(errors: any, path: string) {
   return path.split(".").reduce((obj: any, k) => obj?.[k], errors);
+}
+
+function ErrChip({ show }: { show: boolean }) {
+  if (!show) return null;
+  return (
+    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap">
+      Required
+    </span>
+  );
 }
 
 // ─── ReadOnlyComment ──────────────────────────────────────────────────────────
@@ -34,15 +48,19 @@ function ReadOnlyComment({ name }: { name: string }) {
 // ─── SystemRow ────────────────────────────────────────────────────────────────
 // Matches the ApplianceRow pattern from Step2: card with OptionCards + optional
 // sub-type chips that only appear when the system is active (not NONE/blank).
+// When active AND children are provided, a sub-type selection is REQUIRED.
 function SystemRow({
   label,
   name,
   commentName,
+  subTypeName,
   children,
 }: {
   label: string;
   name: string;
   commentName: string;
+  /** RHF field name for the sub-type chip — used to detect sub-type errors */
+  subTypeName?: string;
   children?: React.ReactNode;
 }) {
   const { register, watch, control } = useFormContext();
@@ -50,8 +68,9 @@ function SystemRow({
   const isReadOnly = useContext(ReadOnlyContext);
   const value = watch(name);
 
-  const hasError = submitCount > 0 && !!getNestedError(errors, name);
-  const isActive = !!value && value !== "NONE";
+  const hasError    = submitCount > 0 && !!getNestedError(errors, name);
+  const isActive    = !!value && value !== "NONE";
+  const hasSubError = submitCount > 0 && !!subTypeName && !!getNestedVal(errors, subTypeName);
 
   return (
     <div
@@ -90,7 +109,13 @@ function SystemRow({
 
       {/* Sub-type chips — only when system is active */}
       {isActive && children && (
-        <div className="pt-3 border-t border-gray-100 space-y-2">
+        <div className={`pt-3 border-t space-y-2 ${
+          hasSubError ? "border-amber-200" : "border-gray-100"
+        }`}>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</p>
+            <ErrChip show={hasSubError} />
+          </div>
           {children}
         </div>
       )}
@@ -129,60 +154,57 @@ export default function Step3Systems() {
           </p>
         </div>
 
-        <SystemRow label="Water Heater" name="systems.waterHeater" commentName="systemComments.waterHeater">
-          <ChipGroup name="inlineOptions.waterHeaterType" options={["Electric", "Gas", "Tankless", "Solar", "Other"]} required={false} />
+        <SystemRow label="Water Heater" name="systems.waterHeater" commentName="systemComments.waterHeater" subTypeName="inlineOptions.waterHeaterType">
+          <ChipGroup name="inlineOptions.waterHeaterType" options={["Electric", "Gas", "Tankless", "Solar", "Other"]} required />
         </SystemRow>
 
-        <SystemRow label="Water Softener" name="systems.waterSoftener" commentName="systemComments.waterSoftener">
-          <ChipGroup name="inlineOptions.waterSoftenerType" options={["Leased", "Owned"]} required={false} />
+        <SystemRow label="Water Softener" name="systems.waterSoftener" commentName="systemComments.waterSoftener" subTypeName="inlineOptions.waterSoftenerType">
+          <ChipGroup name="inlineOptions.waterSoftenerType" options={["Leased", "Owned"]} required />
         </SystemRow>
 
-        <SystemRow label="Air Conditioning" name="systems.ac" commentName="systemComments.ac">
-          <ChipGroup name="inlineOptions.acType" options={["Central", "Window Units", "Evaporative / Swamp", "Other"]} required={false} />
+        <SystemRow label="Air Conditioning" name="systems.ac" commentName="systemComments.ac" subTypeName="inlineOptions.acType">
+          <ChipGroup name="inlineOptions.acType" options={["Central", "Window Units", "Evaporative / Swamp", "Other"]} required />
         </SystemRow>
 
-        <SystemRow label="Heating System" name="systems.heating" commentName="systemComments.heating">
-          <ChipGroup name="inlineOptions.heatingType" options={["Electric", "Gas", "Heat Pump"]} required={false} />
+        <SystemRow label="Heating System" name="systems.heating" commentName="systemComments.heating" subTypeName="inlineOptions.heatingType">
+          <ChipGroup name="inlineOptions.heatingType" options={["Electric", "Gas", "Heat Pump"]} required />
         </SystemRow>
 
-        <SystemRow label="Gas Supply" name="systems.gasSupply" commentName="systemComments.gasSupply">
-          <ChipGroup name="inlineOptions.gasSupplyType" options={["Public", "Propane", "Butane"]} required={false} />
+        <SystemRow label="Gas Supply" name="systems.gasSupply" commentName="systemComments.gasSupply" subTypeName="inlineOptions.gasSupplyType">
+          <ChipGroup name="inlineOptions.gasSupplyType" options={["Public", "Propane", "Butane"]} required />
         </SystemRow>
 
-        <SystemRow label="Propane Tank" name="systems.propaneTank" commentName="systemComments.propaneTank">
-          <ChipGroup name="inlineOptions.propaneTankType" options={["Leased", "Owned"]} required={false} />
+        <SystemRow label="Propane Tank" name="systems.propaneTank" commentName="systemComments.propaneTank" subTypeName="inlineOptions.propaneTankType">
+          <ChipGroup name="inlineOptions.propaneTankType" options={["Leased", "Owned"]} required />
         </SystemRow>
 
-        <SystemRow label="Generator" name="systems.generator" commentName="systemComments.generator">
-          <ChipGroup name="inlineOptions.generatorType" options={["Leased", "Owned", "Financed"]} required={false} />
+        <SystemRow label="Generator" name="systems.generator" commentName="systemComments.generator" subTypeName="inlineOptions.generatorType">
+          <ChipGroup name="inlineOptions.generatorType" options={["Leased", "Owned", "Financed"]} required />
         </SystemRow>
 
-        <SystemRow label="Water Source" name="systems.waterSource" commentName="systemComments.waterSource">
-          <ChipGroup name="inlineOptions.waterSourceType" options={["Public / Municipal", "Private Well", "Shared Well", "Other"]} required={false} />
+        <SystemRow label="Water Source" name="systems.waterSource" commentName="systemComments.waterSource" subTypeName="inlineOptions.waterSourceType">
+          <ChipGroup name="inlineOptions.waterSourceType" options={["Public / Municipal", "Private Well", "Shared Well", "Other"]} required />
         </SystemRow>
 
-        {/* Sewer — extra conditional: private sub-type only when Private selected */}
-        <SystemRow label="Sewer System" name="systems.sewer" commentName="systemComments.sewer">
+        {/* Sewer — extra conditional: access type required, private sub-type required when Private selected */}
+        <SystemRow label="Sewer System" name="systems.sewer" commentName="systemComments.sewer" subTypeName="sewerSystem.type">
           <div className="space-y-3">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Access type</p>
-              <ChipGroup name="sewerSystem.type" options={["Public", "Private"]} required={false} />
-            </div>
+            <ChipGroup name="sewerSystem.type" options={["Public", "Private"]} required />
             {sewerType === "1" && (
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Private system type</p>
-                <ChipGroup name="sewerSystem.privateType" options={["Septic", "Aerobic", "Lagoon", "Other"]} required={false} />
+                <ChipGroup name="sewerSystem.privateType" options={["Septic", "Aerobic", "Lagoon", "Other"]} required />
               </div>
             )}
           </div>
         </SystemRow>
 
-        <SystemRow label="Security System" name="systems.security" commentName="systemComments.security">
-          <ChipGroup name="inlineOptions.securitySystemType" options={["Leased", "Owned", "Monitored", "Financed"]} required={false} />
+        <SystemRow label="Security System" name="systems.security" commentName="systemComments.security" subTypeName="inlineOptions.securitySystemType">
+          <ChipGroup name="inlineOptions.securitySystemType" options={["Leased", "Owned", "Monitored", "Financed"]} required />
         </SystemRow>
 
-        <SystemRow label="Solar Panels" name="systems.solar" commentName="systemComments.solar">
-          <ChipGroup name="inlineOptions.solarPanelType" options={["Leased", "Owned", "Financed"]} required={false} />
+        <SystemRow label="Solar Panels" name="systems.solar" commentName="systemComments.solar" subTypeName="inlineOptions.solarPanelType">
+          <ChipGroup name="inlineOptions.solarPanelType" options={["Leased", "Owned", "Financed"]} required />
         </SystemRow>
 
         {/* Fire Suppression — extra: inspection date */}

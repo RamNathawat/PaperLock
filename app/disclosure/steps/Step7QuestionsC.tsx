@@ -117,12 +117,30 @@ export default function Step7QuestionsC() {
               {!isReadOnly ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Amount of dues ($)</label>
-                    <input {...register("q41Inline.hoaAmount")} placeholder="e.g. 150" className={inputCls} />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-medium text-gray-500">Amount of dues ($) <span className="text-red-400">*</span></label>
+                      <ErrChip show={showErrors && !!(errors as any)?.q41Inline?.hoaAmount} />
+                    </div>
+                    <input
+                      {...register("q41Inline.hoaAmount", { required: true })}
+                      placeholder="e.g. 150"
+                      className={showErrors && !!(errors as any)?.q41Inline?.hoaAmount
+                        ? "w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all"
+                        : inputCls}
+                    />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Special assessment ($)</label>
-                    <input {...register("q41Inline.specialAssessmentAmount")} placeholder="e.g. 500" className={inputCls} />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-medium text-gray-500">Special assessment ($) <span className="text-red-400">*</span></label>
+                      <ErrChip show={showErrors && !!(errors as any)?.q41Inline?.specialAssessmentAmount} />
+                    </div>
+                    <input
+                      {...register("q41Inline.specialAssessmentAmount", { required: true })}
+                      placeholder="e.g. 500"
+                      className={showErrors && !!(errors as any)?.q41Inline?.specialAssessmentAmount
+                        ? "w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all"
+                        : inputCls}
+                    />
                   </div>
                 </div>
               ) : (

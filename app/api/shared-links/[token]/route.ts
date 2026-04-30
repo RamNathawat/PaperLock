@@ -90,6 +90,12 @@ export async function PATCH(
   const isSubmitted      = body.is_submitted      === true;
   const isSeller2Submit  = body.seller2_submitted === true;
 
+  // Derive the site base URL from the incoming request so it always reflects
+  // the real deployed domain — no NEXT_PUBLIC_SITE_URL env var required.
+  const reqUrl   = new URL(req.url);
+  const siteBase = process.env.NEXT_PUBLIC_SITE_URL ||
+    `${reqUrl.protocol}//${reqUrl.host}`;
+
   // 1. Fetch the existing shared link
   const { data: existingLink, error: fetchError } = await supabase
     .from("shared_links")
@@ -139,7 +145,7 @@ export async function PATCH(
 
     if (seller2Email) {
       // Send Seller 2 the invitation link
-      const fillLink = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/fill/${token}`;
+      const fillLink = `${siteBase}/fill/${token}`;
       const property = body.form_data?.propertyIdentifier || "the property";
 
       const html = `
@@ -307,7 +313,7 @@ export async function PATCH(
       }
 
       const pdfRes = await fetch(
-        `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/disclosure/generate`,
+        `${siteBase}/api/disclosure/generate`,
         {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
