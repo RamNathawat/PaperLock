@@ -65,6 +65,11 @@ export interface StepConfig {
    */
   keepValuesOnPrevious?: boolean;
   /**
+   * Indicates if the step is in a read-only state, preventing overwriting of initialValues
+   * with empty values from disabled react-hook-form inputs.
+   */
+  isReadOnly?: boolean;
+  /**
    * Function that returns boolean telling whether the step should be skipped or not.
    *
    * @param allValues Object containing all form field values from previous steps

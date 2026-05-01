@@ -491,6 +491,7 @@ export function DisclosurePage({ sharedToken }: Props) {
           />
         ),
         initialValues: initialValues?.Property,
+        isReadOnly: isSeller2Session,
       },
 
       {
@@ -498,6 +499,7 @@ export function DisclosurePage({ sharedToken }: Props) {
         component: <Step2AppliancesPrimary />,
         initialValues:
           initialValues?.AppliancesPrimary,
+        isReadOnly: isSeller2Session,
       },
 
       {
@@ -505,42 +507,49 @@ export function DisclosurePage({ sharedToken }: Props) {
         component: <Step3AppliancesExtended />,
         initialValues:
           initialValues?.AppliancesExtended,
+        isReadOnly: isSeller2Session,
       },
 
       {
         id: "Systems",
         component: <Step3Systems />,
         initialValues: initialValues?.Systems,
+        isReadOnly: isSeller2Session,
       },
 
       {
         id: "Zoning",
         component: <Step4Zoning />,
         initialValues: initialValues?.Zoning,
+        isReadOnly: isSeller2Session,
       },
 
       {
         id: "Questions",
         component: <Step5QuestionsA />,
         initialValues: initialValues?.QuestionsA,
+        isReadOnly: isSeller2Session,
       },
 
       {
         id: "Questions Continued",
         component: <Step6QuestionsB />,
         initialValues: initialValues?.QuestionsB,
+        isReadOnly: isSeller2Session,
       },
 
       {
         id: "Questions Final",
         component: <Step7QuestionsC />,
         initialValues: initialValues?.QuestionsC,
+        isReadOnly: isSeller2Session,
       },
 
       {
         id: "Financial",
         component: <Step6Financial />,
         initialValues: initialValues?.Financial,
+        isReadOnly: isSeller2Session,
       },
 
       {

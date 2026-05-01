@@ -153,8 +153,11 @@ function Wizard({
 
       const wizardValues = {
         ...values,
-        [activeStep.id]: { ...stepValues },
       };
+
+      if (!activeStep.isReadOnly) {
+        wizardValues[activeStep.id] = { ...stepValues };
+      }
 
       setValues(wizardValues);
 
@@ -182,8 +185,11 @@ function Wizard({
     if (activeStep.keepValuesOnPrevious ?? true) {
       wizardValues = {
         ...values,
-        [activeStep.id]: { ...stepValues },
       };
+
+      if (!activeStep.isReadOnly) {
+        wizardValues[activeStep.id] = { ...stepValues };
+      }
       setValues(wizardValues);
     }
 
