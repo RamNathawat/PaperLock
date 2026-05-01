@@ -89,6 +89,10 @@ export default function Step6Financial() {
 
   return (
     <fieldset disabled={isReadOnly} className={isReadOnly ? "pointer-events-none opacity-70 border-none p-0 m-0 min-w-0" : "border-none p-0 m-0 min-w-0"}>
+      {/* Hidden inputs to explicitly register these programmatic fields */}
+      <input type="hidden" {...register("additionalPages.hasAdditionalPages")} />
+      <input type="hidden" {...register("additionalPages.howMany")} />
+
       <div className="space-y-6">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2463EB]">Additional Notes</p>
