@@ -312,6 +312,11 @@ export function DisclosurePage({ sharedToken }: Props) {
         Object.values(allSteps)
       );
 
+      console.log("[DEBUG-CLIENT] allSteps keys:", Object.keys(allSteps));
+      console.log("[DEBUG-CLIENT] allSteps['Zoning']:", JSON.stringify(allSteps["Zoning"]));
+      console.log("[DEBUG-CLIENT] flatValues.page2Zoning:", JSON.stringify(flatValues.page2Zoning));
+      console.log("[DEBUG-CLIENT] flatValues.page2Flood:", JSON.stringify(flatValues.page2Flood));
+
       /**
        * CRITICAL FIX:
        * Seller 2 flow drops disabled RHF fields.
@@ -321,6 +326,9 @@ export function DisclosurePage({ sharedToken }: Props) {
         flatValues,
         allSteps
       );
+
+      console.log("[DEBUG-CLIENT] cleanPayload.page2Zoning:", JSON.stringify(cleanPayload.page2Zoning));
+      console.log("[DEBUG-CLIENT] cleanPayload.page2Flood:", JSON.stringify(cleanPayload.page2Flood));
 
       if (!cleanPayload.page1NotWorkingExplanation) {
         cleanPayload.page1NotWorkingExplanation =
