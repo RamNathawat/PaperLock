@@ -172,9 +172,9 @@ export default function Step1Property({ readOnly, isSeller2, hasSeller2Email }: 
                 {...register("initials.sellerInitial1", { required: true })}
                 maxLength={5}
                 placeholder="JAD"
-                disabled={isSeller2}
+                readOnly={isSeller2}
                 className={`w-20 border rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
-                  isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" : "bg-white"
+                  isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200 pointer-events-none" : "bg-white"
                 } ${
                   showErrors && (errors as any)?.initials?.sellerInitial1
                     ? "border-amber-300 bg-amber-50"
@@ -185,9 +185,9 @@ export default function Step1Property({ readOnly, isSeller2, hasSeller2Email }: 
                 {...register("initials.sellerInitial2")}
                 maxLength={5}
                 placeholder="MS"
-                disabled={isSeller2}
+                readOnly={isSeller2}
                 className={`w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
-                  isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" : "bg-white"
+                  isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200 pointer-events-none" : "bg-white"
                 }`}
               />
             </div>
@@ -220,9 +220,9 @@ export default function Step1Property({ readOnly, isSeller2, hasSeller2Email }: 
                    {...register("initials.sellerInitial1", { required: true })}
                    maxLength={5}
                    placeholder="JAD"
-                   disabled={isSeller2}
+                   readOnly={isSeller2}
                    className={`w-full border rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
-                     isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" : "bg-white"
+                     isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200 pointer-events-none" : "bg-white"
                    } ${
                      showErrors && (errors as any)?.initials?.sellerInitial1
                        ? "border-amber-300 bg-amber-50"
@@ -236,9 +236,9 @@ export default function Step1Property({ readOnly, isSeller2, hasSeller2Email }: 
                    {...register("initials.sellerInitial2", { required: isSeller2 })}
                    maxLength={5}
                    placeholder="MS"
-                   disabled={!isSeller2}
+                   readOnly={!isSeller2}
                    className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-gray-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all ${
-                     !isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"
+                     !isSeller2 ? "bg-gray-100 text-gray-500 cursor-not-allowed pointer-events-none" : "bg-white"
                    } ${
                      showErrors && isSeller2 && (errors as any)?.initials?.sellerInitial2
                        ? "border-amber-300 bg-amber-50"

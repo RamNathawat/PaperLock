@@ -491,7 +491,7 @@ export function DisclosurePage({ sharedToken }: Props) {
           />
         ),
         initialValues: initialValues?.Property,
-        isReadOnly: isSeller2Session,
+        isReadOnly: false,
       },
 
       {

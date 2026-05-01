@@ -46,12 +46,6 @@ function Wizard({
     defaultValues: getInitialValues(activeStep),
     mode: getMode(activeStep),
     resolver: getResolver(activeStep, values),
-
-    /**
-     * ✅ FINAL FIX
-     * Persist all nested RHF fields across step unmounts
-     */
-    shouldUnregister: false,
   });
 
   const { reset } = methods;

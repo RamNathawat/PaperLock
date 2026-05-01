@@ -82,16 +82,16 @@ export async function renderSignatures(
   if (sig5) {
     if (data.signatures?.sellerName) {
       sig5.drawText(String(data.signatures.sellerName), {
-        x: raw.PAGE5_SIGNATURES.seller1.x - 80,
-        y: raw.PAGE5_SIGNATURES.seller1.y - 26,
+        x: raw.PAGE5_SIGNATURES.seller1.x - 100,
+        y: raw.PAGE5_SIGNATURES.seller1.y - 30,
         size: 9,
         font,
       });
     }
     if (data.signatures?.sellerDate) {
       sig5.drawText(String(data.signatures.sellerDate), {
-        x: raw.PAGE5_SIGNATURES.seller1.x + 115,
-        y: raw.PAGE5_SIGNATURES.seller1.y - 26,
+        x: raw.PAGE5_SIGNATURES.seller1.x + 70,
+        y: raw.PAGE5_SIGNATURES.seller1.y - 30,
         size: 9,
         font,
       });
@@ -115,16 +115,16 @@ export async function renderSignatures(
   if (sig5) {
     if (data.signatures?.seller2Name) {
       sig5.drawText(String(data.signatures.seller2Name), {
-        x: raw.PAGE5_SIGNATURES.seller2.x - 80,
-        y: raw.PAGE5_SIGNATURES.seller2.y - 26,
+        x: raw.PAGE5_SIGNATURES.seller2.x - 50,
+        y: raw.PAGE5_SIGNATURES.seller2.y - 30,
         size: 9,
         font,
       });
     }
     if (data.signatures?.seller2Date) {
       sig5.drawText(String(data.signatures.seller2Date), {
-        x: raw.PAGE5_SIGNATURES.seller2.x + 115,
-        y: raw.PAGE5_SIGNATURES.seller2.y - 26,
+        x: raw.PAGE5_SIGNATURES.seller2.x + 120,
+        y: raw.PAGE5_SIGNATURES.seller2.y - 30,
         size: 9,
         font,
       });
