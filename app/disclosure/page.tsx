@@ -71,6 +71,22 @@ function normalizeQuestions(flat: FlatFormData) {
   return [];
 }
 
+/**
+ * Strip null values from an object so RHF treats them as "not set"
+ * rather than "has a null value". This is critical because:
+ * - RHF's `required` validation may not catch `null` (only undefined/"")
+ * - Radio buttons compare `current === value` and null !== any option string
+ * - JSON.parse(JSON.stringify(obj)) preserves nulls from the DB
+ */
+function stripNulls<T extends Record<string, any>>(obj: T): T {
+  if (!obj || typeof obj !== "object") return obj;
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== null) result[key] = value;
+  }
+  return result;
+}
+
 function GeneratingOverlay() {
   return (
     <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-center justify-center">
@@ -196,20 +212,21 @@ export function DisclosurePage({ sharedToken }: Props) {
 
           Systems: {
             // form_data may be stored flat (wizard format) or nested (clean payload)
-            inlineOptions:
+            inlineOptions: stripNulls(
               flat.inlineOptions ??
               flat.Systems?.inlineOptions ??
-              {},
-            sewerSystem:
+              {}
+            ),
+            sewerSystem: stripNulls(
               flat.sewerSystem ??
               flat.Systems?.sewerSystem ??
-              {},
-            systems: {
-              ...(flat.systems ?? flat.Systems?.systems ?? {}),
-              // One-time migration: waterHeater/waterSoftener were previously in appliances
-              ...(normalizeAppliances(flat)[3] && !(flat.systems ?? flat.Systems?.systems)?.waterHeater ? { waterHeater: normalizeAppliances(flat)[3] } : {}),
-              ...(normalizeAppliances(flat)[5] && !(flat.systems ?? flat.Systems?.systems)?.waterSoftener ? { waterSoftener: normalizeAppliances(flat)[5] } : {})
-            },
+              {}
+            ),
+            systems: stripNulls(
+              flat.systems ??
+              flat.Systems?.systems ??
+              {}
+            ),
             systemComments:
               flat.systemComments ??
               flat.Systems?.systemComments ??
@@ -217,22 +234,16 @@ export function DisclosurePage({ sharedToken }: Props) {
           },
 
           Zoning: {
-            page2Zoning: {
-              ...(flat.page2Zoning ?? flat.Zoning?.page2Zoning ?? {}),
-              // One-time migration: Q2 was historical district
-              ...(normalizeQuestions(flat)[2] && (flat.page2Zoning ?? flat.Zoning?.page2Zoning)?.historicalDistrict === undefined ? { 
-                historicalDistrict: normalizeQuestions(flat)[2] === "YES" ? "0" : normalizeQuestions(flat)[2] === "NO" ? "1" : "2" 
-              } : {})
-            },
-            page2Flood: {
-              ...(flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}),
-              // One-time migration: Q4, Q5, Q6
-              ...(normalizeQuestions(flat)[4] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q4 === undefined ? { 
-                q4: normalizeQuestions(flat)[4] === "YES" ? "0" : normalizeQuestions(flat)[4] === "NO" ? "1" : "2" 
-              } : {}),
-              ...(normalizeQuestions(flat)[5] && !(flat.page2Flood ?? flat.Zoning?.page2Flood)?.q5 ? { q5: normalizeQuestions(flat)[5] } : {}),
-              ...(normalizeQuestions(flat)[6] && !(flat.page2Flood ?? flat.Zoning?.page2Flood)?.q6 ? { q6: normalizeQuestions(flat)[6] } : {})
-            },
+            page2Zoning: stripNulls(
+              flat.page2Zoning ??
+              flat.Zoning?.page2Zoning ??
+              {}
+            ),
+            page2Flood: stripNulls(
+              flat.page2Flood ??
+              flat.Zoning?.page2Flood ??
+              {}
+            ),
           },
 
           QuestionsA: {
@@ -312,10 +323,6 @@ export function DisclosurePage({ sharedToken }: Props) {
         Object.values(allSteps)
       );
 
-      console.log("[DEBUG-CLIENT] allSteps keys:", Object.keys(allSteps));
-      console.log("[DEBUG-CLIENT] allSteps['Zoning']:", JSON.stringify(allSteps["Zoning"]));
-      console.log("[DEBUG-CLIENT] flatValues.page2Zoning:", JSON.stringify(flatValues.page2Zoning));
-      console.log("[DEBUG-CLIENT] flatValues.page2Flood:", JSON.stringify(flatValues.page2Flood));
 
       /**
        * CRITICAL FIX:
@@ -327,8 +334,6 @@ export function DisclosurePage({ sharedToken }: Props) {
         allSteps
       );
 
-      console.log("[DEBUG-CLIENT] cleanPayload.page2Zoning:", JSON.stringify(cleanPayload.page2Zoning));
-      console.log("[DEBUG-CLIENT] cleanPayload.page2Flood:", JSON.stringify(cleanPayload.page2Flood));
 
       if (!cleanPayload.page1NotWorkingExplanation) {
         cleanPayload.page1NotWorkingExplanation =
@@ -349,21 +354,80 @@ export function DisclosurePage({ sharedToken }: Props) {
       }
 
       /**
+       * Final PDF download payload — defaults to cleanPayload (Seller 1),
+       * overridden in the Seller 2 branch below.
+       */
+      let downloadPayload = cleanPayload;
+
+      /**
        * Shared link submit flow
        */
       if (token) {
         if (isSeller2Session) {
+          /**
+           * CRITICAL: Fetch Seller 1's original data BEFORE writing,
+           * because the PATCH replaces form_data entirely. We need
+           * Seller 1's complete data for the PDF.
+           */
+          const storedRes = await fetch(
+            `/api/shared-links/${token}`
+          );
+          const storedJson = await storedRes.json();
+          const seller1Data =
+            storedJson?.link?.form_data || {};
+
+          /**
+           * Merge: keep ALL of Seller 1's content, overlay only
+           * Seller 2's signatures and initials.
+           */
+          const mergedFormData = {
+            ...seller1Data,
+            signatures: {
+              ...(seller1Data.signatures || {}),
+              ...(flatValues.signatures || {}),
+            },
+            initials: {
+              ...(seller1Data.initials || {}),
+              ...(flatValues.initials || {}),
+            },
+          };
+
           await fetch(`/api/shared-links/${token}`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              form_data: flatValues,
+              form_data: mergedFormData,
               pdf_payload: cleanPayload,
               seller2_submitted: true,
             }),
           });
+
+          /**
+           * Build the download PDF from Seller 1's original data
+           * + Seller 2's signatures. This ensures no content fields
+           * are lost from read-only wizard steps.
+           */
+          const completeFlatValues = {
+            ...seller1Data,
+            signatures: mergedFormData.signatures,
+            initials: mergedFormData.initials,
+            page1NotWorkingExplanation:
+              seller1Data.page1NotWorkingExplanation ||
+              cleanPayload.page1NotWorkingExplanation,
+            page2NotWorkingExplanation:
+              seller1Data.page2NotWorkingExplanation ||
+              cleanPayload.page2NotWorkingExplanation,
+            applianceComments:
+              seller1Data.applianceComments ||
+              cleanPayload.applianceComments,
+          };
+
+          downloadPayload = buildCleanPayload(
+            completeFlatValues,
+            {}
+          );
         } else {
           await fetch(`/api/shared-links/${token}`, {
             method: "PATCH",
@@ -376,53 +440,6 @@ export function DisclosurePage({ sharedToken }: Props) {
               is_submitted: true,
             }),
           });
-        }
-      }
-
-      /**
-       * Final PDF download payload
-       */
-      let downloadPayload = cleanPayload;
-
-      if (isSeller2Session && token) {
-        try {
-          const storedRes = await fetch(
-            `/api/shared-links/${token}`
-          );
-
-          const storedJson = await storedRes.json();
-
-          const storedData =
-            storedJson?.link?.form_data || {};
-
-          const completeFlatValues = {
-            ...storedData,
-            signatures: {
-              ...(storedData.signatures || {}),
-              ...(flatValues.signatures || {}),
-            },
-            initials: {
-              ...(storedData.initials || {}),
-              ...(flatValues.initials || {}),
-            },
-            // Overlay any extra fields from Seller 2's session
-            page1NotWorkingExplanation:
-              cleanPayload.page1NotWorkingExplanation ||
-              storedData.page1NotWorkingExplanation,
-            page2NotWorkingExplanation:
-              cleanPayload.page2NotWorkingExplanation ||
-              storedData.page2NotWorkingExplanation,
-            applianceComments:
-              cleanPayload.applianceComments ||
-              storedData.applianceComments,
-          };
-
-          // Generate the final DisclosureInput format!
-          downloadPayload = buildCleanPayload(completeFlatValues, {});
-        } catch {
-          /**
-           * fallback safely
-           */
         }
       }
 

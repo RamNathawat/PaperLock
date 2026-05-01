@@ -2,6 +2,20 @@ export type FlatFormData = Record<string, any>;
 
 const PAGE_2_APPLIANCE_OFFSET = 19;
 
+/**
+ * Strip null values from an object so downstream code treats them as "not set".
+ * This is critical for the Seller 2 flow: Seller 1's stored form_data may
+ * contain explicit nulls for fields that were unset at save time. Without
+ * stripping, the PDF renderer sees null and skips the field entirely.
+ */
+function stripNulls<T extends Record<string, any>>(obj: T): T {
+  if (!obj || typeof obj !== "object") return obj;
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== null) result[key] = value;
+  }
+  return result;
+}
 export function buildCleanPayload(
   flatValues: FlatFormData,
   allSteps: Record<string, FlatFormData>
@@ -102,10 +116,10 @@ export function buildCleanPayload(
     sellerOccupying: allSteps["Property"]?.sellerOccupying ?? flatValues.sellerOccupying,
     appliances: mergedAppliances,
     systems: allSteps["Systems"]?.systems || flatValues.systems || {},
-    inlineOptions: allSteps["Systems"]?.inlineOptions || flatValues.inlineOptions || {},
-    sewerSystem: allSteps["Systems"]?.sewerSystem || flatValues.sewerSystem || {},
-    page2Zoning: allSteps["Zoning"]?.page2Zoning || flatValues.page2Zoning || {},
-    page2Flood: allSteps["Zoning"]?.page2Flood || flatValues.page2Flood || {},
+    inlineOptions: stripNulls(allSteps["Systems"]?.inlineOptions || flatValues.inlineOptions || {}),
+    sewerSystem: stripNulls(allSteps["Systems"]?.sewerSystem || flatValues.sewerSystem || {}),
+    page2Zoning: stripNulls(allSteps["Zoning"]?.page2Zoning || flatValues.page2Zoning || {}),
+    page2Flood: stripNulls(allSteps["Zoning"]?.page2Flood || flatValues.page2Flood || {}),
     questions: mergedQuestions,
     questionComments: mergedComments,
     q37Inline,
