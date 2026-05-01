@@ -204,10 +204,12 @@ export function DisclosurePage({ sharedToken }: Props) {
               flat.sewerSystem ??
               flat.Systems?.sewerSystem ??
               {},
-            systems:
-              flat.systems ??
-              flat.Systems?.systems ??
-              {},
+            systems: {
+              ...(flat.systems ?? flat.Systems?.systems ?? {}),
+              // One-time migration: waterHeater/waterSoftener were previously in appliances
+              ...(normalizeAppliances(flat)[3] && !(flat.systems ?? flat.Systems?.systems)?.waterHeater ? { waterHeater: normalizeAppliances(flat)[3] } : {}),
+              ...(normalizeAppliances(flat)[5] && !(flat.systems ?? flat.Systems?.systems)?.waterSoftener ? { waterSoftener: normalizeAppliances(flat)[5] } : {})
+            },
             systemComments:
               flat.systemComments ??
               flat.Systems?.systemComments ??
@@ -215,14 +217,22 @@ export function DisclosurePage({ sharedToken }: Props) {
           },
 
           Zoning: {
-            page2Zoning:
-              flat.page2Zoning ??
-              flat.Zoning?.page2Zoning ??
-              {},
-            page2Flood:
-              flat.page2Flood ??
-              flat.Zoning?.page2Flood ??
-              {},
+            page2Zoning: {
+              ...(flat.page2Zoning ?? flat.Zoning?.page2Zoning ?? {}),
+              // One-time migration: Q2 was historical district
+              ...(normalizeQuestions(flat)[2] && (flat.page2Zoning ?? flat.Zoning?.page2Zoning)?.historicalDistrict === undefined ? { 
+                historicalDistrict: normalizeQuestions(flat)[2] === "YES" ? "0" : normalizeQuestions(flat)[2] === "NO" ? "1" : "2" 
+              } : {})
+            },
+            page2Flood: {
+              ...(flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}),
+              // One-time migration: Q4, Q5, Q6
+              ...(normalizeQuestions(flat)[4] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q4 === undefined ? { 
+                q4: normalizeQuestions(flat)[4] === "YES" ? "0" : normalizeQuestions(flat)[4] === "NO" ? "1" : "2" 
+              } : {}),
+              ...(normalizeQuestions(flat)[5] && !(flat.page2Flood ?? flat.Zoning?.page2Flood)?.q5 ? { q5: normalizeQuestions(flat)[5] } : {}),
+              ...(normalizeQuestions(flat)[6] && !(flat.page2Flood ?? flat.Zoning?.page2Flood)?.q6 ? { q6: normalizeQuestions(flat)[6] } : {})
+            },
           },
 
           QuestionsA: {

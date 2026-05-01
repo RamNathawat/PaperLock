@@ -214,17 +214,17 @@ export function renderPage2(
   // Flood Q5 — ALWAYS rendered (not conditional)
   // --------------------------------------------------
   if (data.page2Flood?.q5 !== undefined && data.page2Flood?.q5 !== null) {
-    const v = Number(data.page2Flood.q5);
-    const x = v === 0 ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES : raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO;
-    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q5_Y, size: 11, font });
+    const v = String(data.page2Flood.q5).toUpperCase();
+    const x = v === "YES" ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES : v === "NO" ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO : undefined;
+    if (x !== undefined) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q5_Y, size: 11, font });
   }
 
   // --------------------------------------------------
   // Flood Q6 — ALWAYS rendered (not conditional)
   // --------------------------------------------------
   if (data.page2Flood?.q6 !== undefined && data.page2Flood?.q6 !== null) {
-    const v = Number(data.page2Flood.q6);
-    const x = v === 0 ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES : raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO;
-    if (!Number.isNaN(x)) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q6_Y, size: 11, font });
+    const v = String(data.page2Flood.q6).toUpperCase();
+    const x = v === "YES" ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES : v === "NO" ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO : undefined;
+    if (x !== undefined) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q6_Y, size: 11, font });
   }
 }
