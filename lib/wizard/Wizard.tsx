@@ -223,7 +223,12 @@ function Wizard({
     goToNextStep: () => handleNext(methods.getValues()),
     goToStep: (index: number) => {
       const stepValues = methods.getValues();
-      setValues((v) => ({ ...v, [activeStep.id]: { ...stepValues } }));
+      setValues((v) => {
+        if (activeStep.isReadOnly) {
+          return v;
+        }
+        return { ...v, [activeStep.id]: { ...stepValues } };
+      });
       setActiveStep(steps[index]);
     },
     activeStep,

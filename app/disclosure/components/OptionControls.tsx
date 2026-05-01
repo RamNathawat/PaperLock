@@ -56,7 +56,6 @@ export function OptionCards({
               {...register(name, (required && !isReadOnly) ? { required: true } : {})}
               type="radio"
               value={opt.value}
-              disabled={isReadOnly}
               className="sr-only"
             />
             <span className="text-sm font-medium leading-tight">{opt.label}</span>
@@ -97,7 +96,6 @@ export function YesNoCards({ name, required = true }: { name: string; required?:
               {...register(name, (required && !isReadOnly) ? { required: true } : {})}
               type="radio"
               value={opt}
-              disabled={isReadOnly}
               className="sr-only"
             />
             {opt === "YES" ? "Yes" : "No"}
@@ -145,7 +143,6 @@ export function YesNoUnknownCards({
               {...register(name, (required && !isReadOnly) ? { required: true } : {})}
               type="radio"
               value={i}
-              disabled={isReadOnly}
               className="sr-only"
             />
             {label}
@@ -196,7 +193,6 @@ export function ChipGroup({
               {...register(name, (required && !isReadOnly) ? { required: true } : {})}
               type={type}
               value={val}
-              disabled={isReadOnly}
               className="sr-only"
             />
             {label}
@@ -240,7 +236,6 @@ export function ValueChipGroup({
               {...register(name, (required && !isReadOnly) ? { required: true } : {})}
               type="radio"
               value={value}
-              disabled={isReadOnly}
               className="sr-only"
             />
             {label}
