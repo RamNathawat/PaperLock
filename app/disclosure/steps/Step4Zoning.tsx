@@ -95,7 +95,7 @@ export default function Step4Zoning() {
           label="Is the property in a historical district?"
           tip="A historical district means the property is subject to extra rules about exterior changes. Buyers need to know because it limits future renovations."
         >
-          <YesNoUnknownCards name="page2Zoning.historicalDistrict" options={["Yes", "No", "Unknown"]} />
+          <YesNoUnknownCards name="page2Zoning.historicalDistrict" options={["Yes", "No"]} />
         </FieldBox>
 
         <FieldBox

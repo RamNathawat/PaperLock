@@ -184,7 +184,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    console.log("[PDF-DEBUG] body.page2Zoning:", JSON.stringify(body.page2Zoning));
+    console.log("[PDF-DEBUG] body.page2Flood:", JSON.stringify(body.page2Flood));
+
     const normalized = coerce(body);
+
+    console.log("[PDF-DEBUG] normalized.page2Zoning:", JSON.stringify(normalized.page2Zoning));
+    console.log("[PDF-DEBUG] normalized.page2Flood:", JSON.stringify(normalized.page2Flood));
 
     /**
      * Preview should never block on validation
