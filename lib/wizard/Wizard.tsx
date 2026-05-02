@@ -42,6 +42,26 @@ function Wizard({
     return initial;
   });
 
+  /**
+   * When steps change (e.g. async initialValues load in after the first render),
+   * sync the values state so every step's pre-populated data is available.
+   * We only write in values that haven't already been touched by the user
+   * (i.e. not yet present in state) to avoid clobbering in-progress edits.
+   */
+  useEffect(() => {
+    setValues((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      steps.forEach((step) => {
+        if (step.initialValues && !prev[step.id]) {
+          next[step.id] = step.initialValues;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [steps]);
+
   const methods = useForm({
     defaultValues: getInitialValues(activeStep),
     mode: getMode(activeStep),
@@ -59,15 +79,15 @@ function Wizard({
   const isLastStep: boolean = stepNumber === totalSteps;
 
   /**
-   * Only reset when the active step actually changes — never on an in-flight
-   * values update from the same step. Resetting mid-step caused RHF to re-run
-   * the resolver against stale/empty defaults, producing false "field required"
-   * errors even when the user had already filled everything in.
+   * Reset the form whenever the active step changes OR whenever that step's
+   * initialValues change (e.g. async load completes after the Zoning step is
+   * already the active step). Using activeStep.id alone missed the async case
+   * where initialValues arrive after the step was already mounted.
    */
   useEffect(() => {
     reset(getInitialValues(activeStep));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStep.id, reset]);
+  }, [activeStep.id, activeStep.initialValues, reset]);
 
   useEffect(() => {
     if (!enableHash) return;
@@ -149,9 +169,14 @@ function Wizard({
         ...values,
       };
 
-      if (!activeStep.isReadOnly) {
-        wizardValues[activeStep.id] = { ...stepValues };
-      }
+      /**
+       * FIX: Always write the current step's values into wizardValues,
+       * even for read-only steps. Read-only steps hold Seller 1's pre-populated
+       * data that must be preserved in allSteps for buildCleanPayload to read.
+       * The fieldset[disabled] on read-only steps already prevents user edits,
+       * so writing these values is safe — they are just the initialValues echoed back.
+       */
+      wizardValues[activeStep.id] = { ...stepValues };
 
       setValues(wizardValues);
 
@@ -181,9 +206,8 @@ function Wizard({
         ...values,
       };
 
-      if (!activeStep.isReadOnly) {
-        wizardValues[activeStep.id] = { ...stepValues };
-      }
+      // Same fix: always persist values, even for read-only steps.
+      wizardValues[activeStep.id] = { ...stepValues };
       setValues(wizardValues);
     }
 
@@ -217,12 +241,10 @@ function Wizard({
     goToNextStep: () => handleNext(methods.getValues()),
     goToStep: (index: number) => {
       const stepValues = methods.getValues();
-      setValues((v) => {
-        if (activeStep.isReadOnly) {
-          return v;
-        }
-        return { ...v, [activeStep.id]: { ...stepValues } };
-      });
+      setValues((v) => ({
+        ...v,
+        [activeStep.id]: { ...stepValues },
+      }));
       setActiveStep(steps[index]);
     },
     activeStep,
