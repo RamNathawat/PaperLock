@@ -186,12 +186,20 @@ export default function Step7QuestionsC() {
               {!isReadOnly ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Manager name</label>
-                    <input {...register("q41Inline.managerName")} placeholder="Manager name" className={inputCls} />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-medium text-gray-500">Manager name <span className="text-red-400">*</span></label>
+                      <ErrChip show={showErrors && !!(errors as any)?.q41Inline?.managerName} />
+                    </div>
+                    <input {...register("q41Inline.managerName", { required: true })} placeholder="Manager name" 
+                      className={showErrors && !!(errors as any)?.q41Inline?.managerName ? "w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" : inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Phone number</label>
-                    <input {...register("q41Inline.managerPhone")} placeholder="Phone number" className={inputCls} />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-medium text-gray-500">Phone number <span className="text-red-400">*</span></label>
+                      <ErrChip show={showErrors && !!(errors as any)?.q41Inline?.managerPhone} />
+                    </div>
+                    <input {...register("q41Inline.managerPhone", { required: true })} placeholder="Phone number" 
+                      className={showErrors && !!(errors as any)?.q41Inline?.managerPhone ? "w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" : inputCls} />
                   </div>
                 </div>
               ) : (
@@ -219,12 +227,20 @@ export default function Step7QuestionsC() {
               {!isReadOnly ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Fee amount ($)</label>
-                    <input {...register("q46Inline.amount")} placeholder="e.g. 75" className={inputCls} />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-medium text-gray-500">Fee amount ($) <span className="text-red-400">*</span></label>
+                      <ErrChip show={showErrors && !!(errors as any)?.q46Inline?.amount} />
+                    </div>
+                    <input {...register("q46Inline.amount", { required: true })} placeholder="e.g. 75" 
+                      className={showErrors && !!(errors as any)?.q46Inline?.amount ? "w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" : inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Paid to whom</label>
-                    <input {...register("q46Inline.paidTo")} placeholder="e.g. Rural Fire District #4" className={inputCls} />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-medium text-gray-500">Paid to whom <span className="text-red-400">*</span></label>
+                      <ErrChip show={showErrors && !!(errors as any)?.q46Inline?.paidTo} />
+                    </div>
+                    <input {...register("q46Inline.paidTo", { required: true })} placeholder="e.g. Rural Fire District #4" 
+                      className={showErrors && !!(errors as any)?.q46Inline?.paidTo ? "w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" : inputCls} />
                   </div>
                 </div>
               ) : (
@@ -266,12 +282,20 @@ export default function Step7QuestionsC() {
                   <input {...register("q47Details.other")} placeholder="If Other selected, explain (optional)" className={inputCls} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Initial membership fee ($)</label>
-                      <input {...register("q47Details.initialMembershipFee")} placeholder="e.g. 500" className={inputCls} />
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-medium text-gray-500">Initial membership fee ($) <span className="text-red-400">*</span></label>
+                        <ErrChip show={showErrors && !!(errors as any)?.q47Details?.initialMembershipFee} />
+                      </div>
+                      <input {...register("q47Details.initialMembershipFee", { required: true })} placeholder="e.g. 500" 
+                        className={showErrors && !!(errors as any)?.q47Details?.initialMembershipFee ? "w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" : inputCls} />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Annual membership fee ($)</label>
-                      <input {...register("q47Details.annualMembershipFee")} placeholder="e.g. 120" className={inputCls} />
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-medium text-gray-500">Annual membership fee ($) <span className="text-red-400">*</span></label>
+                        <ErrChip show={showErrors && !!(errors as any)?.q47Details?.annualMembershipFee} />
+                      </div>
+                      <input {...register("q47Details.annualMembershipFee", { required: true })} placeholder="e.g. 120" 
+                        className={showErrors && !!(errors as any)?.q47Details?.annualMembershipFee ? "w-full rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" : inputCls} />
                     </div>
                   </div>
                 </>

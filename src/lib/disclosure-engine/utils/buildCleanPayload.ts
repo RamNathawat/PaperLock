@@ -118,8 +118,20 @@ export function buildCleanPayload(
     systems: allSteps["Systems"]?.systems || flatValues.systems || {},
     inlineOptions: stripNulls(allSteps["Systems"]?.inlineOptions || flatValues.inlineOptions || {}),
     sewerSystem: stripNulls(allSteps["Systems"]?.sewerSystem || flatValues.sewerSystem || {}),
-    page2Zoning: stripNulls(allSteps["Zoning"]?.page2Zoning || flatValues.page2Zoning || {}),
-    page2Flood: stripNulls(allSteps["Zoning"]?.page2Flood || flatValues.page2Flood || {}),
+    page2Zoning: {
+      ...stripNulls(allSteps["Zoning"]?.page2Zoning || flatValues.page2Zoning || {}),
+      ...(mergedQuestions[2] && (allSteps["Zoning"]?.page2Zoning || flatValues.page2Zoning)?.historicalDistrict == null ? {
+        historicalDistrict: mergedQuestions[2] === "YES" ? "0" : mergedQuestions[2] === "NO" ? "1" : "2"
+      } : {})
+    },
+    page2Flood: {
+      ...stripNulls(allSteps["Zoning"]?.page2Flood || flatValues.page2Flood || {}),
+      ...(mergedQuestions[4] && (allSteps["Zoning"]?.page2Flood || flatValues.page2Flood)?.q4 == null ? {
+        q4: mergedQuestions[4] === "YES" ? "0" : mergedQuestions[4] === "NO" ? "1" : "2"
+      } : {}),
+      ...(mergedQuestions[5] && (allSteps["Zoning"]?.page2Flood || flatValues.page2Flood)?.q5 == null ? { q5: mergedQuestions[5] } : {}),
+      ...(mergedQuestions[6] && (allSteps["Zoning"]?.page2Flood || flatValues.page2Flood)?.q6 == null ? { q6: mergedQuestions[6] } : {})
+    },
     questions: mergedQuestions,
     questionComments: mergedComments,
     q37Inline,
