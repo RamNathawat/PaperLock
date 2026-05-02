@@ -62,6 +62,19 @@ function Wizard({
     });
   }, [steps]);
 
+  /**
+   * Keep activeStep in sync when the steps array is replaced (e.g. async
+   * initialValues arrive after mount). Without this, activeStep holds the
+   * stale step object with initialValues=undefined, so the reset effect
+   * below never sees the new initialValues and the form stays blank.
+   */
+  useEffect(() => {
+    const freshStep = steps.find((s) => s.id === activeStep.id);
+    if (freshStep && freshStep !== activeStep) {
+      setActiveStep(freshStep);
+    }
+  }, [steps]);
+
   const methods = useForm({
     defaultValues: getInitialValues(activeStep),
     mode: getMode(activeStep),
@@ -79,15 +92,19 @@ function Wizard({
   const isLastStep: boolean = stepNumber === totalSteps;
 
   /**
-   * Reset the form whenever the active step changes OR whenever that step's
-   * initialValues change (e.g. async load completes after the Zoning step is
-   * already the active step). Using activeStep.id alone missed the async case
-   * where initialValues arrive after the step was already mounted.
+   * Reset the form whenever:
+   * 1. The active step changes (user navigates)
+   * 2. The values for the current step change (async initialValues arrive)
+   *
+   * Using activeStep.id alone missed the async case where initialValues arrive
+   * after the step is already mounted. We reference values[activeStep.id]
+   * directly so the reset fires as soon as the async data lands in state.
    */
+  const activeStepValues = values[activeStep.id];
   useEffect(() => {
     reset(getInitialValues(activeStep));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStep.id, activeStep.initialValues, reset]);
+  }, [activeStep.id, activeStepValues, reset]);
 
   useEffect(() => {
     if (!enableHash) return;
