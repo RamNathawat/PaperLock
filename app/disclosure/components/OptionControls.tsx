@@ -142,7 +142,7 @@ export function YesNoUnknownCards({
             <input
               {...register(name, (required && !isReadOnly) ? { required: true } : {})}
               type="radio"
-              value={i}
+              value={String(i)}
               className="sr-only"
             />
             {label}
