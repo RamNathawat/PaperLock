@@ -234,30 +234,22 @@ export function DisclosurePage({ sharedToken }: Props) {
           },
 
           Zoning: {
-            page2Zoning: (() => {
-              const z = stripNulls(flat.page2Zoning ?? flat.Zoning?.page2Zoning ?? {});
-              // Stringify numeric fields so RHF radio value={String(i)} matches
-              if (z.historicalDistrict != null) z.historicalDistrict = String(z.historicalDistrict);
+            page2Zoning: {
+              ...stripNulls(flat.page2Zoning ?? flat.Zoning?.page2Zoning ?? {}),
               // One-time migration: Q2 was historical district
-              const migrated = normalizeQuestions(flat)[2] && z.historicalDistrict == null
-                ? { historicalDistrict: normalizeQuestions(flat)[2] === "YES" ? "0" : normalizeQuestions(flat)[2] === "NO" ? "1" : "2" }
-                : {};
-              return { ...z, ...migrated };
-            })(),
-            page2Flood: (() => {
-              const f = stripNulls(flat.page2Flood ?? flat.Zoning?.page2Flood ?? {});
-              // Stringify numeric fields so RHF radio value={String(i)} matches
-              if (f.q3Main     != null) f.q3Main     = String(f.q3Main);
-              if (f.q3Municipal != null) f.q3Municipal = String(f.q3Municipal);
-              if (f.q4         != null) f.q4         = String(f.q4);
+              ...(normalizeQuestions(flat)[2] && (flat.page2Zoning ?? flat.Zoning?.page2Zoning)?.historicalDistrict == null ? { 
+                historicalDistrict: normalizeQuestions(flat)[2] === "YES" ? "0" : normalizeQuestions(flat)[2] === "NO" ? "1" : "2" 
+              } : {})
+            },
+            page2Flood: {
+              ...stripNulls(flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}),
               // One-time migration: Q4, Q5, Q6
-              const migrated = {
-                ...(normalizeQuestions(flat)[4] && f.q4 == null ? { q4: normalizeQuestions(flat)[4] === "YES" ? "0" : normalizeQuestions(flat)[4] === "NO" ? "1" : "2" } : {}),
-                ...(normalizeQuestions(flat)[5] && f.q5 == null ? { q5: normalizeQuestions(flat)[5] } : {}),
-                ...(normalizeQuestions(flat)[6] && f.q6 == null ? { q6: normalizeQuestions(flat)[6] } : {}),
-              };
-              return { ...f, ...migrated };
-            })(),
+              ...(normalizeQuestions(flat)[4] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q4 == null ? { 
+                q4: normalizeQuestions(flat)[4] === "YES" ? "0" : normalizeQuestions(flat)[4] === "NO" ? "1" : "2" 
+              } : {}),
+              ...(normalizeQuestions(flat)[5] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q5 == null ? { q5: normalizeQuestions(flat)[5] } : {}),
+              ...(normalizeQuestions(flat)[6] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q6 == null ? { q6: normalizeQuestions(flat)[6] } : {})
+            },
           },
 
           QuestionsA: {

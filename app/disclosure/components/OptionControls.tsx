@@ -124,7 +124,8 @@ export function YesNoUnknownCards({
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((label, i) => {
-        const isSelected = String(current) === String(i);
+        // Use == (loose) so stored number 1 matches string "1" and vice versa
+        const isSelected = current != null && current != "" && current == i;
         return (
           <label
             key={label}
@@ -142,7 +143,7 @@ export function YesNoUnknownCards({
             <input
               {...register(name, (required && !isReadOnly) ? { required: true } : {})}
               type="radio"
-              value={String(i)}
+              value={i}
               className="sr-only"
             />
             {label}
@@ -175,9 +176,10 @@ export function ChipGroup({
     <div className="flex flex-wrap gap-2">
       {options.map((label, i) => {
         const val = String(i);
+        // Use == (loose) so stored number 1 matches string "1" and vice versa
         const isSelected = type === "checkbox"
-          ? Array.isArray(current) && current.includes(val)
-          : String(current) === val;
+          ? Array.isArray(current) && current.map(String).includes(val)
+          : current != null && current != "" && current == i;
 
         return (
           <label
