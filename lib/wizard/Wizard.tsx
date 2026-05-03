@@ -96,13 +96,15 @@ function Wizard({
    * 1. The active step changes (user navigates)
    * 2. The values for the current step change (async initialValues arrive)
    *
-   * Using activeStep.id alone missed the async case where initialValues arrive
-   * after the step is already mounted. We reference values[activeStep.id]
-   * directly so the reset fires as soon as the async data lands in state.
+   * IMPORTANT: We derive `activeStepValues` outside the effect and pass it
+   * directly into reset(). This avoids the stale closure problem where
+   * `values` inside the effect body would reference the snapshot from when
+   * the effect was created, not the latest state. By the time the effect
+   * runs, `activeStepValues` is already the fresh value from this render.
    */
-  const activeStepValues = values[activeStep.id];
+  const activeStepValues = values[activeStep.id] ?? activeStep.initialValues ?? {};
   useEffect(() => {
-    reset(getInitialValues(activeStep));
+    reset(activeStepValues);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStep.id, activeStepValues, reset]);
 
