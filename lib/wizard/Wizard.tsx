@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
 import { getMode, getResolver } from "./helpers/form";
@@ -30,92 +30,70 @@ function Wizard({
   const [activeStep, setActiveStep] = useState(initialStep);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const [values, setValues] = useState<WizardValues>(() => {
-    const initial: WizardValues = {};
+  // Stores values for editable steps only. Read-only steps always source
+  // their data from step.initialValues directly, never from this state.
+  const [values, setValues] = useState<WizardValues>({});
 
-    steps.forEach((step) => {
-      if (step.initialValues) {
-        initial[step.id] = step.initialValues;
-      }
-    });
-
-    return initial;
-  });
-
-  /**
-   * When steps change (e.g. async initialValues load in after the first render),
-   * sync the values state so every step's pre-populated data is available.
-   * We only write in values that haven't already been touched by the user
-   * (i.e. not yet present in state) to avoid clobbering in-progress edits.
-   */
+  // Keep activeStep reference fresh whenever the steps array is replaced
+  // (e.g. async initialValues arrive after mount). Without this, activeStep
+  // holds the stale step object and the form reset never sees new data.
+  const stepsRef = useRef(steps);
   useEffect(() => {
-    setValues((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      steps.forEach((step) => {
-        if (step.initialValues && !prev[step.id]) {
-          next[step.id] = step.initialValues;
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [steps]);
-
-  /**
-   * Keep activeStep in sync when the steps array is replaced (e.g. async
-   * initialValues arrive after mount). Without this, activeStep holds the
-   * stale step object with initialValues=undefined, so the reset effect
-   * below never sees the new initialValues and the form stays blank.
-   */
-  useEffect(() => {
+    stepsRef.current = steps;
     const freshStep = steps.find((s) => s.id === activeStep.id);
     if (freshStep && freshStep !== activeStep) {
       setActiveStep(freshStep);
     }
   }, [steps]);
 
+  /**
+   * Returns the values to pre-populate a step's form with.
+   * - Read-only steps: always use step.initialValues (the server data).
+   *   Never use values[step.id] for read-only steps because handleNext
+   *   would have written empty disabled-form values there.
+   * - Editable steps: use values[step.id] if the user has been there,
+   *   otherwise fall back to step.initialValues.
+   */
+  function getStepValues(step: Step): Values {
+    if (step.isReadOnly) {
+      return step.initialValues ?? {};
+    }
+    return values[step.id] ?? step.initialValues ?? {};
+  }
+
   const methods = useForm({
-    defaultValues: getInitialValues(activeStep),
+    defaultValues: getStepValues(activeStep),
     mode: getMode(activeStep),
     resolver: getResolver(activeStep, values),
   });
 
   const { reset } = methods;
 
-  const currentIndex: number = steps.findIndex(
-    (s) => s.id === activeStep.id
-  );
+  const currentIndex: number = steps.findIndex((s) => s.id === activeStep.id);
   const stepNumber: number = currentIndex + 1;
   const totalSteps: number = steps.length;
   const isFirstStep: boolean = stepNumber === 1;
   const isLastStep: boolean = stepNumber === totalSteps;
 
   /**
-   * Reset the form whenever:
-   * 1. The active step changes (user navigates)
-   * 2. The values for the current step change (async initialValues arrive)
-   *
-   * IMPORTANT: We derive `activeStepValues` outside the effect and pass it
-   * directly into reset(). This avoids the stale closure problem where
-   * `values` inside the effect body would reference the snapshot from when
-   * the effect was created, not the latest state. By the time the effect
-   * runs, `activeStepValues` is already the fresh value from this render.
+   * Reset form whenever active step changes OR its source data changes.
+   * activeStep.initialValues covers async load for read-only steps.
+   * values[activeStep.id] covers editable steps navigated back to.
    */
-  const activeStepValues = values[activeStep.id] ?? activeStep.initialValues ?? {};
+  const resetKey = activeStep.isReadOnly
+    ? activeStep.initialValues
+    : values[activeStep.id] ?? activeStep.initialValues;
+
   useEffect(() => {
-    reset(activeStepValues);
+    reset(getStepValues(activeStep));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStep.id, activeStepValues, reset]);
+  }, [activeStep.id, resetKey, reset]);
 
   useEffect(() => {
     if (!enableHash) return;
-
     window.addEventListener("hashchange", handleHashChange);
     updateHash(hashes, activeStep);
-
-    return () =>
-      window.removeEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
   }, [activeStep]);
 
   function handleHashChange() {
@@ -129,51 +107,43 @@ function Wizard({
     newValues: WizardValues,
     direction: number
   ): Promise<Step | undefined> {
-    let proceedingStep;
-
-    for (let idx = 0; idx < remainingSteps.length; ++idx) {
-      const step = remainingSteps[idx];
-
-      if (step.shouldSkip === undefined) {
-        proceedingStep = step;
-        break;
-      }
-
+    for (const step of remainingSteps) {
+      if (step.shouldSkip === undefined) return step;
       const shouldSkip = await step.shouldSkip(newValues, direction);
-
-      if (!shouldSkip) {
-        proceedingStep = step;
-        break;
-      }
+      if (!shouldSkip) return step;
     }
-
-    return proceedingStep;
+    return undefined;
   }
 
-  async function _resolveNextStep(
-    newValues: WizardValues
-  ): Promise<Step | undefined> {
-    const remainingSteps = steps.slice(currentIndex + 1);
-    return _getProceedingStep(remainingSteps, newValues, 1);
+  async function _resolveNextStep(newValues: WizardValues) {
+    return _getProceedingStep(steps.slice(currentIndex + 1), newValues, 1);
   }
 
-  async function _resolvePreviousStep(
-    newValues: WizardValues
-  ): Promise<Step | undefined> {
-    const remainingSteps = steps.slice(0, currentIndex).reverse();
-    return _getProceedingStep(remainingSteps, newValues, -1);
+  async function _resolvePreviousStep(newValues: WizardValues) {
+    return _getProceedingStep(steps.slice(0, currentIndex).reverse(), newValues, -1);
   }
 
-  function handleCompleted(values: WizardValues) {
-    if (!onCompleted) return;
-
-    let result = {};
-
-    Object.keys(values).forEach((stepId: string | number) => {
-      result = { ...result, ...values[stepId] };
+  /**
+   * Build the full allSteps map for onCompleted/onStepChanged.
+   * Read-only steps use their initialValues; editable steps use saved values.
+   */
+  function buildAllSteps(editableValues: WizardValues): WizardValues {
+    const all: WizardValues = {};
+    stepsRef.current.forEach((step) => {
+      if (step.isReadOnly) {
+        all[step.id] = step.initialValues ?? {};
+      } else {
+        all[step.id] = editableValues[step.id] ?? step.initialValues ?? {};
+      }
     });
+    return all;
+  }
 
-    onCompleted(result, values);
+  function handleCompleted(allSteps: WizardValues) {
+    if (!onCompleted) return;
+    let flat = {};
+    Object.values(allSteps).forEach((v) => { flat = { ...flat, ...v }; });
+    onCompleted(flat, allSteps);
   }
 
   async function handleNext(stepValues: Values) {
@@ -184,32 +154,22 @@ function Wizard({
         setIsLoading(false);
       }
 
-      const wizardValues = {
-        ...values,
-      };
+      // Only persist values for editable steps
+      const newValues = activeStep.isReadOnly
+        ? { ...values }
+        : { ...values, [activeStep.id]: { ...stepValues } };
 
-      /**
-       * FIX: Always write the current step's values into wizardValues,
-       * even for read-only steps. Read-only steps hold Seller 1's pre-populated
-       * data that must be preserved in allSteps for buildCleanPayload to read.
-       * The fieldset[disabled] on read-only steps already prevents user edits,
-       * so writing these values is safe — they are just the initialValues echoed back.
-       */
-      wizardValues[activeStep.id] = { ...stepValues };
+      setValues(newValues);
 
-      setValues(wizardValues);
-
-      const nextStep = await _resolveNextStep(wizardValues);
+      const allSteps = buildAllSteps(newValues);
+      const nextStep = await _resolveNextStep(allSteps);
 
       if (!nextStep) {
-        handleCompleted(wizardValues);
+        handleCompleted(allSteps);
         return;
       }
 
-      if (onStepChanged) {
-        onStepChanged(activeStep, nextStep, wizardValues);
-      }
-
+      if (onStepChanged) onStepChanged(activeStep, nextStep, allSteps);
       setActiveStep(nextStep as Step);
     } catch (error: any) {
       console.log(error);
@@ -218,37 +178,22 @@ function Wizard({
   }
 
   async function handlePrevious(stepValues: Values) {
-    let wizardValues = null;
+    const newValues = (activeStep.keepValuesOnPrevious ?? true) && !activeStep.isReadOnly
+      ? { ...values, [activeStep.id]: { ...stepValues } }
+      : { ...values };
 
-    if (activeStep.keepValuesOnPrevious ?? true) {
-      wizardValues = {
-        ...values,
-      };
+    setValues(newValues);
 
-      // Same fix: always persist values, even for read-only steps.
-      wizardValues[activeStep.id] = { ...stepValues };
-      setValues(wizardValues);
-    }
-
-    wizardValues = wizardValues || values;
-
-    const previousStep = await _resolvePreviousStep(wizardValues);
-
+    const allSteps = buildAllSteps(newValues);
+    const previousStep = await _resolvePreviousStep(allSteps);
     if (!previousStep) return;
 
-    if (onStepChanged) {
-      onStepChanged(activeStep, previousStep, wizardValues);
-    }
-
+    if (onStepChanged) onStepChanged(activeStep, previousStep, allSteps);
     setActiveStep(previousStep as Step);
   }
 
   function updateStep(key: string, value: any) {
     setActiveStep({ ...activeStep, [key]: value });
-  }
-
-  function getInitialValues(step: Step) {
-    return values[step.id] || step.initialValues || {};
   }
 
   const context: WizardContextValues = {
@@ -260,10 +205,9 @@ function Wizard({
     goToNextStep: () => handleNext(methods.getValues()),
     goToStep: (index: number) => {
       const stepValues = methods.getValues();
-      setValues((v) => ({
-        ...v,
-        [activeStep.id]: { ...stepValues },
-      }));
+      if (!activeStep.isReadOnly) {
+        setValues((v) => ({ ...v, [activeStep.id]: { ...stepValues } }));
+      }
       setActiveStep(steps[index]);
     },
     activeStep,
