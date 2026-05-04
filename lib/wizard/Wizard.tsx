@@ -77,17 +77,18 @@ function Wizard({
 
   /**
    * Reset form whenever active step changes OR its source data changes.
-   * activeStep.initialValues covers async load for read-only steps.
-   * values[activeStep.id] covers editable steps navigated back to.
+   * We use a stable JSON string as the reset key so that:
+   * 1. Object reference changes (new array from useMemo) don't cause spurious resets
+   * 2. Actual data changes (async load completing) DO trigger a reset
+   * 3. Production builds behave identically to dev builds
    */
-  const resetKey = activeStep.isReadOnly
-    ? activeStep.initialValues
-    : values[activeStep.id] ?? activeStep.initialValues;
+  const stepData = getStepValues(activeStep);
+  const resetKey = activeStep.id + ":" + JSON.stringify(stepData);
 
   useEffect(() => {
-    reset(getStepValues(activeStep));
+    reset(stepData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStep.id, resetKey, reset]);
+  }, [resetKey, reset]);
 
   useEffect(() => {
     if (!enableHash) return;
