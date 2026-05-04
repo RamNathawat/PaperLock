@@ -56,7 +56,13 @@ function normalizeAppliances(flat: FlatFormData) {
 }
 
 function normalizeQuestions(flat: FlatFormData) {
-  const source = flat?.questions || {};
+  const source =
+    flat?.questions ??
+    flat?.QuestionsA?.questions ??
+    flat?.QuestionsB?.questions ??
+    flat?.QuestionsC?.questions ??
+    flat?.Questions?.questions ??
+    {};
 
   if (Array.isArray(source)) return source;
 
