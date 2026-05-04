@@ -3,6 +3,15 @@ import * as raw from "../../../forms/orec/2026/layout";
 import { DisclosureInput, ZoningType } from "../schema/disclosure.schema";
 import { drawOverflowText } from "../utils/drawOverflowText";
 
+function normalizeYesNo(value: unknown): "YES" | "NO" | undefined {
+  if (value === null || value === undefined || value === "") return undefined;
+  if (value === "YES" || value === "NO") return value;
+  if (value === 0 || value === "0") return "YES";
+  if (value === 1 || value === "1") return "NO";
+  const v = String(value).toUpperCase();
+  return v === "YES" || v === "NO" ? (v as "YES" | "NO") : undefined;
+}
+
 const ZONING_X: Record<ZoningType, { y: number; x: number }> = {
   residential:        { y: raw.PAGE2_ZONING_Q1_ROW1.y, x: raw.PAGE2_ZONING_Q1_ROW1.firstX },
   commercial:         { y: raw.PAGE2_ZONING_Q1_ROW1.y, x: raw.PAGE2_ZONING_Q1_ROW1.firstX + raw.PAGE2_ZONING_Q1_ROW1.deltas[0] },
@@ -214,7 +223,7 @@ export function renderPage2(
   // Flood Q5 — ALWAYS rendered (not conditional)
   // --------------------------------------------------
   if (data.page2Flood?.q5 !== undefined && data.page2Flood?.q5 !== null) {
-    const v = String(data.page2Flood.q5).toUpperCase();
+    const v = normalizeYesNo(data.page2Flood.q5);
     const x = v === "YES" ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES : v === "NO" ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO : undefined;
     if (x !== undefined) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q5_Y, size: 11, font });
   }
@@ -223,7 +232,7 @@ export function renderPage2(
   // Flood Q6 — ALWAYS rendered (not conditional)
   // --------------------------------------------------
   if (data.page2Flood?.q6 !== undefined && data.page2Flood?.q6 !== null) {
-    const v = String(data.page2Flood.q6).toUpperCase();
+    const v = normalizeYesNo(data.page2Flood.q6);
     const x = v === "YES" ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.YES : v === "NO" ? raw.PAGE2_FLOOD_VERTICAL_COLUMNS.NO : undefined;
     if (x !== undefined) page.drawText("X", { x, y: raw.PAGE2_FLOOD_Q6_Y, size: 11, font });
   }

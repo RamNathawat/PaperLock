@@ -87,6 +87,15 @@ function stripNulls<T extends Record<string, any>>(obj: T): T {
   return result;
 }
 
+function normalizeYesNo(value: any): "YES" | "NO" | undefined {
+  if (value === null || value === undefined || value === "") return undefined;
+  if (value === "YES" || value === "NO") return value;
+  if (value === 0 || value === "0") return "YES";
+  if (value === 1 || value === "1") return "NO";
+  const v = String(value).toUpperCase();
+  return v === "YES" || v === "NO" ? (v as "YES" | "NO") : undefined;
+}
+
 function GeneratingOverlay() {
   return (
     <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-center justify-center">
@@ -247,8 +256,8 @@ export function DisclosurePage({ sharedToken }: Props) {
               ...(normalizeQuestions(flat)[4] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q4 == null ? { 
                 q4: normalizeQuestions(flat)[4] === "YES" ? "0" : normalizeQuestions(flat)[4] === "NO" ? "1" : "2" 
               } : {}),
-              ...(normalizeQuestions(flat)[5] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q5 == null ? { q5: normalizeQuestions(flat)[5] } : {}),
-              ...(normalizeQuestions(flat)[6] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q6 == null ? { q6: normalizeQuestions(flat)[6] } : {})
+              q5: normalizeYesNo((flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}).q5) ?? (normalizeQuestions(flat)[5] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q5 == null ? normalizeQuestions(flat)[5] : undefined),
+              q6: normalizeYesNo((flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}).q6) ?? (normalizeQuestions(flat)[6] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q6 == null ? normalizeQuestions(flat)[6] : undefined)
             },
           },
 
