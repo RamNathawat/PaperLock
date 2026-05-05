@@ -111,9 +111,28 @@ export async function PATCH(
   const realtorUserId = existingLink.created_by;
 
   // 2. Build the update payload
+  // Seller 2 sessions must NOT overwrite Seller 1 answers with null/empty values.
+  // Preserve the existing record and only merge seller2-owned fields.
+  const incomingFormData = body.form_data || {};
+  const existingFormData = existingLink.form_data || {};
+
+  const mergedFormData = isSeller2Submit
+    ? {
+        ...existingFormData,
+        signatures: {
+          ...(existingFormData.signatures || {}),
+          ...(incomingFormData.signatures || {}),
+        },
+        initials: {
+          ...(existingFormData.initials || {}),
+          ...(incomingFormData.initials || {}),
+        },
+      }
+    : incomingFormData;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updatePayload: Record<string, any> = {
-    form_data:   body.form_data,
+    form_data:   mergedFormData,
     updated_at:  new Date().toISOString(),
   };
 
@@ -147,7 +166,7 @@ export async function PATCH(
     if (seller2Email) {
       // Send Seller 2 the invitation link
       const fillLink = `${siteBase}/fill/${token}`;
-      const property = body.form_data?.propertyIdentifier || "the property";
+      const property = mergedFormData?.propertyIdentifier || "the property";
 
       const html = `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #eaeaea;border-radius:12px;overflow:hidden;color:#111827;">
@@ -214,8 +233,8 @@ export async function PATCH(
       .from("disclosures")
       .insert({
         user_id:              realtorUserId,
-        property_identifier:  body.form_data?.propertyIdentifier || "Untitled",
-        form_data:            body.form_data,
+        property_identifier:  mergedFormData?.propertyIdentifier || "Untitled",
+        form_data:            mergedFormData,
         status:               "submitted",
       })
       .select()
@@ -236,8 +255,8 @@ export async function PATCH(
     await supabase
       .from("disclosures")
       .update({
-        property_identifier: body.form_data?.propertyIdentifier || "Untitled",
-        form_data:           body.form_data,
+        property_identifier: mergedFormData?.propertyIdentifier || "Untitled",
+        form_data:           mergedFormData,
         status:              "submitted",
         updated_at:          new Date().toISOString(),
       })
@@ -328,7 +347,7 @@ export async function PATCH(
       if (pdfRes.ok) {
         const pdfBuffer = await pdfRes.arrayBuffer();
         const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
-        const property  = body.form_data?.propertyIdentifier || "Oklahoma Property";
+        const property  = mergedFormData?.propertyIdentifier || "Oklahoma Property";
 
         const htmlTemplate = `
           <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #eaeaea;border-radius:12px;overflow:hidden;color:#111827;">
