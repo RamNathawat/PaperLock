@@ -56,7 +56,13 @@ function normalizeAppliances(flat: FlatFormData) {
 }
 
 function normalizeQuestions(flat: FlatFormData) {
-  const source = flat?.questions || {};
+  const source =
+    flat?.questions ??
+    flat?.QuestionsA?.questions ??
+    flat?.QuestionsB?.questions ??
+    flat?.QuestionsC?.questions ??
+    flat?.Questions?.questions ??
+    {};
 
   if (Array.isArray(source)) return source;
 
@@ -85,6 +91,19 @@ function stripNulls<T extends Record<string, any>>(obj: T): T {
     if (value !== null) result[key] = value;
   }
   return result;
+}
+
+function isUnset(value: unknown): boolean {
+  return value === null || value === undefined || value === "";
+}
+
+function normalizeYesNo(value: any): "YES" | "NO" | undefined {
+  if (value === null || value === undefined || value === "") return undefined;
+  if (value === "YES" || value === "NO") return value;
+  if (value === 0 || value === "0") return "YES";
+  if (value === 1 || value === "1") return "NO";
+  const v = String(value).toUpperCase();
+  return v === "YES" || v === "NO" ? (v as "YES" | "NO") : undefined;
 }
 
 function GeneratingOverlay() {
@@ -237,18 +256,18 @@ export function DisclosurePage({ sharedToken }: Props) {
             page2Zoning: {
               ...stripNulls(flat.page2Zoning ?? flat.Zoning?.page2Zoning ?? {}),
               // One-time migration: Q2 was historical district
-              ...(normalizeQuestions(flat)[2] && (flat.page2Zoning ?? flat.Zoning?.page2Zoning)?.historicalDistrict == null ? { 
+              ...(normalizeQuestions(flat)[2] && isUnset((flat.page2Zoning ?? flat.Zoning?.page2Zoning)?.historicalDistrict) ? { 
                 historicalDistrict: normalizeQuestions(flat)[2] === "YES" ? "0" : normalizeQuestions(flat)[2] === "NO" ? "1" : "2" 
               } : {})
             },
             page2Flood: {
               ...stripNulls(flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}),
               // One-time migration: Q4, Q5, Q6
-              ...(normalizeQuestions(flat)[4] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q4 == null ? { 
+              ...(normalizeQuestions(flat)[4] && isUnset((flat.page2Flood ?? flat.Zoning?.page2Flood)?.q4) ? { 
                 q4: normalizeQuestions(flat)[4] === "YES" ? "0" : normalizeQuestions(flat)[4] === "NO" ? "1" : "2" 
               } : {}),
-              ...(normalizeQuestions(flat)[5] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q5 == null ? { q5: normalizeQuestions(flat)[5] } : {}),
-              ...(normalizeQuestions(flat)[6] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q6 == null ? { q6: normalizeQuestions(flat)[6] } : {})
+              q5: normalizeYesNo((flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}).q5) ?? (normalizeQuestions(flat)[5] && isUnset((flat.page2Flood ?? flat.Zoning?.page2Flood)?.q5) ? normalizeQuestions(flat)[5] : undefined),
+              q6: normalizeYesNo((flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}).q6) ?? (normalizeQuestions(flat)[6] && isUnset((flat.page2Flood ?? flat.Zoning?.page2Flood)?.q6) ? normalizeQuestions(flat)[6] : undefined)
             },
           },
 
