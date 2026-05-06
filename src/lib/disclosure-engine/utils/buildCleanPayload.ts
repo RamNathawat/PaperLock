@@ -25,6 +25,11 @@ function normalizeYesNo(value: any): "YES" | "NO" | undefined {
   return v === "YES" || v === "NO" ? (v as "YES" | "NO") : undefined;
 }
 
+function isUnset(value: any): boolean {
+  return value === null || value === undefined || value === "";
+}
+
+
 export function buildCleanPayload(
   flatValues: FlatFormData,
   allSteps: Record<string, FlatFormData>
@@ -129,13 +134,13 @@ export function buildCleanPayload(
     sewerSystem: stripNulls(allSteps["Systems"]?.sewerSystem || flatValues.sewerSystem || {}),
     page2Zoning: {
       ...stripNulls(allSteps["Zoning"]?.page2Zoning || flatValues.page2Zoning || {}),
-      ...(mergedQuestions[2] && (allSteps["Zoning"]?.page2Zoning || flatValues.page2Zoning)?.historicalDistrict == null ? {
+      ...(mergedQuestions[2] && isUnset((allSteps["Zoning"]?.page2Zoning || flatValues.page2Zoning)?.historicalDistrict) ? {
         historicalDistrict: mergedQuestions[2] === "YES" ? "0" : mergedQuestions[2] === "NO" ? "1" : "2"
       } : {})
     },
     page2Flood: {
       ...stripNulls(allSteps["Zoning"]?.page2Flood || flatValues.page2Flood || {}),
-      ...(mergedQuestions[4] && (allSteps["Zoning"]?.page2Flood || flatValues.page2Flood)?.q4 == null ? {
+      ...(mergedQuestions[4] && isUnset((allSteps["Zoning"]?.page2Flood || flatValues.page2Flood)?.q4) ? {
         q4: mergedQuestions[4] === "YES" ? "0" : mergedQuestions[4] === "NO" ? "1" : "2"
       } : {}),
       q5: normalizeYesNo((allSteps["Zoning"]?.page2Flood || flatValues.page2Flood || {}).q5) ?? (mergedQuestions[5] && (allSteps["Zoning"]?.page2Flood || flatValues.page2Flood)?.q5 == null ? mergedQuestions[5] : undefined),

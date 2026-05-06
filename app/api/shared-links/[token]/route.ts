@@ -27,6 +27,23 @@ async function getSupabase() {
 
 const PAGE_2_APPLIANCE_OFFSET = 19;
 
+
+function debugFloodSnapshot(label: string, data: Record<string, any>) {
+  const flood = data?.page2Flood || {};
+  const zoning = data?.page2Zoning || {};
+  console.log(`[shared-link:${label}]`, {
+    historicalDistrict: zoning?.historicalDistrict ?? null,
+    q4: flood?.q4 ?? null,
+    q5: flood?.q5 ?? null,
+    q6: flood?.q6 ?? null,
+    questions4: data?.questions?.[4] ?? null,
+    questions5: data?.questions?.[5] ?? null,
+    questions6: data?.questions?.[6] ?? null,
+    isSubmitted: data?.is_submitted ?? null,
+    seller2Submitted: data?.seller2_submitted ?? null,
+  });
+}
+
 /**
  * The autosave in handleStepChanged saves raw step values, which include
  * applianceComments but NOT the derived page1/2NotWorkingExplanation fields
@@ -110,6 +127,16 @@ export async function PATCH(
 
   const realtorUserId = existingLink.created_by;
 
+  // Treat any write after Seller 1 submitted as a Seller 2 session write,
+  // even autosaves that do not include seller2_submitted yet.
+  const isSeller2SessionWrite =
+    isSeller2Submit ||
+    (
+      existingLink.is_submitted === true &&
+      !!existingLink.seller2_email &&
+      existingLink.seller2_submitted !== true
+    );
+
   // 2. Build the update payload
   // Seller 2 sessions must NOT overwrite Seller 1 answers with null/empty values.
   // Preserve the existing record and only merge seller2-owned fields.
@@ -150,6 +177,8 @@ export async function PATCH(
     console.error("SHARED_LINK UPDATE ERROR:", updateError);
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
+
+  debugFloodSnapshot("db-after-update", updatedLink?.form_data || {});
 
   // 3. Only proceed with disclosure record + email logic on a final submit
   const isFinalSubmit = isSubmitted || isSeller2Submit;
