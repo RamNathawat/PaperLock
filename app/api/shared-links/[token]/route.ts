@@ -144,6 +144,10 @@ export async function PATCH(
   const incomingFormData = body.form_data || {};
   const existingFormData = existingLink.form_data || {};
 
+  // ── Diagnostic: trace data loss ──
+  console.log("📋 [PATCH] incoming questions keys:", Object.keys(incomingFormData.questions || {}));
+  console.log("📋 [PATCH] incoming appliances keys:", Object.keys(incomingFormData.appliances || {}));
+
   const mergedFormData = normalizeDisclosureData(isSeller2Submit
     ? {
         ...existingFormData,
@@ -157,6 +161,10 @@ export async function PATCH(
         },
       }
     : incomingFormData);
+
+  // ── Diagnostic: trace after normalize ──
+  console.log("📋 [PATCH] normalized questions keys:", Object.keys(mergedFormData.questions || {}));
+  console.log("📋 [PATCH] normalized appliances keys:", Object.keys(mergedFormData.appliances || {}));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updatePayload: Record<string, any> = {

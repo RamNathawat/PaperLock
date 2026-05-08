@@ -256,9 +256,28 @@ export function DisclosurePage({ sharedToken }: Props) {
         perStepValuesRef.current ||
         {};
 
+      // ── Diagnostic: log per-step data to find where questions/appliances vanish ──
+      console.group("📋 handleCompleted — allSteps breakdown");
+      Object.entries(allSteps).forEach(([stepId, stepData]) => {
+        const sd = stepData as Record<string, any>;
+        const qKeys = sd?.questions ? Object.keys(sd.questions) : [];
+        const aKeys = sd?.appliances ? Object.keys(sd.appliances) : [];
+        console.log(`  [${stepId}]`, {
+          topKeys: Object.keys(sd || {}),
+          questionKeys: qKeys.length ? qKeys : "(none)",
+          applianceKeys: aKeys.length ? aKeys : "(none)",
+        });
+      });
+      console.groupEnd();
+
       const flatValues = mergePayloads(
         Object.values(allSteps)
       );
+
+      // ── Diagnostic: verify merged flatValues ──
+      console.log("📋 flatValues.questions keys:", Object.keys(flatValues.questions || {}));
+      console.log("📋 flatValues.appliances keys:", Object.keys(flatValues.appliances || {}));
+      console.log("📋 flatValues.questions sample:", JSON.stringify(flatValues.questions).slice(0, 200));
 
 
       /**
@@ -366,13 +385,49 @@ export function DisclosurePage({ sharedToken }: Props) {
             {}
           );
         } else {
+          /**
+           * CRITICAL: save form_data using cleanPayload's correctly-merged
+           * fields (questions, appliances) which are built by per-step key
+           * extraction in buildCleanPayload. The raw flatValues from
+           * mergePayloads can lose shared nested keys (questions, appliances,
+           * questionComments) due to shallow object spread across steps.
+           *
+           * We start with flatValues (has raw UI fields like address, systems,
+           * systemComments, etc.) and overlay the fields that cleanPayload
+           * builds more reliably.
+           */
+          const robustFormData = {
+            ...flatValues,
+            // Overwrite shared-across-steps keys with cleanPayload's
+            // correctly-merged versions
+            questions:        cleanPayload.questions,
+            appliances:       cleanPayload.appliances,
+            questionComments: cleanPayload.questionComments,
+            // Also persist the PDF-oriented fields so Seller 2 / reload
+            // can rebuild cleanPayload correctly
+            page3TextFields:  cleanPayload.page3TextFields,
+            q37Inline:        cleanPayload.q37Inline,
+            q41Inline:        cleanPayload.q41Inline,
+            q46Inline:        cleanPayload.q46Inline,
+            q47Details:       cleanPayload.q47Details,
+            explanation:      cleanPayload.explanation,
+            signatures:       cleanPayload.signatures,
+            initials:         cleanPayload.initials,
+            additionalPages:  cleanPayload.additionalPages,
+            page1NotWorkingExplanation: cleanPayload.page1NotWorkingExplanation,
+            page2NotWorkingExplanation: cleanPayload.page2NotWorkingExplanation,
+          };
+
+          console.log("📋 [SAVE] robustFormData questions keys:", Object.keys(robustFormData.questions || {}));
+          console.log("📋 [SAVE] robustFormData appliances keys:", Object.keys(robustFormData.appliances || {}));
+
           await fetch(`/api/shared-links/${token}`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              form_data: flatValues,
+              form_data: robustFormData,
               pdf_payload: cleanPayload,
               is_submitted: true,
             }),
