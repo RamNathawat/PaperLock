@@ -256,28 +256,9 @@ export function DisclosurePage({ sharedToken }: Props) {
         perStepValuesRef.current ||
         {};
 
-      // ── Diagnostic: log per-step data to find where questions/appliances vanish ──
-      console.group("📋 handleCompleted — allSteps breakdown");
-      Object.entries(allSteps).forEach(([stepId, stepData]) => {
-        const sd = stepData as Record<string, any>;
-        const qKeys = sd?.questions ? Object.keys(sd.questions) : [];
-        const aKeys = sd?.appliances ? Object.keys(sd.appliances) : [];
-        console.log(`  [${stepId}]`, {
-          topKeys: Object.keys(sd || {}),
-          questionKeys: qKeys.length ? qKeys : "(none)",
-          applianceKeys: aKeys.length ? aKeys : "(none)",
-        });
-      });
-      console.groupEnd();
-
       const flatValues = mergePayloads(
         Object.values(allSteps)
       );
-
-      // ── Diagnostic: verify merged flatValues ──
-      console.log("📋 flatValues.questions keys:", Object.keys(flatValues.questions || {}));
-      console.log("📋 flatValues.appliances keys:", Object.keys(flatValues.appliances || {}));
-      console.log("📋 flatValues.questions sample:", JSON.stringify(flatValues.questions).slice(0, 200));
 
 
       /**
@@ -289,6 +270,7 @@ export function DisclosurePage({ sharedToken }: Props) {
         flatValues,
         allSteps
       );
+
 
 
       if (!cleanPayload.page1NotWorkingExplanation) {
@@ -403,6 +385,13 @@ export function DisclosurePage({ sharedToken }: Props) {
             questions:        cleanPayload.questions,
             appliances:       cleanPayload.appliances,
             questionComments: cleanPayload.questionComments,
+            // Zoning/Flood — cleanPayload normalises values to correct types
+            page2Zoning:      cleanPayload.page2Zoning,
+            page2Flood:       cleanPayload.page2Flood,
+            // Systems — ensure the full system + inline set survives
+            systems:          cleanPayload.systems,
+            inlineOptions:    cleanPayload.inlineOptions,
+            sewerSystem:      cleanPayload.sewerSystem,
             // Also persist the PDF-oriented fields so Seller 2 / reload
             // can rebuild cleanPayload correctly
             page3TextFields:  cleanPayload.page3TextFields,
@@ -418,8 +407,6 @@ export function DisclosurePage({ sharedToken }: Props) {
             page2NotWorkingExplanation: cleanPayload.page2NotWorkingExplanation,
           };
 
-          console.log("📋 [SAVE] robustFormData questions keys:", Object.keys(robustFormData.questions || {}));
-          console.log("📋 [SAVE] robustFormData appliances keys:", Object.keys(robustFormData.appliances || {}));
 
           await fetch(`/api/shared-links/${token}`, {
             method: "PATCH",
