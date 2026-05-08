@@ -129,7 +129,7 @@ export default function Step3Systems() {
   const isReadOnly = useContext(ReadOnlyContext);
 
   const sewerType          = String(watch("sewerSystem.type") ?? "");
-  const fireSuppresionDate = watch("inlineOptions.fireSuppresionDate");
+  const fireSuppressionDate = watch("inlineOptions.fireSuppressionDate");
 
   return (
     <fieldset
@@ -213,21 +213,21 @@ export default function Step3Systems() {
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last inspection date</p>
             {isReadOnly ? (
               <p className="text-sm text-gray-700 bg-gray-50 rounded-lg px-4 py-2 border border-gray-100 inline-block">
-                {fireSuppresionDate || <span className="text-gray-400 italic">Not provided</span>}
+                {fireSuppressionDate || <span className="text-gray-400 italic">Not provided</span>}
               </p>
             ) : (
               <input
                 type="text"
                 inputMode="numeric"
                 maxLength={10}
-                value={fireSuppresionDate || ""}
+                value={fireSuppressionDate || ""}
                 placeholder="MM/DD/YYYY"
                 onChange={(e) => {
                   const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
                   let formatted = digits;
                   if (digits.length > 2) formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
                   if (digits.length > 4) formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-                  setValue("inlineOptions.fireSuppresionDate", formatted);
+                  setValue("inlineOptions.fireSuppressionDate", formatted);
                 }}
                 className="w-48 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />

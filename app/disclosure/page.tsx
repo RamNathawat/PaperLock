@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Wizard } from "@/lib/wizard/index";
 import { mergePayloads } from "@/src/lib/disclosure-engine/utils/mergePayloads";
 import { buildCleanPayload } from "@/src/lib/disclosure-engine/utils/buildCleanPayload";
+import { normalizeDisclosureData } from "@/src/lib/disclosure-engine/utils/normalizeDisclosureData";
 
 const Step1Property = dynamic(() => import("./steps/Step1Property"));
 const Step2AppliancesPrimary = dynamic(() => import("./steps/Step2AppliancesPrimary"));
@@ -35,76 +36,7 @@ type Props = {
 
 type FlatFormData = Record<string, any>;
 
-function normalizeAppliances(flat: FlatFormData) {
-  const source =
-    flat?.appliances ||
-    flat?.Appliances?.appliances ||
-    flat?.Appliances ||
-    {};
 
-  if (Array.isArray(source)) return source;
-
-  if (typeof source === "object" && source !== null) {
-    const result: string[] = [];
-    Object.entries(source).forEach(([key, value]) => {
-      result[Number(key)] = value as string;
-    });
-    return result;
-  }
-
-  return [];
-}
-
-function normalizeQuestions(flat: FlatFormData) {
-  const source =
-    flat?.questions ??
-    flat?.QuestionsA?.questions ??
-    flat?.QuestionsB?.questions ??
-    flat?.QuestionsC?.questions ??
-    flat?.Questions?.questions ??
-    {};
-
-  if (Array.isArray(source)) return source;
-
-  if (typeof source === "object" && source !== null) {
-    const result: string[] = [];
-    Object.entries(source).forEach(([key, value]) => {
-      result[Number(key)] = value as string;
-    });
-    return result;
-  }
-
-  return [];
-}
-
-/**
- * Strip null values from an object so RHF treats them as "not set"
- * rather than "has a null value". This is critical because:
- * - RHF's `required` validation may not catch `null` (only undefined/"")
- * - Radio buttons compare `current === value` and null !== any option string
- * - JSON.parse(JSON.stringify(obj)) preserves nulls from the DB
- */
-function stripNulls<T extends Record<string, any>>(obj: T): T {
-  if (!obj || typeof obj !== "object") return obj;
-  const result: any = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== null) result[key] = value;
-  }
-  return result;
-}
-
-function normalizeYesNo(value: any): "YES" | "NO" | undefined {
-  if (value === null || value === undefined || value === "") return undefined;
-  if (value === "YES" || value === "NO") return value;
-  if (value === 0 || value === "0") return "YES";
-  if (value === 1 || value === "1") return "NO";
-  const v = String(value).toUpperCase();
-  return v === "YES" || v === "NO" ? (v as "YES" | "NO") : undefined;
-}
-
-function isUnset(value: any): boolean {
-  return value === null || value === undefined || value === "";
-}
 
 
 function GeneratingOverlay() {
@@ -203,125 +135,104 @@ export function DisclosurePage({ sharedToken }: Props) {
         const hasSeller2Email = !!data.link?.seller2_email;
         setHasSeller2(hasSeller2Email);
 
+        const normalized = normalizeDisclosureData(flat);
+
+        const numbersToStrings = (obj: any): any => {
+          if (obj === null || obj === undefined) return obj;
+          if (typeof obj === "number") return String(obj);
+          if (typeof obj !== "object") return obj;
+          if (Array.isArray(obj)) return obj.map(numbersToStrings);
+          const result: Record<string, any> = {};
+          for (const [key, value] of Object.entries(obj)) {
+            result[key] = numbersToStrings(value);
+          }
+          return result;
+        };
+
+        const stringified = numbersToStrings(normalized);
+
         setInitialValues({
           Property: {
-            propertyIdentifier: flat.propertyIdentifier,
-            address: flat.address || {
-              street: flat.propertyIdentifier
-                ? flat.propertyIdentifier.split(",")[0]?.trim()
+            propertyIdentifier: stringified.propertyIdentifier,
+            address: stringified.address || {
+              street: stringified.propertyIdentifier
+                ? stringified.propertyIdentifier.split(",")[0]?.trim()
                 : "",
             },
-            sellerOccupying: flat.sellerOccupying,
-            initials: flat.initials,
+            sellerOccupying: stringified.sellerOccupying,
+            initials: stringified.initials,
             disclosureId,
           },
 
           AppliancesPrimary: {
-            appliances: normalizeAppliances(flat),
-            page1NotWorkingExplanation:
-              flat.page1NotWorkingExplanation,
-            applianceComments: flat.applianceComments,
+            appliances: stringified.appliances,
+            page1NotWorkingExplanation: stringified.page1NotWorkingExplanation,
+            applianceComments: stringified.applianceComments,
           },
 
           AppliancesExtended: {
-            appliances: normalizeAppliances(flat),
-            page2NotWorkingExplanation:
-              flat.page2NotWorkingExplanation,
-            applianceComments: flat.applianceComments,
+            appliances: stringified.appliances,
+            page2NotWorkingExplanation: stringified.page2NotWorkingExplanation,
+            applianceComments: stringified.applianceComments,
           },
 
           Systems: {
-            // form_data may be stored flat (wizard format) or nested (clean payload)
-            inlineOptions: stripNulls(
-              flat.inlineOptions ??
-              flat.Systems?.inlineOptions ??
-              {}
-            ),
-            sewerSystem: stripNulls(
-              flat.sewerSystem ??
-              flat.Systems?.sewerSystem ??
-              {}
-            ),
-            systems: stripNulls(
-              flat.systems ??
-              flat.Systems?.systems ??
-              {}
-            ),
-            systemComments:
-              flat.systemComments ??
-              flat.Systems?.systemComments ??
-              {},
+            inlineOptions: stringified.inlineOptions || {},
+            sewerSystem: stringified.sewerSystem || {},
+            systems: stringified.systems || {},
+            systemComments: stringified.systemComments || {},
           },
 
           Zoning: {
-            page2Zoning: {
-              ...stripNulls(flat.page2Zoning ?? flat.Zoning?.page2Zoning ?? {}),
-              // One-time migration: Q2 was historical district
-              ...(normalizeQuestions(flat)[2] && isUnset((flat.page2Zoning ?? flat.Zoning?.page2Zoning)?.historicalDistrict) ? { 
-                historicalDistrict: normalizeQuestions(flat)[2] === "YES" ? "0" : normalizeQuestions(flat)[2] === "NO" ? "1" : "2" 
-              } : {})
-            },
-            page2Flood: {
-              ...stripNulls(flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}),
-              // One-time migration: Q4, Q5, Q6
-              ...(normalizeQuestions(flat)[4] && isUnset((flat.page2Flood ?? flat.Zoning?.page2Flood)?.q4) ? { 
-                q4: normalizeQuestions(flat)[4] === "YES" ? "0" : normalizeQuestions(flat)[4] === "NO" ? "1" : "2" 
-              } : {}),
-              q5: normalizeYesNo((flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}).q5) ?? (normalizeQuestions(flat)[5] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q5 == null ? normalizeQuestions(flat)[5] : undefined),
-              q6: normalizeYesNo((flat.page2Flood ?? flat.Zoning?.page2Flood ?? {}).q6) ?? (normalizeQuestions(flat)[6] && (flat.page2Flood ?? flat.Zoning?.page2Flood)?.q6 == null ? normalizeQuestions(flat)[6] : undefined)
-            },
+            page2Zoning: stringified.page2Zoning || {},
+            page2Flood: stringified.page2Flood || {},
           },
 
           QuestionsA: {
-            questions: normalizeQuestions(flat),
-            questionComments: flat.questionComments,
-            q16Inline: flat.page3TextFields
+            questions: stringified.questions || {},
+            questionComments: stringified.questionComments || {},
+            q16Inline: stringified.page3TextFields
               ? {
-                  roofAge: flat.page3TextFields.roofAge,
-                  layers: flat.page3TextFields.roofLayers,
+                  roofAge: stringified.page3TextFields.roofAge,
+                  layers: stringified.page3TextFields.roofLayers,
                 }
-              : flat.q16Inline,
-            q19Inline: flat.page3TextFields
+              : stringified.q16Inline || {},
+            q19Inline: stringified.page3TextFields
               ? {
-                  annualCost:
-                    flat.page3TextFields
-                      .termiteBaitAnnualCost,
+                  annualCost: stringified.page3TextFields.termiteBaitAnnualCost,
                 }
-              : flat.q19Inline,
+              : stringified.q19Inline || {},
           },
 
           QuestionsB: {
-            questions: normalizeQuestions(flat),
-            questionComments: flat.questionComments,
-            // q37Inline in cleanPayload is numeric (0=YES,1=NO) but the form
-            // component (YesNoCards) expects the string "YES" or "NO".
-            // Handle both formats so pre-population works for Seller 2.
+            questions: stringified.questions || {},
+            questionComments: stringified.questionComments || {},
             q37Inline: {
               maintenance: (() => {
                 const raw =
-                  flat.q37Inline?.maintenance ??
-                  (flat.q37Inline === 0 ? "YES" :
-                   flat.q37Inline === 1 ? "NO" : undefined);
+                  stringified.q37Inline?.maintenance ??
+                  (stringified.q37Inline === "0" ? "YES" :
+                   stringified.q37Inline === "1" ? "NO" : undefined);
                 return raw;
               })(),
             },
           },
 
           QuestionsC: {
-            questions: normalizeQuestions(flat),
-            questionComments: flat.questionComments,
-            q41Inline: flat.q41Inline,
-            q46Inline: flat.q46Inline,
-            q47Details: flat.q47Details,
+            questions: stringified.questions || {},
+            questionComments: stringified.questionComments || {},
+            q41Inline: stringified.q41Inline || {},
+            q46Inline: stringified.q46Inline || {},
+            q47Details: stringified.q47Details || {},
           },
 
           Financial: {
-            additionalPages: flat.additionalPages,
-            explanation: flat.explanation,
+            additionalPages: stringified.additionalPages,
+            explanation: stringified.explanation,
           },
 
           Signatures: {
-            signatures: flat.signatures,
+            signatures: stringified.signatures,
           },
         });
 

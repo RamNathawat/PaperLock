@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { buildCleanPayload } from "@/src/lib/disclosure-engine/utils/buildCleanPayload";
+import { normalizeDisclosureData } from "@/src/lib/disclosure-engine/utils/normalizeDisclosureData";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -143,7 +144,7 @@ export async function PATCH(
   const incomingFormData = body.form_data || {};
   const existingFormData = existingLink.form_data || {};
 
-  const mergedFormData = isSeller2Submit
+  const mergedFormData = normalizeDisclosureData(isSeller2Submit
     ? {
         ...existingFormData,
         signatures: {
@@ -155,7 +156,7 @@ export async function PATCH(
           ...(incomingFormData.initials || {}),
         },
       }
-    : incomingFormData;
+    : incomingFormData);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updatePayload: Record<string, any> = {

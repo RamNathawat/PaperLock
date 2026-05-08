@@ -45,7 +45,7 @@ export interface InlineOptions {
   propaneTankType?: 0 | 1;
   generatorType?: 0 | 1 | 2;
   waterSourceType?: 0 | 1 | 2;
-  fireSuppresionDate?: string;
+  fireSuppressionDate?: string;
   securitySystemType?: SecuritySystemType;
   solarPanelType?: SolarPanelType;
 }

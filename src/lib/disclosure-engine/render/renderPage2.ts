@@ -110,8 +110,8 @@ export function renderPage2(
   // --------------------------------------------------
   // Fire Suppression System date
   // --------------------------------------------------
-  if (data.inlineOptions?.fireSuppresionDate) {
-    page.drawText(data.inlineOptions.fireSuppresionDate, {
+  if (data.inlineOptions?.fireSuppressionDate) {
+    page.drawText(data.inlineOptions.fireSuppressionDate, {
       x: raw.PAGE2_FIRE_SUPPRESSION_DATE.x,
       y: raw.PAGE2_FIRE_SUPPRESSION_DATE.y,
       size: 10,
