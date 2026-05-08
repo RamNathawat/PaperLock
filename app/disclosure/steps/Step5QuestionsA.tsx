@@ -99,12 +99,12 @@ export default function Step5QuestionsA() {
           <p className="text-sm font-semibold text-gray-800 pr-8">Q16. Approximate age of roof covering</p>
           <div className="grid grid-cols-2 gap-3">
             <input
-              {...register("q16Inline.roofAge", { required: true })}
+              {...register("q16Inline.roofAge", !isReadOnly ? { required: true } : {})}
               placeholder="Roof age (years)"
               className={`w-full rounded-xl border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${showErrors && !!(errors as any)?.q16Inline?.roofAge ? "border-red-400 bg-red-50" : "border-gray-200"}`}
             />
             <input
-              {...register("q16Inline.layers", { required: true })}
+              {...register("q16Inline.layers", !isReadOnly ? { required: true } : {})}
               placeholder="Number of layers"
               className={`w-full rounded-xl border px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${showErrors && !!(errors as any)?.q16Inline?.layers ? "border-red-400 bg-red-50" : "border-gray-200"}`}
             />

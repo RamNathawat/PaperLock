@@ -80,10 +80,14 @@ export function buildCleanPayload(
   const q19 = allSteps["Questions"]?.q19Inline || flatValues.q19Inline || {};
 
   const q37MaintenanceRaw =
-    allSteps["Questions Continued"]?.q37Inline?.maintenance ||
-    flatValues?.q37Inline?.maintenance;
+    allSteps["Questions Continued"]?.q37Inline?.maintenance ??
+    flatValues?.q37Inline?.maintenance ??
+    flatValues?.q37Inline;
+    
   const q37Inline: 0 | 1 | undefined =
-    q37MaintenanceRaw === "YES" ? 0 : q37MaintenanceRaw === "NO" ? 1 : undefined;
+    q37MaintenanceRaw === "YES" || q37MaintenanceRaw === "0" || q37MaintenanceRaw === 0 ? 0 : 
+    q37MaintenanceRaw === "NO" || q37MaintenanceRaw === "1" || q37MaintenanceRaw === 1 ? 1 : 
+    undefined;
 
   const q41 = allSteps["Questions Final"]?.q41Inline || flatValues.q41Inline || {};
   const q46 = allSteps["Questions Final"]?.q46Inline || flatValues.q46Inline || {};
