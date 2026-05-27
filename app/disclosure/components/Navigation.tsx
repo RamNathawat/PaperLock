@@ -2,12 +2,35 @@
 
 import { useWizard } from "@/lib/wizard/index";
 import { useFormContext, useFormState } from "react-hook-form";
+import { useEffect } from "react";
 
 export default function Navigation() {
-  const { isFirstStep, isLastStep, isLoading, goToPreviousStep } = useWizard();
-  const { control } = useFormContext();
+  const { isFirstStep, isLastStep, isLoading, goToPreviousStep, activeStep } = useWizard();
+  const { control, watch, getValues } = useFormContext();
   // useFormState subscribes directly to the error stream — re-renders on every error change
   const { errors, submitCount } = useFormState({ control });
+
+  useEffect(() => {
+    const subscription = watch(() => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id") || params.get("token");
+      if (!id) return;
+
+      const lsKey = `disclosure_backup_${id}`;
+      try {
+        const existingRaw = localStorage.getItem(lsKey);
+        const existing = existingRaw ? JSON.parse(existingRaw) : {};
+        
+        const newBackup = {
+          ...existing,
+          [activeStep.id]: getValues()
+        };
+        
+        localStorage.setItem(lsKey, JSON.stringify(newBackup));
+      } catch(e) {}
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, getValues, activeStep.id]);
 
   const errorCount = submitCount > 0 ? countErrors(errors) : 0;
 

@@ -19,6 +19,14 @@ export default function Step1Property({ readOnly, isSeller2, hasSeller2Email }: 
   const state = watch("address.state");
   const zip = watch("address.zip");
 
+  const sellerOccupying = watch("sellerOccupying");
+  
+  const isAddressEmpty = !street && !city && !state && !zip;
+  const isOccupyingEmpty = sellerOccupying === undefined || sellerOccupying === null || sellerOccupying === "";
+
+  const addressReadOnly = readOnly && !isAddressEmpty;
+  const occupyingReadOnly = readOnly && !isOccupyingEmpty;
+
   useEffect(() => {
     if (street || city || state || zip) {
       const parts = [
@@ -41,13 +49,12 @@ export default function Step1Property({ readOnly, isSeller2, hasSeller2Email }: 
       </div>
 
       {/* Property Address */}
-      <div className={readOnly ? "pointer-events-none opacity-70" : ""}>
-        <div
-          className={`rounded-2xl border p-5 space-y-4 ${
+      <div
+        className={`rounded-2xl border p-5 space-y-4 ${
           showErrors && errors.propertyIdentifier
             ? "border-red-300 bg-red-50"
             : "border-gray-100 bg-gray-50/50"
-        }`}
+        } ${addressReadOnly ? "pointer-events-none opacity-70" : ""}`}
       >
         <div>
           <label className="block text-sm font-semibold text-gray-800">
@@ -112,7 +119,7 @@ export default function Step1Property({ readOnly, isSeller2, hasSeller2Email }: 
           showErrors && errors.sellerOccupying
             ? "border-red-300 bg-red-50"
             : "border-gray-100 bg-gray-50/50"
-        }`}
+        } ${occupyingReadOnly ? "pointer-events-none opacity-70" : ""}`}
       >
         <div>
           <label className="block text-sm font-semibold text-gray-800">
@@ -125,26 +132,27 @@ export default function Step1Property({ readOnly, isSeller2, hasSeller2Email }: 
           )}
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
-          <label className="flex items-center gap-2.5 px-4 py-3 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-all text-sm text-gray-700 font-medium">
+          <label htmlFor="occupying-yes" className="flex items-center gap-2.5 px-4 py-3 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-all text-sm text-gray-700 font-medium">
             <input
               {...register("sellerOccupying", { required: true })}
               type="radio"
               value={0}
+              id="occupying-yes"
               className="accent-blue-600"
             />
             Yes, currently occupying
           </label>
-          <label className="flex items-center gap-2.5 px-4 py-3 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-all text-sm text-gray-700 font-medium">
+          <label htmlFor="occupying-no" className="flex items-center gap-2.5 px-4 py-3 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-all text-sm text-gray-700 font-medium">
             <input
               {...register("sellerOccupying", { required: true })}
               type="radio"
               value={1}
+              id="occupying-no"
               className="accent-blue-600"
             />
             Not occupying
           </label>
         </div>
-      </div>
       </div>
 
       {/* Initials */}

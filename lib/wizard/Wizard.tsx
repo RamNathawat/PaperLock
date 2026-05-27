@@ -222,7 +222,16 @@ function Wizard({
   return (
     <WizardContext.Provider value={context}>
       <FormProvider {...methods}>
-        <form onSubmit={methods.handleSubmit(handleNext)}>
+        <form
+          onSubmit={(e) => {
+            if (activeStep.isReadOnly) {
+              e.preventDefault();
+              handleNext(methods.getValues());
+            } else {
+              methods.handleSubmit(handleNext)(e);
+            }
+          }}
+        >
           {header}
           <div className="relative overflow-hidden w-full">
             <AnimatePresence mode="wait" custom={stepNumber}>

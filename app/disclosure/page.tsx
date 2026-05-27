@@ -151,6 +151,13 @@ export function DisclosurePage({ sharedToken }: Props) {
 
         const stringified = numbersToStrings(normalized);
 
+        let backup: any = {};
+        try {
+          const lsKey = `disclosure_backup_${token || disclosureId}`;
+          const raw = localStorage.getItem(lsKey);
+          if (raw) backup = JSON.parse(raw);
+        } catch(e) {}
+
         setInitialValues({
           Property: {
             propertyIdentifier: stringified.propertyIdentifier,
@@ -162,18 +169,21 @@ export function DisclosurePage({ sharedToken }: Props) {
             sellerOccupying: stringified.sellerOccupying,
             initials: stringified.initials,
             disclosureId,
+            ...(backup["Property"] || {}),
           },
 
           AppliancesPrimary: {
             appliances: stringified.appliances,
             page1NotWorkingExplanation: stringified.page1NotWorkingExplanation,
             applianceComments: stringified.applianceComments,
+            ...(backup["Appliances"] || {}),
           },
 
           AppliancesExtended: {
             appliances: stringified.appliances,
             page2NotWorkingExplanation: stringified.page2NotWorkingExplanation,
             applianceComments: stringified.applianceComments,
+            ...(backup["Appliances Continued"] || {}),
           },
 
           Systems: {
@@ -181,11 +191,13 @@ export function DisclosurePage({ sharedToken }: Props) {
             sewerSystem: stringified.sewerSystem || {},
             systems: stringified.systems || {},
             systemComments: stringified.systemComments || {},
+            ...(backup["Systems"] || {}),
           },
 
           Zoning: {
             page2Zoning: stringified.page2Zoning || {},
             page2Flood: stringified.page2Flood || {},
+            ...(backup["Zoning"] || {}),
           },
 
           QuestionsA: {
@@ -202,6 +214,7 @@ export function DisclosurePage({ sharedToken }: Props) {
                   annualCost: stringified.page3TextFields.termiteBaitAnnualCost,
                 }
               : stringified.q19Inline || {},
+            ...(backup["Questions"] || {}),
           },
 
           QuestionsB: {
@@ -216,6 +229,7 @@ export function DisclosurePage({ sharedToken }: Props) {
                 return raw;
               })(),
             },
+            ...(backup["Questions Continued"] || {}),
           },
 
           QuestionsC: {
@@ -224,15 +238,18 @@ export function DisclosurePage({ sharedToken }: Props) {
             q41Inline: stringified.q41Inline || {},
             q46Inline: stringified.q46Inline || {},
             q47Details: stringified.q47Details || {},
+            ...(backup["Questions Final"] || {}),
           },
 
           Financial: {
             additionalPages: stringified.additionalPages,
             explanation: stringified.explanation,
+            ...(backup["Financial"] || {}),
           },
 
           Signatures: {
             signatures: stringified.signatures,
+            ...(backup["Signatures"] || {}),
           },
         });
 
@@ -330,18 +347,6 @@ export function DisclosurePage({ sharedToken }: Props) {
             },
           };
 
-          await fetch(`/api/shared-links/${token}`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              form_data: mergedFormData,
-              pdf_payload: cleanPayload,
-              seller2_submitted: true,
-            }),
-          });
-
           /**
            * Build the download PDF from Seller 1's original data
            * + Seller 2's signatures. This ensures no content fields
@@ -366,6 +371,18 @@ export function DisclosurePage({ sharedToken }: Props) {
             completeFlatValues,
             {}
           );
+
+          await fetch(`/api/shared-links/${token}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              form_data: mergedFormData,
+              pdf_payload: downloadPayload,
+              seller2_submitted: true,
+            }),
+          });
         } else {
           /**
            * CRITICAL: save form_data using cleanPayload's correctly-merged
@@ -469,6 +486,10 @@ export function DisclosurePage({ sharedToken }: Props) {
       document.body.appendChild(link);
       link.click();
       link.remove();
+
+      try {
+        localStorage.removeItem(`disclosure_backup_${token || disclosureId}`);
+      } catch(e) {}
 
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
