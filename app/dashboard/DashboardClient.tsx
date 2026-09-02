@@ -245,12 +245,8 @@ function ShareModal({ link, creating, copied, sellerEmail, seller2Email, onSelle
 export default function DashboardClient({ email, initialDisclosures, initialSharedLinks }: {
   email: string; initialDisclosures: Disclosure[]; initialSharedLinks: SharedLink[];
 }) {
-  const [disclosures, setDisclosures] = useState<Disclosure[]>(() =>
-    (typeof window !== "undefined" ? getPortalCache()?.disclosures : null) ?? initialDisclosures
-  );
-  const [sharedLinks, setSharedLinks] = useState<SharedLink[]>(() =>
-    (typeof window !== "undefined" ? getPortalCache()?.sharedLinks : null) ?? initialSharedLinks
-  );
+  const [disclosures, setDisclosures] = useState<Disclosure[]>(initialDisclosures);
+  const [sharedLinks, setSharedLinks] = useState<SharedLink[]>(initialSharedLinks);
   const [showModal, setShowModal] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -262,7 +258,15 @@ export default function DashboardClient({ email, initialDisclosures, initialShar
   const supabase = createClient();
 
   useEffect(() => {
-    if (!getPortalCache()) setPortalCache({ disclosures: initialDisclosures, sharedLinks: initialSharedLinks });
+    // Seed cache from server props if not already populated, then refresh from DB.
+    const cached = getPortalCache();
+    if (cached) {
+      // Hydration is already done — safe to read from cache now.
+      setDisclosures(cached.disclosures);
+      setSharedLinks(cached.sharedLinks);
+    } else {
+      setPortalCache({ disclosures: initialDisclosures, sharedLinks: initialSharedLinks });
+    }
     async function refresh() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -312,7 +316,9 @@ export default function DashboardClient({ email, initialDisclosures, initialShar
     const fd = item.type === "draft" ? disclosures.find(d => d.id === item.id)?.form_data : sharedLinks.find(l => l.token === item.token)?.form_data;
     if (!fd) return;
     try {
-      const res = await fetch("/api/disclosure/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(fd) });
+      // Ensure the version field is present — stored form_data may not have it.
+      const payload = { version: "01-01-2026", ...fd };
+      const res = await fetch("/api/disclosure/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error();
       const blob = await res.blob(); const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url; a.download = `Disclosure-${item.address}.pdf`;

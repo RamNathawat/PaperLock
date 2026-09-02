@@ -7,7 +7,11 @@ import { normalizeDisclosureData } from "@/src/lib/disclosure-engine/utils/norma
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const rawBody = await req.json();
+
+    // Inject the version if missing — stored form_data from the DB may not
+    // have it (it's only added by buildCleanPayload during the wizard flow).
+    const body = { version: "01-01-2026", ...rawBody };
 
     const normalized = normalizeDisclosureData(body) as DisclosureInput;
 
